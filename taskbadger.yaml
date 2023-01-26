@@ -170,7 +170,7 @@ paths:
                     updated: '2022-08-24T16:15:22Z'
                   summary: Get Response
           description: ''
-    post:
+    put:
       operationId: task_update
       description: Update a task
       summary: Update Task
@@ -230,6 +230,42 @@ paths:
                     created: '2022-08-24T14:15:22Z'
                     updated: '2022-08-24T16:15:22Z'
                   summary: Update Response
+          description: ''
+    patch:
+      operationId: tasks_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: organization_slug
+        schema:
+          type: string
+        description: Slug for your organization
+        required: true
+      - in: path
+        name: project_slug
+        schema:
+          type: string
+        description: Slug for your project
+        required: true
+      tags:
+      - Task Endpoints
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTaskRequest'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
           description: ''
     delete:
       operationId: task_cancel
@@ -379,7 +415,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Action'
           description: ''
-    post:
+    put:
       operationId: action_update
       description: Update an action
       summary: Update Action
@@ -416,6 +452,49 @@ paths:
             schema:
               $ref: '#/components/schemas/ActionRequest'
         required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+          description: ''
+    patch:
+      operationId: tasks_actions_partial_update
+      description: test summary
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: organization_slug
+        schema:
+          type: string
+        description: Slug for your organization
+        required: true
+      - in: path
+        name: project_slug
+        schema:
+          type: string
+        description: Slug for your project
+        required: true
+      - in: path
+        name: task_id
+        schema:
+          type: string
+        description: ID of the task
+        required: true
+      tags:
+      - Action Endpoints
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedActionRequest'
       security:
       - tokenAuth: []
       responses:
@@ -530,6 +609,44 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Task'
+    PatchedActionRequest:
+      type: object
+      properties:
+        trigger:
+          type: string
+          minLength: 1
+          maxLength: 255
+        integration:
+          type: string
+          minLength: 1
+          maxLength: 50
+        config:
+          type: object
+          additionalProperties: {}
+    PatchedTaskRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Name of the task
+          maxLength: 255
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          default: pending
+        value:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+          description: Current progress value
+        data:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: Custom metadata
     StatusEnum:
       enum:
       - pending

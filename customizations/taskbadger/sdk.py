@@ -1,11 +1,11 @@
 import dataclasses
+from _contextvars import ContextVar
 from typing import List
 
-from _contextvars import ContextVar
-
 from taskbadger import AuthenticatedClient
-from taskbadger.api.task_endpoints import task_create, task_update
-from taskbadger.models import Action, StatusEnum, Task, TaskData
+from taskbadger.api.task_endpoints import task_create, tasks_partial_update
+from taskbadger.models import Action, StatusEnum, Task, TaskData, PatchedTaskRequest, ActionRequest
+from taskbadger.types import UNSET
 
 _local = ContextVar("taskbadger_client")
 
@@ -33,9 +33,23 @@ def create_task(
     return task_create.sync(**kwargs)
 
 
-def update_task(task: Task) -> Task:
-    kwargs = _make_args(id=task.id, json_body=task)
-    return task_update.sync(**kwargs)
+def update_task(
+        task_id: str,
+        name: str = UNSET,
+        status: StatusEnum = UNSET,
+        value: int = UNSET,
+        data: dict = UNSET,
+        actions: List[ActionRequest] = None
+) -> Task:
+    body = PatchedTaskRequest.from_dict({
+        "name": name, "status": status, "value": value, "data": data
+    })
+    if actions:
+        body.additional_properties = {
+            "actions": [a.to_dict() for a in actions]
+        }
+    kwargs = _make_args(id=task_id, json_body=body)
+    return tasks_partial_update.sync(**kwargs)
 
 
 def _make_args(**kwargs):
@@ -66,8 +80,8 @@ if __name__ == "__main__":
     # ])
     # print(t.name, t.id)
 
-    t = update_task(Task(id="e9f6gAUcNsjN8fBPC4fxyFCRzC", name="test", value=100, status=StatusEnum.SUCCESS))
-    print(t.status, t.value)
+    t = update_task("e9f6gAUcNsjN8fBPC4fxyFCRzC", name="bob")
+    print(t.status, t.value, t.name)
 
 # def main(args):
 #     tb = Taskbadger(args.org, args.project, args.key)

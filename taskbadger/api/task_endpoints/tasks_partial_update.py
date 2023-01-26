@@ -5,8 +5,8 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
+from ...models.patched_task_request import PatchedTaskRequest
 from ...models.task import Task
-from ...models.task_request import TaskRequest
 from ...types import Response
 
 
@@ -16,7 +16,7 @@ def _get_kwargs(
     id: str,
     *,
     client: AuthenticatedClient,
-    json_body: TaskRequest,
+    json_body: PatchedTaskRequest,
 ) -> Dict[str, Any]:
     url = "{}/api/{organization_slug}/{project_slug}/tasks/{id}/".format(
         client.base_url, organization_slug=organization_slug, project_slug=project_slug, id=id
@@ -28,7 +28,7 @@ def _get_kwargs(
     json_json_body = json_body.to_dict()
 
     return {
-        "method": "put",
+        "method": "patch",
         "url": url,
         "headers": headers,
         "cookies": cookies,
@@ -63,17 +63,14 @@ def sync_detailed(
     id: str,
     *,
     client: AuthenticatedClient,
-    json_body: TaskRequest,
+    json_body: PatchedTaskRequest,
 ) -> Response[Task]:
-    """Update Task
-
-     Update a task
-
+    """
     Args:
         organization_slug (str):
         project_slug (str):
         id (str):
-        json_body (TaskRequest):
+        json_body (PatchedTaskRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -105,17 +102,14 @@ def sync(
     id: str,
     *,
     client: AuthenticatedClient,
-    json_body: TaskRequest,
+    json_body: PatchedTaskRequest,
 ) -> Optional[Task]:
-    """Update Task
-
-     Update a task
-
+    """
     Args:
         organization_slug (str):
         project_slug (str):
         id (str):
-        json_body (TaskRequest):
+        json_body (PatchedTaskRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -140,17 +134,14 @@ async def asyncio_detailed(
     id: str,
     *,
     client: AuthenticatedClient,
-    json_body: TaskRequest,
+    json_body: PatchedTaskRequest,
 ) -> Response[Task]:
-    """Update Task
-
-     Update a task
-
+    """
     Args:
         organization_slug (str):
         project_slug (str):
         id (str):
-        json_body (TaskRequest):
+        json_body (PatchedTaskRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -180,17 +171,14 @@ async def asyncio(
     id: str,
     *,
     client: AuthenticatedClient,
-    json_body: TaskRequest,
+    json_body: PatchedTaskRequest,
 ) -> Optional[Task]:
-    """Update Task
-
-     Update a task
-
+    """
     Args:
         organization_slug (str):
         project_slug (str):
         id (str):
-        json_body (TaskRequest):
+        json_body (PatchedTaskRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
