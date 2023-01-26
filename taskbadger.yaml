@@ -1,0 +1,582 @@
+openapi: 3.0.3
+info:
+  title: Task Badger
+  version: '0.1'
+  description: Documentation for the Task Badger API
+paths:
+  /api/{organization_slug}/{project_slug}/tasks/:
+    get:
+      operationId: task_list
+      description: List all tasks
+      summary: List Tasks
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: path
+        name: organization_slug
+        schema:
+          type: string
+        description: Slug for your organization
+        required: true
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: project_slug
+        schema:
+          type: string
+        description: Slug for your project
+        required: true
+      tags:
+      - Task Endpoints
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTaskList'
+              examples:
+                ListResponse:
+                  value:
+                    previous: string
+                    next: string
+                    results:
+                    - id: 57ae8eVBrH7jbDgmYj6Ut2vR9S
+                      organization: example_org
+                      project: example_org
+                      name: example task
+                      status: processing
+                      value: 63
+                      value_percent: 63
+                      data:
+                        property1: customValue
+                      created: '2022-08-24T14:15:22Z'
+                      updated: '2022-08-24T16:15:22Z'
+                  summary: List Response
+          description: ''
+    post:
+      operationId: task_create
+      description: Create a task
+      summary: Create Task
+      parameters:
+      - in: path
+        name: organization_slug
+        schema:
+          type: string
+        description: Slug for your organization
+        required: true
+      - in: path
+        name: project_slug
+        schema:
+          type: string
+        description: Slug for your project
+        required: true
+      tags:
+      - Task Endpoints
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+            examples:
+              CreatePayload:
+                value:
+                  name: example task
+                  status: pending
+                  data:
+                    property1: customValue
+                summary: Create Payload
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+              examples:
+                CreateResponse:
+                  value:
+                    id: 57ae8eVBrH7jbDgmYj6Ut2vR9S
+                    organization: example_org
+                    project: example_org
+                    name: example task
+                    status: pending
+                    value: null
+                    value_percent: 63
+                    data:
+                      property1: customValue
+                    created: '2022-08-24T14:15:22Z'
+                    updated: '2022-08-24T16:15:22Z'
+                  summary: Create Response
+          description: ''
+  /api/{organization_slug}/{project_slug}/tasks/{id}/:
+    get:
+      operationId: task_get
+      description: Fetch a task by ID
+      summary: Get Task
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_slug
+        schema:
+          type: string
+        description: Slug for your organization
+        required: true
+      - in: path
+        name: project_slug
+        schema:
+          type: string
+        description: Slug for your project
+        required: true
+      tags:
+      - Task Endpoints
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+              examples:
+                GetResponse:
+                  value:
+                    id: 57ae8eVBrH7jbDgmYj6Ut2vR9S
+                    organization: example_org
+                    project: example_org
+                    name: example task
+                    status: post_processing
+                    value: 100
+                    value_percent: 63
+                    data:
+                      property1: customValue
+                    created: '2022-08-24T14:15:22Z'
+                    updated: '2022-08-24T16:15:22Z'
+                  summary: Get Response
+          description: ''
+    post:
+      operationId: task_update
+      description: Update a task
+      summary: Update Task
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_slug
+        schema:
+          type: string
+        description: Slug for your organization
+        required: true
+      - in: path
+        name: project_slug
+        schema:
+          type: string
+        description: Slug for your project
+        required: true
+      tags:
+      - Task Endpoints
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+            examples:
+              UpdatePayload:
+                value:
+                  status: success
+                  value: 100
+                summary: Update Payload
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+              examples:
+                UpdateResponse:
+                  value:
+                    id: 57ae8eVBrH7jbDgmYj6Ut2vR9S
+                    organization: example_org
+                    project: example_org
+                    name: example task
+                    status: success
+                    value: 100
+                    value_percent: 63
+                    data:
+                      property1: customValue
+                    created: '2022-08-24T14:15:22Z'
+                    updated: '2022-08-24T16:15:22Z'
+                  summary: Update Response
+          description: ''
+    delete:
+      operationId: task_cancel
+      description: Cancel a task
+      summary: Cancel Task
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_slug
+        schema:
+          type: string
+        description: Slug for your organization
+        required: true
+      - in: path
+        name: project_slug
+        schema:
+          type: string
+        description: Slug for your project
+        required: true
+      tags:
+      - Task Endpoints
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/{organization_slug}/{project_slug}/tasks/{task_id}/actions/:
+    get:
+      operationId: action_list
+      description: List actions for task
+      summary: List Actions
+      parameters:
+      - in: path
+        name: organization_slug
+        schema:
+          type: string
+        description: Slug for your organization
+        required: true
+      - in: path
+        name: project_slug
+        schema:
+          type: string
+        description: Slug for your project
+        required: true
+      - in: path
+        name: task_id
+        schema:
+          type: string
+        description: ID of the task
+        required: true
+      tags:
+      - Action Endpoints
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Action'
+          description: ''
+    post:
+      operationId: action_create
+      description: Create an action for a task
+      summary: Create Action
+      parameters:
+      - in: path
+        name: organization_slug
+        schema:
+          type: string
+        description: Slug for your organization
+        required: true
+      - in: path
+        name: project_slug
+        schema:
+          type: string
+        description: Slug for your project
+        required: true
+      - in: path
+        name: task_id
+        schema:
+          type: string
+        description: ID of the task
+        required: true
+      tags:
+      - Action Endpoints
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Action'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+          description: ''
+  /api/{organization_slug}/{project_slug}/tasks/{task_id}/actions/{id}/:
+    get:
+      operationId: action_get
+      description: Fetch an action
+      summary: Get Action
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_slug
+        schema:
+          type: string
+        description: Slug for your organization
+        required: true
+      - in: path
+        name: project_slug
+        schema:
+          type: string
+        description: Slug for your project
+        required: true
+      - in: path
+        name: task_id
+        schema:
+          type: string
+        description: ID of the task
+        required: true
+      tags:
+      - Action Endpoints
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+          description: ''
+    post:
+      operationId: action_update
+      description: Update an action
+      summary: Update Action
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_slug
+        schema:
+          type: string
+        description: Slug for your organization
+        required: true
+      - in: path
+        name: project_slug
+        schema:
+          type: string
+        description: Slug for your project
+        required: true
+      - in: path
+        name: task_id
+        schema:
+          type: string
+        description: ID of the task
+        required: true
+      tags:
+      - Action Endpoints
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Action'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+          description: ''
+    delete:
+      operationId: action_cancel
+      description: Cancel an action
+      summary: Cancel Action
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_slug
+        schema:
+          type: string
+        description: Slug for your organization
+        required: true
+      - in: path
+        name: project_slug
+        schema:
+          type: string
+        description: Slug for your project
+        required: true
+      - in: path
+        name: task_id
+        schema:
+          type: string
+        description: ID of the task
+        required: true
+      tags:
+      - Action Endpoints
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    Action:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        task:
+          type: string
+          readOnly: true
+        trigger:
+          type: string
+          maxLength: 255
+        integration:
+          type: string
+          maxLength: 50
+        status:
+          type: string
+          readOnly: true
+        config:
+          type: object
+          additionalProperties: {}
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        updated:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created
+      - id
+      - integration
+      - status
+      - task
+      - trigger
+      - updated
+    PaginatedTaskList:
+      type: object
+      properties:
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+    StatusEnum:
+      enum:
+      - pending
+      - pre_processing
+      - processing
+      - post_processing
+      - success
+      - error
+      - cancelled
+      type: string
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+          description: Task ID
+        organization:
+          type: string
+          readOnly: true
+        project:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          nullable: true
+          description: Name of the task
+          maxLength: 255
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          default: pending
+        value:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+          description: Current progress value
+        value_percent:
+          type: integer
+          readOnly: true
+        data:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: Custom metadata
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        updated:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created
+      - id
+      - organization
+      - project
+      - updated
+      - value_percent
+  securitySchemes:
+    tokenAuth:
+      type: http
+      scheme: bearer
+externalDocs:
+  url: https://docs.taskbadger.net
+  description: Task Badger Documentation

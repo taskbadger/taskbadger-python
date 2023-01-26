@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "taskbadger-python"
+version = "0.1"
+description = "A client library for accessing Task Badger"
+
+authors = []
+
+readme = "README.md"
+packages = [
+    {include = "taskbadger"},
+]
+include = ["CHANGELOG.md", "taskbadger/py.typed"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+httpx = ">=0.15.4,<0.24.0"
+attrs = ">=21.3.0"
+python-dateutil = "^2.8.0"
+openapi-python-client = "^0.13.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+target_version = ['py37', 'py38', 'py39']
+exclude = '''
+(
+  /(
+    | \.git
+    | \.venv
+    | \.mypy_cache
+  )/
+)
+'''
+
+[tool.isort]
+line_length = 120
+profile = "black"
