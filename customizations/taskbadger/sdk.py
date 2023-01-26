@@ -1,10 +1,13 @@
 import dataclasses
-from _contextvars import ContextVar
 from typing import List
 
+from _contextvars import ContextVar
 from taskbadger import AuthenticatedClient
 from taskbadger.api.task_endpoints import task_create, tasks_partial_update
-from taskbadger.models import Action, StatusEnum, Task, TaskData, PatchedTaskRequest, ActionRequest
+from taskbadger.models import (Action, ActionRequest, PatchedTaskRequest,
+                               StatusEnum)
+from taskbadger.models import Task as CoreTask
+from taskbadger.models import TaskData, TaskRequest
 from taskbadger.types import UNSET
 
 _local = ContextVar("taskbadger_client")
@@ -20,17 +23,18 @@ def init(organization_slug: str, project_slug: str, token: str):
 def create_task(
     name: str,
     status: StatusEnum = StatusEnum.PENDING,
-    value: int = None,
-    data: dict = None,
+    value: int = UNSET,
+    data: dict = UNSET,
     actions: List[Action] = None,
-) -> Task:
-    task = Task(name=name, status=status, value=value)
+) -> CoreTask:
+    task = TaskRequest(name=name, status=status, value=value)
     if data:
         task.data = TaskData.from_dict(data)
     if actions:
         task.additional_properties = {"actions": [a.to_dict() for a in actions]}
     kwargs = _make_args(json_body=task)
-    return task_create.sync(**kwargs)
+    response = task_create.sync_detailed(**kwargs)
+    return Task(response.parsed)
 
 
 def update_task(
@@ -40,7 +44,7 @@ def update_task(
         value: int = UNSET,
         data: dict = UNSET,
         actions: List[ActionRequest] = None
-) -> Task:
+) -> CoreTask:
     body = PatchedTaskRequest.from_dict({
         "name": name, "status": status, "value": value, "data": data
     })
@@ -49,7 +53,8 @@ def update_task(
             "actions": [a.to_dict() for a in actions]
         }
     kwargs = _make_args(id=task_id, json_body=body)
-    return tasks_partial_update.sync(**kwargs)
+    response = tasks_partial_update.sync_detailed(**kwargs)
+    return Task(response.parsed)
 
 
 def _make_args(**kwargs):
@@ -68,6 +73,26 @@ class Settings:
     client: AuthenticatedClient
     organization_slug: str
     project_slug: str
+
+
+class Task:
+    def __init__(self, task):
+        self._task = task
+
+    def pre_processing(self):
+        self._update(status=StatusEnum.PRE_PROCESSING)
+
+    def increment_progress(self, amount: int):
+        self._update(value=self._task.value + amount)
+
+    def update_progress(self, value: int):
+        self._update(value=value)
+
+    def error(self, value=UNSET, data: dict = UNSET):
+        self._update(status=StatusEnum.ERROR, value=value, data=data)
+
+    def _update(self, **kwargs):
+        self._task = update_task(self._task.id, **kwargs)
 
 
 if __name__ == "__main__":
