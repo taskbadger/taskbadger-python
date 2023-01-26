@@ -17,55 +17,64 @@ T = TypeVar("T", bound="Action")
 class Action:
     """
     Attributes:
-        id (int):
-        task (str):
         trigger (str):
         integration (str):
-        status (str):
-        created (datetime.datetime):
-        updated (datetime.datetime):
+        id (Union[Unset, int]):
+        task (Union[Unset, str]):
+        status (Union[Unset, str]):
         config (Union[Unset, ActionConfig]):
+        created (Union[Unset, datetime.datetime]):
+        updated (Union[Unset, datetime.datetime]):
     """
 
-    id: int
-    task: str
     trigger: str
     integration: str
-    status: str
-    created: datetime.datetime
-    updated: datetime.datetime
+    id: Union[Unset, int] = UNSET
+    task: Union[Unset, str] = UNSET
+    status: Union[Unset, str] = UNSET
     config: Union[Unset, "ActionConfig"] = UNSET
+    created: Union[Unset, datetime.datetime] = UNSET
+    updated: Union[Unset, datetime.datetime] = UNSET
     additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        id = self.id
-        task = self.task
         trigger = self.trigger
         integration = self.integration
+        id = self.id
+        task = self.task
         status = self.status
-        created = self.created.isoformat()
-
-        updated = self.updated.isoformat()
-
         config: Union[Unset, Dict[str, Any]] = UNSET
         if not isinstance(self.config, Unset):
             config = self.config.to_dict()
+
+        created: Union[Unset, str] = UNSET
+        if not isinstance(self.created, Unset):
+            created = self.created.isoformat()
+
+        updated: Union[Unset, str] = UNSET
+        if not isinstance(self.updated, Unset):
+            updated = self.updated.isoformat()
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
-                "id": id,
-                "task": task,
                 "trigger": trigger,
                 "integration": integration,
-                "status": status,
-                "created": created,
-                "updated": updated,
             }
         )
+        if id is not UNSET:
+            field_dict["id"] = id
+        if task is not UNSET:
+            field_dict["task"] = task
+        if status is not UNSET:
+            field_dict["status"] = status
         if config is not UNSET:
             field_dict["config"] = config
+        if created is not UNSET:
+            field_dict["created"] = created
+        if updated is not UNSET:
+            field_dict["updated"] = updated
 
         return field_dict
 
@@ -74,19 +83,15 @@ class Action:
         from ..models.action_config import ActionConfig
 
         d = src_dict.copy()
-        id = d.pop("id")
-
-        task = d.pop("task")
-
         trigger = d.pop("trigger")
 
         integration = d.pop("integration")
 
-        status = d.pop("status")
+        id = d.pop("id", UNSET)
 
-        created = isoparse(d.pop("created"))
+        task = d.pop("task", UNSET)
 
-        updated = isoparse(d.pop("updated"))
+        status = d.pop("status", UNSET)
 
         _config = d.pop("config", UNSET)
         config: Union[Unset, ActionConfig]
@@ -95,15 +100,29 @@ class Action:
         else:
             config = ActionConfig.from_dict(_config)
 
+        _created = d.pop("created", UNSET)
+        created: Union[Unset, datetime.datetime]
+        if isinstance(_created, Unset):
+            created = UNSET
+        else:
+            created = isoparse(_created)
+
+        _updated = d.pop("updated", UNSET)
+        updated: Union[Unset, datetime.datetime]
+        if isinstance(_updated, Unset):
+            updated = UNSET
+        else:
+            updated = isoparse(_updated)
+
         action = cls(
-            id=id,
-            task=task,
             trigger=trigger,
             integration=integration,
+            id=id,
+            task=task,
             status=status,
+            config=config,
             created=created,
             updated=updated,
-            config=config,
         )
 
         action.additional_properties = d

@@ -95,6 +95,7 @@ paths:
                   data:
                     property1: customValue
                 summary: Create Payload
+        required: true
       security:
       - tokenAuth: []
       responses:
@@ -205,6 +206,7 @@ paths:
                   status: success
                   value: 100
                 summary: Update Payload
+        required: true
       security:
       - tokenAuth: []
       responses:
@@ -491,13 +493,8 @@ components:
           format: date-time
           readOnly: true
       required:
-      - created
-      - id
       - integration
-      - status
-      - task
       - trigger
-      - updated
     PaginatedTaskList:
       type: object
       properties:
@@ -536,7 +533,6 @@ components:
           readOnly: true
         name:
           type: string
-          nullable: true
           description: Name of the task
           maxLength: 255
         status:
@@ -568,12 +564,7 @@ components:
           format: date-time
           readOnly: true
       required:
-      - created
-      - id
-      - organization
-      - project
-      - updated
-      - value_percent
+      - name
   securitySchemes:
     tokenAuth:
       type: http

@@ -1,5 +1,5 @@
 import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union
 
 import attr
 from dateutil.parser import isoparse
@@ -18,39 +18,35 @@ T = TypeVar("T", bound="Task")
 class Task:
     """
     Attributes:
-        id (str): Task ID
-        organization (str):
-        project (str):
-        created (datetime.datetime):
-        updated (datetime.datetime):
-        name (Union[Unset, None, str]): Name of the task
+        name (str): Name of the task
+        id (Union[Unset, str]): Task ID
+        organization (Union[Unset, str]):
+        project (Union[Unset, str]):
         status (Union[Unset, StatusEnum]):  Default: StatusEnum.PENDING.
         value (Union[Unset, None, int]): Current progress value
-        value_percent (Optional[int]):
+        value_percent (Union[Unset, None, int]):
         data (Union[Unset, None, TaskData]): Custom metadata
+        created (Union[Unset, datetime.datetime]):
+        updated (Union[Unset, datetime.datetime]):
     """
 
-    id: str
-    organization: str
-    project: str
-    created: datetime.datetime
-    updated: datetime.datetime
-    value_percent: Optional[int]
-    name: Union[Unset, None, str] = UNSET
+    name: str
+    id: Union[Unset, str] = UNSET
+    organization: Union[Unset, str] = UNSET
+    project: Union[Unset, str] = UNSET
     status: Union[Unset, StatusEnum] = StatusEnum.PENDING
     value: Union[Unset, None, int] = UNSET
+    value_percent: Union[Unset, None, int] = UNSET
     data: Union[Unset, None, "TaskData"] = UNSET
+    created: Union[Unset, datetime.datetime] = UNSET
+    updated: Union[Unset, datetime.datetime] = UNSET
     additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
+        name = self.name
         id = self.id
         organization = self.organization
         project = self.project
-        created = self.created.isoformat()
-
-        updated = self.updated.isoformat()
-
-        name = self.name
         status: Union[Unset, str] = UNSET
         if not isinstance(self.status, Unset):
             status = self.status.value
@@ -61,26 +57,39 @@ class Task:
         if not isinstance(self.data, Unset):
             data = self.data.to_dict() if self.data else None
 
+        created: Union[Unset, str] = UNSET
+        if not isinstance(self.created, Unset):
+            created = self.created.isoformat()
+
+        updated: Union[Unset, str] = UNSET
+        if not isinstance(self.updated, Unset):
+            updated = self.updated.isoformat()
+
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
-                "id": id,
-                "organization": organization,
-                "project": project,
-                "created": created,
-                "updated": updated,
-                "value_percent": value_percent,
+                "name": name,
             }
         )
-        if name is not UNSET:
-            field_dict["name"] = name
+        if id is not UNSET:
+            field_dict["id"] = id
+        if organization is not UNSET:
+            field_dict["organization"] = organization
+        if project is not UNSET:
+            field_dict["project"] = project
         if status is not UNSET:
             field_dict["status"] = status
         if value is not UNSET:
             field_dict["value"] = value
+        if value_percent is not UNSET:
+            field_dict["value_percent"] = value_percent
         if data is not UNSET:
             field_dict["data"] = data
+        if created is not UNSET:
+            field_dict["created"] = created
+        if updated is not UNSET:
+            field_dict["updated"] = updated
 
         return field_dict
 
@@ -89,17 +98,13 @@ class Task:
         from ..models.task_data import TaskData
 
         d = src_dict.copy()
-        id = d.pop("id")
+        name = d.pop("name")
 
-        organization = d.pop("organization")
+        id = d.pop("id", UNSET)
 
-        project = d.pop("project")
+        organization = d.pop("organization", UNSET)
 
-        created = isoparse(d.pop("created"))
-
-        updated = isoparse(d.pop("updated"))
-
-        name = d.pop("name", UNSET)
+        project = d.pop("project", UNSET)
 
         _status = d.pop("status", UNSET)
         status: Union[Unset, StatusEnum]
@@ -110,7 +115,7 @@ class Task:
 
         value = d.pop("value", UNSET)
 
-        value_percent = d.pop("value_percent")
+        value_percent = d.pop("value_percent", UNSET)
 
         _data = d.pop("data", UNSET)
         data: Union[Unset, None, TaskData]
@@ -121,17 +126,31 @@ class Task:
         else:
             data = TaskData.from_dict(_data)
 
+        _created = d.pop("created", UNSET)
+        created: Union[Unset, datetime.datetime]
+        if isinstance(_created, Unset):
+            created = UNSET
+        else:
+            created = isoparse(_created)
+
+        _updated = d.pop("updated", UNSET)
+        updated: Union[Unset, datetime.datetime]
+        if isinstance(_updated, Unset):
+            updated = UNSET
+        else:
+            updated = isoparse(_updated)
+
         task = cls(
+            name=name,
             id=id,
             organization=organization,
             project=project,
-            created=created,
-            updated=updated,
-            name=name,
             status=status,
             value=value,
             value_percent=value_percent,
             data=data,
+            created=created,
+            updated=updated,
         )
 
         task.additional_properties = d
