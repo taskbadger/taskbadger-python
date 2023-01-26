@@ -1,62 +1,40 @@
-import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union
 
 import attr
-from dateutil.parser import isoparse
 
 from ..models.status_enum import StatusEnum
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
-    from ..models.task_data import TaskData
+    from ..models.task_request_data import TaskRequestData
 
 
-T = TypeVar("T", bound="Task")
+T = TypeVar("T", bound="TaskRequest")
 
 
 @attr.s(auto_attribs=True)
-class Task:
+class TaskRequest:
     """
     Attributes:
-        id (str): Task ID
-        organization (str):
-        project (str):
         name (str): Name of the task
-        created (datetime.datetime):
-        updated (datetime.datetime):
         status (Union[Unset, StatusEnum]):  Default: StatusEnum.PENDING.
         value (Union[Unset, None, int]): Current progress value
-        value_percent (Optional[int]):
-        data (Union[Unset, None, TaskData]): Custom metadata
+        data (Union[Unset, None, TaskRequestData]): Custom metadata
     """
 
-    id: str
-    organization: str
-    project: str
     name: str
-    created: datetime.datetime
-    updated: datetime.datetime
-    value_percent: Optional[int]
     status: Union[Unset, StatusEnum] = StatusEnum.PENDING
     value: Union[Unset, None, int] = UNSET
-    data: Union[Unset, None, "TaskData"] = UNSET
+    data: Union[Unset, None, "TaskRequestData"] = UNSET
     additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        id = self.id
-        organization = self.organization
-        project = self.project
         name = self.name
-        created = self.created.isoformat()
-
-        updated = self.updated.isoformat()
-
         status: Union[Unset, str] = UNSET
         if not isinstance(self.status, Unset):
             status = self.status.value
 
         value = self.value
-        value_percent = self.value_percent
         data: Union[Unset, None, Dict[str, Any]] = UNSET
         if not isinstance(self.data, Unset):
             data = self.data.to_dict() if self.data else None
@@ -65,13 +43,7 @@ class Task:
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
-                "id": id,
-                "organization": organization,
-                "project": project,
                 "name": name,
-                "created": created,
-                "updated": updated,
-                "value_percent": value_percent,
             }
         )
         if status is not UNSET:
@@ -85,20 +57,10 @@ class Task:
 
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
-        from ..models.task_data import TaskData
+        from ..models.task_request_data import TaskRequestData
 
         d = src_dict.copy()
-        id = d.pop("id")
-
-        organization = d.pop("organization")
-
-        project = d.pop("project")
-
         name = d.pop("name")
-
-        created = isoparse(d.pop("created"))
-
-        updated = isoparse(d.pop("updated"))
 
         _status = d.pop("status", UNSET)
         status: Union[Unset, StatusEnum]
@@ -109,32 +71,24 @@ class Task:
 
         value = d.pop("value", UNSET)
 
-        value_percent = d.pop("value_percent")
-
         _data = d.pop("data", UNSET)
-        data: Union[Unset, None, TaskData]
+        data: Union[Unset, None, TaskRequestData]
         if _data is None:
             data = None
         elif isinstance(_data, Unset):
             data = UNSET
         else:
-            data = TaskData.from_dict(_data)
+            data = TaskRequestData.from_dict(_data)
 
-        task = cls(
-            id=id,
-            organization=organization,
-            project=project,
+        task_request = cls(
             name=name,
-            created=created,
-            updated=updated,
             status=status,
             value=value,
-            value_percent=value_percent,
             data=data,
         )
 
-        task.additional_properties = d
-        return task
+        task_request.additional_properties = d
+        return task_request
 
     @property
     def additional_keys(self) -> List[str]:

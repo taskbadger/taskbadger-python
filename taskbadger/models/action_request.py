@@ -1,52 +1,33 @@
-import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union
 
 import attr
-from dateutil.parser import isoparse
 
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
-    from ..models.action_config import ActionConfig
+    from ..models.action_request_config import ActionRequestConfig
 
 
-T = TypeVar("T", bound="Action")
+T = TypeVar("T", bound="ActionRequest")
 
 
 @attr.s(auto_attribs=True)
-class Action:
+class ActionRequest:
     """
     Attributes:
-        id (int):
-        task (str):
         trigger (str):
         integration (str):
-        status (str):
-        created (datetime.datetime):
-        updated (datetime.datetime):
-        config (Union[Unset, ActionConfig]):
+        config (Union[Unset, ActionRequestConfig]):
     """
 
-    id: int
-    task: str
     trigger: str
     integration: str
-    status: str
-    created: datetime.datetime
-    updated: datetime.datetime
-    config: Union[Unset, "ActionConfig"] = UNSET
+    config: Union[Unset, "ActionRequestConfig"] = UNSET
     additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        id = self.id
-        task = self.task
         trigger = self.trigger
         integration = self.integration
-        status = self.status
-        created = self.created.isoformat()
-
-        updated = self.updated.isoformat()
-
         config: Union[Unset, Dict[str, Any]] = UNSET
         if not isinstance(self.config, Unset):
             config = self.config.to_dict()
@@ -55,13 +36,8 @@ class Action:
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
-                "id": id,
-                "task": task,
                 "trigger": trigger,
                 "integration": integration,
-                "status": status,
-                "created": created,
-                "updated": updated,
             }
         )
         if config is not UNSET:
@@ -71,43 +47,28 @@ class Action:
 
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
-        from ..models.action_config import ActionConfig
+        from ..models.action_request_config import ActionRequestConfig
 
         d = src_dict.copy()
-        id = d.pop("id")
-
-        task = d.pop("task")
-
         trigger = d.pop("trigger")
 
         integration = d.pop("integration")
 
-        status = d.pop("status")
-
-        created = isoparse(d.pop("created"))
-
-        updated = isoparse(d.pop("updated"))
-
         _config = d.pop("config", UNSET)
-        config: Union[Unset, ActionConfig]
+        config: Union[Unset, ActionRequestConfig]
         if isinstance(_config, Unset):
             config = UNSET
         else:
-            config = ActionConfig.from_dict(_config)
+            config = ActionRequestConfig.from_dict(_config)
 
-        action = cls(
-            id=id,
-            task=task,
+        action_request = cls(
             trigger=trigger,
             integration=integration,
-            status=status,
-            created=created,
-            updated=updated,
             config=config,
         )
 
-        action.additional_properties = d
-        return action
+        action_request.additional_properties = d
+        return action_request
 
     @property
     def additional_keys(self) -> List[str]:

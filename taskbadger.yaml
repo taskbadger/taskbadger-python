@@ -86,7 +86,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Task'
+              $ref: '#/components/schemas/TaskRequest'
             examples:
               CreatePayload:
                 value:
@@ -199,7 +199,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Task'
+              $ref: '#/components/schemas/TaskRequest'
             examples:
               UpdatePayload:
                 value:
@@ -327,7 +327,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Action'
+              $ref: '#/components/schemas/ActionRequest'
         required: true
       security:
       - tokenAuth: []
@@ -414,7 +414,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Action'
+              $ref: '#/components/schemas/ActionRequest'
         required: true
       security:
       - tokenAuth: []
@@ -493,6 +493,28 @@ components:
           format: date-time
           readOnly: true
       required:
+      - created
+      - id
+      - integration
+      - status
+      - task
+      - trigger
+      - updated
+    ActionRequest:
+      type: object
+      properties:
+        trigger:
+          type: string
+          minLength: 1
+          maxLength: 255
+        integration:
+          type: string
+          minLength: 1
+          maxLength: 50
+        config:
+          type: object
+          additionalProperties: {}
+      required:
       - integration
       - trigger
     PaginatedTaskList:
@@ -563,6 +585,38 @@ components:
           type: string
           format: date-time
           readOnly: true
+      required:
+      - created
+      - id
+      - name
+      - organization
+      - project
+      - updated
+      - value_percent
+    TaskRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Name of the task
+          maxLength: 255
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          default: pending
+        value:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+          description: Current progress value
+        data:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: Custom metadata
       required:
       - name
   securitySchemes:

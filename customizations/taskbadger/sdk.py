@@ -1,10 +1,11 @@
 import dataclasses
+from typing import List
 
 from _contextvars import ContextVar
-from taskbadger.api.task_endpoints import task_create
 
 from taskbadger import AuthenticatedClient
-from taskbadger.models import Task, StatusEnum, TaskData
+from taskbadger.api.task_endpoints import task_create, task_update
+from taskbadger.models import Action, StatusEnum, Task, TaskData
 
 _local = ContextVar("taskbadger_client")
 
@@ -17,16 +18,24 @@ def init(organization_slug: str, project_slug: str, token: str):
 
 
 def create_task(
-        name: str,
-        status: StatusEnum = StatusEnum.PENDING,
-        value: int = None,
-        data: dict = None
+    name: str,
+    status: StatusEnum = StatusEnum.PENDING,
+    value: int = None,
+    data: dict = None,
+    actions: List[Action] = None,
 ) -> Task:
     task = Task(name=name, status=status, value=value)
     if data:
         task.data = TaskData.from_dict(data)
+    if actions:
+        task.additional_properties = {"actions": [a.to_dict() for a in actions]}
     kwargs = _make_args(json_body=task)
     return task_create.sync(**kwargs)
+
+
+def update_task(task: Task) -> Task:
+    kwargs = _make_args(id=task.id, json_body=task)
+    return task_update.sync(**kwargs)
 
 
 def _make_args(**kwargs):
@@ -50,8 +59,16 @@ class Settings:
 if __name__ == "__main__":
     init("simongdkelly", "demo-x", "WcMOjV1Z.lkohynNSP2ymjupqQAfKs2bdJ30FsJbf")
 
-    t = create_task("test", value=5, data={"custom": "test"})
-    print(t.name, t.id)
+    # t = create_task("test", value=5, data={"custom": "test"}, actions=[
+    #     Action(integration="email", trigger="success", config=ActionConfig.from_dict({
+    #         "to": "simongdkelly@gmail.com"
+    #     }))
+    # ])
+    # print(t.name, t.id)
+
+    t = update_task(Task(id="e9f6gAUcNsjN8fBPC4fxyFCRzC", name="test", value=100, status=StatusEnum.SUCCESS))
+    print(t.status, t.value)
+
 # def main(args):
 #     tb = Taskbadger(args.org, args.project, args.key)
 #     actions = [EmailAction('*/10%,success,error', to=args.email)] if args.email else []

@@ -6,6 +6,7 @@ import httpx
 from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.action import Action
+from ...models.action_request import ActionRequest
 from ...types import Response
 
 
@@ -15,7 +16,7 @@ def _get_kwargs(
     task_id: str,
     *,
     client: AuthenticatedClient,
-    json_body: Action,
+    json_body: ActionRequest,
 ) -> Dict[str, Any]:
     url = "{}/api/{organization_slug}/{project_slug}/tasks/{task_id}/actions/".format(
         client.base_url, organization_slug=organization_slug, project_slug=project_slug, task_id=task_id
@@ -62,7 +63,7 @@ def sync_detailed(
     task_id: str,
     *,
     client: AuthenticatedClient,
-    json_body: Action,
+    json_body: ActionRequest,
 ) -> Response[Action]:
     """Create Action
 
@@ -72,7 +73,7 @@ def sync_detailed(
         organization_slug (str):
         project_slug (str):
         task_id (str):
-        json_body (Action):
+        json_body (ActionRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -104,7 +105,7 @@ def sync(
     task_id: str,
     *,
     client: AuthenticatedClient,
-    json_body: Action,
+    json_body: ActionRequest,
 ) -> Optional[Action]:
     """Create Action
 
@@ -114,7 +115,7 @@ def sync(
         organization_slug (str):
         project_slug (str):
         task_id (str):
-        json_body (Action):
+        json_body (ActionRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -139,7 +140,7 @@ async def asyncio_detailed(
     task_id: str,
     *,
     client: AuthenticatedClient,
-    json_body: Action,
+    json_body: ActionRequest,
 ) -> Response[Action]:
     """Create Action
 
@@ -149,7 +150,7 @@ async def asyncio_detailed(
         organization_slug (str):
         project_slug (str):
         task_id (str):
-        json_body (Action):
+        json_body (ActionRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -179,7 +180,7 @@ async def asyncio(
     task_id: str,
     *,
     client: AuthenticatedClient,
-    json_body: Action,
+    json_body: ActionRequest,
 ) -> Optional[Action]:
     """Create Action
 
@@ -189,7 +190,7 @@ async def asyncio(
         organization_slug (str):
         project_slug (str):
         task_id (str):
-        json_body (Action):
+        json_body (ActionRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

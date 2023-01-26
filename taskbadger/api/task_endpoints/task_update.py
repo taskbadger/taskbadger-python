@@ -6,6 +6,7 @@ import httpx
 from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.task import Task
+from ...models.task_request import TaskRequest
 from ...types import Response
 
 
@@ -15,7 +16,7 @@ def _get_kwargs(
     id: str,
     *,
     client: AuthenticatedClient,
-    json_body: Task,
+    json_body: TaskRequest,
 ) -> Dict[str, Any]:
     url = "{}/api/{organization_slug}/{project_slug}/tasks/{id}/".format(
         client.base_url, organization_slug=organization_slug, project_slug=project_slug, id=id
@@ -62,7 +63,7 @@ def sync_detailed(
     id: str,
     *,
     client: AuthenticatedClient,
-    json_body: Task,
+    json_body: TaskRequest,
 ) -> Response[Task]:
     """Update Task
 
@@ -72,7 +73,7 @@ def sync_detailed(
         organization_slug (str):
         project_slug (str):
         id (str):
-        json_body (Task):
+        json_body (TaskRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -104,7 +105,7 @@ def sync(
     id: str,
     *,
     client: AuthenticatedClient,
-    json_body: Task,
+    json_body: TaskRequest,
 ) -> Optional[Task]:
     """Update Task
 
@@ -114,7 +115,7 @@ def sync(
         organization_slug (str):
         project_slug (str):
         id (str):
-        json_body (Task):
+        json_body (TaskRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -139,7 +140,7 @@ async def asyncio_detailed(
     id: str,
     *,
     client: AuthenticatedClient,
-    json_body: Task,
+    json_body: TaskRequest,
 ) -> Response[Task]:
     """Update Task
 
@@ -149,7 +150,7 @@ async def asyncio_detailed(
         organization_slug (str):
         project_slug (str):
         id (str):
-        json_body (Task):
+        json_body (TaskRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -179,7 +180,7 @@ async def asyncio(
     id: str,
     *,
     client: AuthenticatedClient,
-    json_body: Task,
+    json_body: TaskRequest,
 ) -> Optional[Task]:
     """Update Task
 
@@ -189,7 +190,7 @@ async def asyncio(
         organization_slug (str):
         project_slug (str):
         id (str):
-        json_body (Task):
+        json_body (TaskRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
