@@ -1,22 +1,31 @@
 import dataclasses
-from _contextvars import ContextVar
 
-from api.task_endpoints import task_create
+from _contextvars import ContextVar
+from taskbadger.api.task_endpoints import task_create
+
 from taskbadger import AuthenticatedClient
-from taskbadger.models import Task
+from taskbadger.models import Task, StatusEnum, TaskData
 
 _local = ContextVar("taskbadger_client")
 
 
 def init(organization_slug: str, project_slug: str, token: str):
-    client = AuthenticatedClient('https://taskbadger.net', token)
+    client = AuthenticatedClient("https://taskbadger.net", token, raise_on_unexpected_status=True)
     settings = Settings(client, organization_slug, project_slug)
 
     _local.set(settings)
 
 
-def create_task(name):
-    kwargs = _make_args(name=Task(name))
+def create_task(
+        name: str,
+        status: StatusEnum = StatusEnum.PENDING,
+        value: int = None,
+        data: dict = None
+) -> Task:
+    task = Task(name=name, status=status, value=value)
+    if data:
+        task.data = TaskData.from_dict(data)
+    kwargs = _make_args(json_body=task)
     return task_create.sync(**kwargs)
 
 
@@ -38,10 +47,10 @@ class Settings:
     project_slug: str
 
 
-if __name__ == '__main__':
-    init('simon-kelly', 'demo', 'EWlYBBAY.Sfo886ibIJZJ0knaH0TyJFLGVJoB1wf8')
+if __name__ == "__main__":
+    init("simongdkelly", "demo-x", "WcMOjV1Z.lkohynNSP2ymjupqQAfKs2bdJ30FsJbf")
 
-    t = create_task('test')
+    t = create_task("test", value=5, data={"custom": "test"})
     print(t.name, t.id)
 # def main(args):
 #     tb = Taskbadger(args.org, args.project, args.key)
