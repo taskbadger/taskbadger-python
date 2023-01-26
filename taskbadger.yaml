@@ -553,6 +553,7 @@ components:
         value_percent:
           type: integer
           readOnly: true
+          nullable: true
         data:
           type: object
           additionalProperties: {}

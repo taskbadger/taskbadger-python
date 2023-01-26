@@ -1,5 +1,5 @@
 import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, TypeVar, Union
 
 import attr
 from dateutil.parser import isoparse
@@ -21,21 +21,21 @@ class Task:
         id (str): Task ID
         organization (str):
         project (str):
-        value_percent (int):
         created (datetime.datetime):
         updated (datetime.datetime):
         name (Union[Unset, None, str]): Name of the task
         status (Union[Unset, StatusEnum]):  Default: StatusEnum.PENDING.
         value (Union[Unset, None, int]): Current progress value
+        value_percent (Optional[int]):
         data (Union[Unset, None, TaskData]): Custom metadata
     """
 
     id: str
     organization: str
     project: str
-    value_percent: int
     created: datetime.datetime
     updated: datetime.datetime
+    value_percent: Optional[int]
     name: Union[Unset, None, str] = UNSET
     status: Union[Unset, StatusEnum] = StatusEnum.PENDING
     value: Union[Unset, None, int] = UNSET
@@ -46,7 +46,6 @@ class Task:
         id = self.id
         organization = self.organization
         project = self.project
-        value_percent = self.value_percent
         created = self.created.isoformat()
 
         updated = self.updated.isoformat()
@@ -57,6 +56,7 @@ class Task:
             status = self.status.value
 
         value = self.value
+        value_percent = self.value_percent
         data: Union[Unset, None, Dict[str, Any]] = UNSET
         if not isinstance(self.data, Unset):
             data = self.data.to_dict() if self.data else None
@@ -68,9 +68,9 @@ class Task:
                 "id": id,
                 "organization": organization,
                 "project": project,
-                "value_percent": value_percent,
                 "created": created,
                 "updated": updated,
+                "value_percent": value_percent,
             }
         )
         if name is not UNSET:
@@ -95,8 +95,6 @@ class Task:
 
         project = d.pop("project")
 
-        value_percent = d.pop("value_percent")
-
         created = isoparse(d.pop("created"))
 
         updated = isoparse(d.pop("updated"))
@@ -112,6 +110,8 @@ class Task:
 
         value = d.pop("value", UNSET)
 
+        value_percent = d.pop("value_percent")
+
         _data = d.pop("data", UNSET)
         data: Union[Unset, None, TaskData]
         if _data is None:
@@ -125,12 +125,12 @@ class Task:
             id=id,
             organization=organization,
             project=project,
-            value_percent=value_percent,
             created=created,
             updated=updated,
             name=name,
             status=status,
             value=value,
+            value_percent=value_percent,
             data=data,
         )
 
