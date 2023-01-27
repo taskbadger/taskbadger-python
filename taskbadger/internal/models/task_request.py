@@ -19,12 +19,14 @@ class TaskRequest:
         name (str): Name of the task
         status (Union[Unset, StatusEnum]):  Default: StatusEnum.PENDING.
         value (Union[Unset, None, int]): Current progress value
+        value_max (Union[Unset, int]): Maximum value of the task. Defaults to 100.
         data (Union[Unset, None, TaskRequestData]): Custom metadata
     """
 
     name: str
     status: Union[Unset, StatusEnum] = StatusEnum.PENDING
     value: Union[Unset, None, int] = UNSET
+    value_max: Union[Unset, int] = UNSET
     data: Union[Unset, None, "TaskRequestData"] = UNSET
     additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
 
@@ -35,6 +37,7 @@ class TaskRequest:
             status = self.status.value
 
         value = self.value
+        value_max = self.value_max
         data: Union[Unset, None, Dict[str, Any]] = UNSET
         if not isinstance(self.data, Unset):
             data = self.data.to_dict() if self.data else None
@@ -50,6 +53,8 @@ class TaskRequest:
             field_dict["status"] = status
         if value is not UNSET:
             field_dict["value"] = value
+        if value_max is not UNSET:
+            field_dict["value_max"] = value_max
         if data is not UNSET:
             field_dict["data"] = data
 
@@ -71,6 +76,8 @@ class TaskRequest:
 
         value = d.pop("value", UNSET)
 
+        value_max = d.pop("value_max", UNSET)
+
         _data = d.pop("data", UNSET)
         data: Union[Unset, None, TaskRequestData]
         if _data is None:
@@ -84,6 +91,7 @@ class TaskRequest:
             name=name,
             status=status,
             value=value,
+            value_max=value_max,
             data=data,
         )
 

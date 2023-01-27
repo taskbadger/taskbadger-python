@@ -1,14 +1,15 @@
 import dataclasses
+from _contextvars import ContextVar
 from typing import List
 
-from _contextvars import ContextVar
-from taskbadger.internal.api.task_endpoints import task_create, tasks_partial_update, task_get
-from taskbadger.internal.models import Action, ActionRequest, PatchedTaskRequest, StatusEnum, ActionRequestConfig
+from taskbadger import Action
+from taskbadger.internal import AuthenticatedClient
+from taskbadger.internal.api.task_endpoints import task_create, task_get, tasks_partial_update
+from taskbadger.internal.models import PatchedTaskRequest, StatusEnum, \
+    PatchedTaskRequestData
 from taskbadger.internal.models import Task as CoreTask
 from taskbadger.internal.models import TaskData, TaskRequest
 from taskbadger.internal.types import UNSET
-
-from taskbadger.internal import AuthenticatedClient
 
 _local = ContextVar("taskbadger_client")
 
@@ -32,14 +33,15 @@ def create_task(
     name: str,
     status: StatusEnum = StatusEnum.PENDING,
     value: int = UNSET,
+    value_max: int = UNSET,
     data: dict = UNSET,
     actions: List[Action] = None,
 ) -> CoreTask:
-    task = TaskRequest(name=name, status=status, value=value)
+    task = TaskRequest(name=name, status=status, value=value, value_max=value_max)
     if data:
         task.data = TaskData.from_dict(data)
     if actions:
-        task.additional_properties = {"actions": [a.to_dict() for a in actions]}
+        task.additional_properties = {"actions": [a.for_request() for a in actions]}
     kwargs = _make_args(json_body=task)
     response = task_create.sync_detailed(**kwargs)
     return response.parsed
@@ -50,12 +52,15 @@ def update_task(
     name: str = UNSET,
     status: StatusEnum = UNSET,
     value: int = UNSET,
+    value_max: int = UNSET,
     data: dict = UNSET,
-    actions: List[ActionRequest] = None,
+    actions: List[Action] = None,
 ) -> CoreTask:
-    body = PatchedTaskRequest.from_dict({"name": name, "status": status, "value": value, "data": data})
+    body = PatchedTaskRequest(
+        name=name, status=status, value=value, value_max=value_max, data=PatchedTaskRequestData.from_dict(data)
+    )
     if actions:
-        body.additional_properties = {"actions": [a.to_dict() for a in actions]}
+        body.additional_properties = {"actions": [a.for_request() for a in actions]}
     kwargs = _make_args(id=task_id, json_body=body)
     response = tasks_partial_update.sync_detailed(**kwargs)
     return response.parsed
@@ -86,16 +91,15 @@ class TaskAccessorsMixin:
 
     @classmethod
     def create(
-            cls,
-            name: str,
-            status: StatusEnum = StatusEnum.PENDING,
-            value: int = UNSET,
-            data: dict = UNSET,
-            actions: List[Action] = None,
+        cls,
+        name: str,
+        status: StatusEnum = StatusEnum.PENDING,
+        value: int = UNSET,
+        value_max: int = UNSET,
+        data: dict = UNSET,
+        actions: List[Action] = None,
     ) -> "Task":
-        return Task(
-            create_task(name, status, value, data, actions)
-        )
+        return Task(create_task(name, status, value, value_max, data, actions))
 
 
 class Task(TaskAccessorsMixin):
@@ -105,56 +109,51 @@ class Task(TaskAccessorsMixin):
     def pre_processing(self):
         self.update_status(StatusEnum.PRE_PROCESSING)
 
+    def start(self):
+        self.processing(value=0)
+
     def processing(self, value: int = UNSET):
-        self._update(status=StatusEnum.PROCESSING, value=value)
+        self.update(status=StatusEnum.PROCESSING, value=value)
 
     def post_processing(self, value: int = UNSET):
-        self._update(status=StatusEnum.POST_PROCESSING, value=value)
+        self.update(status=StatusEnum.POST_PROCESSING, value=value)
 
     def success(self, value: int = UNSET):
-        self._update(status=StatusEnum.SUCCESS, value=value)
+        self.update(status=StatusEnum.SUCCESS, value=value)
 
-    def error(self, value=UNSET, data: dict = UNSET):
-        self._update(status=StatusEnum.ERROR, value=value, data=data)
+    def error(self, value: int = UNSET, data: dict = UNSET):
+        self.update(status=StatusEnum.ERROR, value=value, data=data)
 
     def cancel(self):
         self.update_status(StatusEnum.CANCELLED)
 
     def update_status(self, status: StatusEnum):
-        self._update(status=status)
+        self.update(status=status)
 
     def increment_progress(self, amount: int):
-        self._update(value=self._task.value + amount)
+        self.update(value=self._task.value + amount)
 
     def update_progress(self, value: int):
-        self._update(value=value)
+        self.update(value=value)
+
+    def set_value_max(self, value_max: int):
+        self.update(value_max=value_max)
 
     def update(
-            self,
-            name: str = UNSET,
-            status: StatusEnum = UNSET,
-            value: int = UNSET,
-            data: dict = UNSET,
-            actions: List[ActionRequest] = None,
+        self,
+        name: str = UNSET,
+        status: StatusEnum = UNSET,
+        value: int = UNSET,
+        value_max: int = UNSET,
+        data: dict = UNSET,
+        actions: List[Action] = None,
     ):
-        self._update(
-            name=name,
-            status=status,
-            value=value,
-            data=data,
-            actions=actions
+        self._task = update_task(
+            self._task.id, name=name, status=status, value=value, value_max=value_max, data=data, actions=actions
         )
 
-    def add_action(self, integration: str, trigger: str, config: dict = UNSET):
-        self._update(actions=[ActionRequest(
-            integration=integration,
-            trigger=trigger,
-            config=ActionRequestConfig.from_dict(config)
-        )])
-
-    def _update(self, **kwargs):
-        updated_task = update_task(self._task.id, **kwargs)
-        self._task = updated_task
+    def add_actions(self, actions: List[Action]):
+        self.update(actions=actions)
 
     @property
     def data(self):

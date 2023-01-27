@@ -26,6 +26,7 @@ class Task:
         updated (datetime.datetime):
         status (Union[Unset, StatusEnum]):  Default: StatusEnum.PENDING.
         value (Union[Unset, None, int]): Current progress value
+        value_max (Union[Unset, int]): Maximum value of the task. Defaults to 100.
         value_percent (Optional[int]):
         data (Union[Unset, None, TaskData]): Custom metadata
     """
@@ -39,6 +40,7 @@ class Task:
     value_percent: Optional[int]
     status: Union[Unset, StatusEnum] = StatusEnum.PENDING
     value: Union[Unset, None, int] = UNSET
+    value_max: Union[Unset, int] = UNSET
     data: Union[Unset, None, "TaskData"] = UNSET
     additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
 
@@ -56,6 +58,7 @@ class Task:
             status = self.status.value
 
         value = self.value
+        value_max = self.value_max
         value_percent = self.value_percent
         data: Union[Unset, None, Dict[str, Any]] = UNSET
         if not isinstance(self.data, Unset):
@@ -78,6 +81,8 @@ class Task:
             field_dict["status"] = status
         if value is not UNSET:
             field_dict["value"] = value
+        if value_max is not UNSET:
+            field_dict["value_max"] = value_max
         if data is not UNSET:
             field_dict["data"] = data
 
@@ -109,6 +114,8 @@ class Task:
 
         value = d.pop("value", UNSET)
 
+        value_max = d.pop("value_max", UNSET)
+
         value_percent = d.pop("value_percent")
 
         _data = d.pop("data", UNSET)
@@ -129,6 +136,7 @@ class Task:
             updated=updated,
             status=status,
             value=value,
+            value_max=value_max,
             value_percent=value_percent,
             data=data,
         )

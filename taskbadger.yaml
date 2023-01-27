@@ -642,6 +642,12 @@ components:
           format: int64
           nullable: true
           description: Current progress value
+        value_max:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          description: Maximum value of the task. Defaults to 100.
         data:
           type: object
           additionalProperties: {}
@@ -685,6 +691,12 @@ components:
           format: int64
           nullable: true
           description: Current progress value
+        value_max:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          description: Maximum value of the task. Defaults to 100.
         value_percent:
           type: integer
           readOnly: true
@@ -729,6 +741,12 @@ components:
           format: int64
           nullable: true
           description: Current progress value
+        value_max:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          description: Maximum value of the task. Defaults to 100.
         data:
           type: object
           additionalProperties: {}
