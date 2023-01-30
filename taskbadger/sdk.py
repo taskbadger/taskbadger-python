@@ -1,4 +1,5 @@
 import dataclasses
+import os
 from typing import List
 
 from _contextvars import ContextVar
@@ -12,6 +13,14 @@ from taskbadger.internal.models import TaskData, TaskRequest
 from taskbadger.internal.types import UNSET
 
 _local = ContextVar("taskbadger_client")
+
+
+def init_from_env():
+    _init(
+        os.environ["TASKBADGER_ORG"],
+        os.environ["TASKBADGER_PROJECT"],
+        os.environ["TASKBADGER_TOKEN"],
+    )
 
 
 def init(organization_slug: str, project_slug: str, token: str):
