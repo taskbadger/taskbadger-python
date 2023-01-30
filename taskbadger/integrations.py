@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Dict, Any
+from typing import Any, Dict
 
 from taskbadger.internal.models import ActionRequest, ActionRequestConfig
 
@@ -17,9 +17,7 @@ class Action:
     integration: Integration
 
     def to_dict(self) -> Dict[str, Any]:
-        return ActionRequest(
-            self.trigger, self.integration.name, self.integration.request_config()
-        ).to_dict()
+        return ActionRequest(self.trigger, self.integration.name, self.integration.request_config()).to_dict()
 
 
 @dataclasses.dataclass

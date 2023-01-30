@@ -37,7 +37,7 @@ paths:
       tags:
       - Task Endpoints
       security:
-      - tokenAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -97,7 +97,7 @@ paths:
                 summary: Create Payload
         required: true
       security:
-      - tokenAuth: []
+      - bearerAuth: []
       responses:
         '201':
           content:
@@ -147,7 +147,7 @@ paths:
       tags:
       - Task Endpoints
       security:
-      - tokenAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -203,12 +203,21 @@ paths:
             examples:
               UpdatePayload:
                 value:
+                  id: 57ae8eVBrH7jbDgmYj6Ut2vR9S
+                  organization: example_org
+                  project: example_org
+                  name: example task
                   status: success
                   value: 100
+                  value_percent: 63
+                  data:
+                    property1: customValue
+                  created: '2022-08-24T14:15:22Z'
+                  updated: '2022-08-24T16:15:22Z'
                 summary: Update Payload
         required: true
       security:
-      - tokenAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -224,7 +233,7 @@ paths:
                     name: example task
                     status: success
                     value: 100
-                    value_percent: 63
+                    value_percent: 100
                     data:
                       property1: customValue
                     created: '2022-08-24T14:15:22Z'
@@ -232,12 +241,15 @@ paths:
                   summary: Update Response
           description: ''
     patch:
-      operationId: tasks_partial_update
+      operationId: task_partial_update
+      description: Update a task with partial data
+      summary: Update Task (partial)
       parameters:
       - in: path
         name: id
         schema:
           type: string
+          format: uuid
         required: true
       - in: path
         name: organization_slug
@@ -258,14 +270,35 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PatchedTaskRequest'
+            examples:
+              UpdatePayload:
+                value:
+                  status: success
+                  value: 100
+                summary: Update Payload
       security:
-      - tokenAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Task'
+              examples:
+                UpdateResponse:
+                  value:
+                    id: 57ae8eVBrH7jbDgmYj6Ut2vR9S
+                    organization: example_org
+                    project: example_org
+                    name: example task
+                    status: success
+                    value: 100
+                    value_percent: 100
+                    data:
+                      property1: customValue
+                    created: '2022-08-24T14:15:22Z'
+                    updated: '2022-08-24T16:15:22Z'
+                  summary: Update Response
           description: ''
     delete:
       operationId: task_cancel
@@ -293,7 +326,7 @@ paths:
       tags:
       - Task Endpoints
       security:
-      - tokenAuth: []
+      - bearerAuth: []
       responses:
         '204':
           description: No response body
@@ -324,7 +357,7 @@ paths:
       tags:
       - Action Endpoints
       security:
-      - tokenAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -366,7 +399,7 @@ paths:
               $ref: '#/components/schemas/ActionRequest'
         required: true
       security:
-      - tokenAuth: []
+      - bearerAuth: []
       responses:
         '201':
           content:
@@ -407,7 +440,7 @@ paths:
       tags:
       - Action Endpoints
       security:
-      - tokenAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -453,7 +486,7 @@ paths:
               $ref: '#/components/schemas/ActionRequest'
         required: true
       security:
-      - tokenAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -462,13 +495,15 @@ paths:
                 $ref: '#/components/schemas/Action'
           description: ''
     patch:
-      operationId: tasks_actions_partial_update
-      description: test summary
+      operationId: action_partial_update
+      description: Update an action
+      summary: Update Action (partial)
       parameters:
       - in: path
         name: id
         schema:
           type: string
+          format: uuid
         required: true
       - in: path
         name: organization_slug
@@ -496,7 +531,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedActionRequest'
       security:
-      - tokenAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -536,7 +571,7 @@ paths:
       tags:
       - Action Endpoints
       security:
-      - tokenAuth: []
+      - bearerAuth: []
       responses:
         '204':
           description: No response body
@@ -645,7 +680,7 @@ components:
         value_max:
           type: integer
           maximum: 9223372036854775807
-          minimum: -9223372036854775808
+          minimum: 0
           format: int64
           description: Maximum value of the task. Defaults to 100.
         data:
@@ -694,7 +729,7 @@ components:
         value_max:
           type: integer
           maximum: 9223372036854775807
-          minimum: -9223372036854775808
+          minimum: 0
           format: int64
           description: Maximum value of the task. Defaults to 100.
         value_percent:
@@ -744,7 +779,7 @@ components:
         value_max:
           type: integer
           maximum: 9223372036854775807
-          minimum: -9223372036854775808
+          minimum: 0
           format: int64
           description: Maximum value of the task. Defaults to 100.
         data:
@@ -755,7 +790,7 @@ components:
       required:
       - name
   securitySchemes:
-    tokenAuth:
+    bearerAuth:
       type: http
       scheme: bearer
 externalDocs:

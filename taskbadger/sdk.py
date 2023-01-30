@@ -1,12 +1,12 @@
 import dataclasses
-from _contextvars import ContextVar
 from typing import List
+
+from _contextvars import ContextVar
 
 from taskbadger import Action
 from taskbadger.internal import AuthenticatedClient, errors
-from taskbadger.internal.api.task_endpoints import task_create, task_get, tasks_partial_update
-from taskbadger.internal.models import PatchedTaskRequest, StatusEnum, \
-    PatchedTaskRequestData
+from taskbadger.internal.api.task_endpoints import task_create, task_get, task_partial_update
+from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum
 from taskbadger.internal.models import Task as CoreTask
 from taskbadger.internal.models import TaskData, TaskRequest
 from taskbadger.internal.types import UNSET
@@ -58,13 +58,11 @@ def update_task(
     actions: List[Action] = None,
 ) -> CoreTask:
     data = UNSET if data is UNSET else PatchedTaskRequestData.from_dict(data)
-    body = PatchedTaskRequest(
-        name=name, status=status, value=value, value_max=value_max, data=data
-    )
+    body = PatchedTaskRequest(name=name, status=status, value=value, value_max=value_max, data=data)
     if actions:
         body.additional_properties = {"actions": [a.to_dict() for a in actions]}
     kwargs = _make_args(id=task_id, json_body=body)
-    response = tasks_partial_update.sync_detailed(**kwargs)
+    response = task_partial_update.sync_detailed(**kwargs)
     _check_response(response)
     return response.parsed
 
