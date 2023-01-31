@@ -21,6 +21,7 @@ tomlkit = "^0.11.6"
 
 [tool.poetry.group.dev.dependencies]
 openapi-python-client = "^0.13.1"
+pytest = "^7.2.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

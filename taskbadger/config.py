@@ -1,4 +1,5 @@
 import dataclasses
+import inspect
 import os
 from pathlib import Path
 
@@ -32,6 +33,13 @@ class Config:
             organization_slug=overrides.get("org") or _from_env("ORG", defaults.get("org")),
             project_slug=overrides.get("project") or _from_env("PROJECT", defaults.get("project")),
         )
+
+    def __str__(self):
+        return inspect.cleandoc(f"""
+        Organization slug: {self.organization_slug or '-'}
+        Project slug: {self.project_slug or '-'}
+        Auth token: {self.token or '-'}
+        """)
 
 
 def _from_env(name, default=None, prefix="TASKBADGER_"):

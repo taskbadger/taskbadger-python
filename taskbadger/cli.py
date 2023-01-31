@@ -49,9 +49,7 @@ def docs():
 @app.command()
 def info(ctx: typer.Context):
     config = ctx.meta["tb_config"]
-    print(f"Default Organization: {config.organization_slug or '-'}")
-    print(f"Default Project: {config.project_slug or '-'}")
-    print(f"Auth Token: {config.token or '-'}")
+    print(str(config))
 
 
 @app.callback()
