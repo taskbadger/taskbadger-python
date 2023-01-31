@@ -22,6 +22,7 @@ def _configure_api(ctx):
 
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 def monitor(ctx: typer.Context, name: str):
+    """Monitor a command"""
     _configure_api(ctx)
     task = tb.Task.create(name)
     try:
@@ -39,6 +40,7 @@ def monitor(ctx: typer.Context, name: str):
 
 @app.command()
 def configure(ctx: typer.Context):
+    """Update configuration"""
     config = ctx.meta["tb_config"]
     config.organization_slug = typer.prompt(f"Organization slug", default=config.organization_slug)
     config.project_slug = typer.prompt(f"Project slug", default=config.project_slug)
@@ -49,11 +51,13 @@ def configure(ctx: typer.Context):
 
 @app.command()
 def docs():
+    """Open Task Badger docs"""
     typer.launch("https://docs.taskbadger.net")
 
 
 @app.command()
 def info(ctx: typer.Context):
+    """Show CLI configuration"""
     config = ctx.meta["tb_config"]
     print(str(config))
 
@@ -65,7 +69,7 @@ def main(
     project: Optional[str] = typer.Option(None, "--project", "-p", show_envvar=False, metavar="PROJECT"),
 ):
     """
-    Manage users in the awesome CLI app.
+    Task Badger CLI
     """
     config = get_config(org=org, project=project)
     ctx.meta["tb_config"] = config
