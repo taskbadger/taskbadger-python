@@ -1,10 +1,12 @@
 import subprocess
-from typing import Optional
+from typing import Optional, List, Tuple
 
 import typer
 from rich import print
 
 import taskbadger as tb
+from taskbadger import Action
+from taskbadger import integrations
 from taskbadger.config import get_config, write_config
 from taskbadger.exceptions import ConfigurationError
 
@@ -21,10 +23,21 @@ def _configure_api(ctx):
 
 
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
-def monitor(ctx: typer.Context, name: str):
+def monitor(
+        ctx: typer.Context,
+        name: str,
+        action_def: Tuple[str, integrations.Integrations, str] = typer.Option(
+            (None, None, None), "--action", "-a", metavar="<trigger integration config>", show_default=False,
+            help="Action definition e.g. \"success,error email to:me@email.com\""
+        )
+):
     """Monitor a command"""
     _configure_api(ctx)
-    task = tb.Task.create(name)
+    action = None
+    if all(action_def):
+        trigger, integration, config = action_def
+        action = Action(trigger, integrations.from_config(integration, config))
+    task = tb.Task.create(name, actions=[action] if action else None)
     try:
         result = subprocess.run(ctx.args, env={"TASKBADGER_TASK_ID": task.id}, shell=True)
     except Exception as e:

@@ -30,7 +30,19 @@ def test_monitor_error():
     _test_monitor(["not-a-command"], 127)
 
 
-def _test_monitor(command, return_code):
+@mock.patch.dict(os.environ, {
+    "TASKBADGER_ORG": "org",
+    "TASKBADGER_PROJECT": "project",
+    "TASKBADGER_TOKEN": "token",
+}, clear=True)
+def test_monitor_action():
+    _test_monitor(
+        ["echo", "test"], 0, ["-a", "success,error", "email", "to:me@test.com"],
+        action={'trigger': 'success,error', 'integration': 'email', 'config': {'to': 'me@test.com'}}
+    )
+
+
+def _test_monitor(command, return_code, args=None, action=None):
     with (
         mock.patch("taskbadger.sdk.task_create.sync_detailed") as create,
         mock.patch("taskbadger.sdk.task_partial_update.sync_detailed") as update
@@ -39,15 +51,21 @@ def _test_monitor(command, return_code):
         create.return_value = Response(HTTPStatus.OK, b"", {}, task)
 
         update.return_value = Response(HTTPStatus.OK, b"", {}, task)
-        result = runner.invoke(app, ["monitor", "task_name", "--"] + command)
+        args = args or []
+        result = runner.invoke(app, ["monitor", "task_name"] + args + ["--"] + command)
         assert result.exit_code == return_code
 
         settings = _get_settings()
+        request = TaskRequest(name="task_name", status=StatusEnum.PENDING)
+        if action:
+            request.additional_properties = {
+                'actions': [action]
+            }
         create.assert_called_with(
             client=settings.client,
             organization_slug="org",
             project_slug="project",
-            json_body=TaskRequest(name="task_name", status=StatusEnum.PENDING)
+            json_body=request
         )
 
         if return_code == 0:
