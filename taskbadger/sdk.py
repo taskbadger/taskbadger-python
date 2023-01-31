@@ -5,6 +5,7 @@ from typing import List
 from _contextvars import ContextVar
 
 from taskbadger import Action
+from taskbadger.exceptions import ConfigurationError
 from taskbadger.internal import AuthenticatedClient, errors
 from taskbadger.internal.api.task_endpoints import task_create, task_get, task_partial_update
 from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum
@@ -15,23 +16,27 @@ from taskbadger.internal.types import UNSET
 _local = ContextVar("taskbadger_client")
 
 
-def init_from_env():
-    _init(
-        os.environ["TASKBADGER_ORG"],
-        os.environ["TASKBADGER_PROJECT"],
-        os.environ["TASKBADGER_TOKEN"],
-    )
-
-
-def init(organization_slug: str, project_slug: str, token: str):
+def init(organization_slug: str = None, project_slug: str = None, token: str = None):
     _init("https://taskbadger.net", organization_slug, project_slug, token)
 
 
-def _init(host: str, organization_slug: str, project_slug: str, token: str):
-    client = AuthenticatedClient(host, token)
-    settings = Settings(client, organization_slug, project_slug)
+def _init(host: str = None, organization_slug: str = None, project_slug: str = None, token: str = None):
+    host = host or os.environ.get("TASKBADGER_HOST", "https://taskbadger.net")
+    organization_slug = organization_slug or os.environ.get("TASKBADGER_ORG")
+    project_slug = project_slug or os.environ.get("TASKBADGER_PROJECT")
+    token = token or os.environ.get("TASKBADGER_TOKEN")
 
-    _local.set(settings)
+    if host and organization_slug and project_slug and token:
+        client = AuthenticatedClient(host, token)
+        settings = Settings(client, organization_slug, project_slug)
+        _local.set(settings)
+    else:
+        raise ConfigurationError(
+            host=host,
+            organization_slug=organization_slug,
+            project_slug=project_slug,
+            token=token,
+        )
 
 
 def get_task(task_id: str):

@@ -1,2 +1,2 @@
 from .integrations import Action, EmailIntegration
-from .sdk import Task, init, init_from_env, update_task
+from .sdk import Task, init, update_task

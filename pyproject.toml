@@ -17,6 +17,7 @@ httpx = ">=0.15.4,<0.24.0"
 attrs = ">=21.3.0"
 python-dateutil = "^2.8.0"
 typer = {extras = ["all"], version = "^0.7.0"}
+tomlkit = "^0.11.6"
 
 [tool.poetry.group.dev.dependencies]
 openapi-python-client = "^0.13.1"
