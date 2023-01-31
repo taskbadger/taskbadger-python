@@ -24,11 +24,17 @@ def _configure_api(ctx):
 def monitor(ctx: typer.Context, name: str):
     _configure_api(ctx)
     task = tb.Task.create(name)
-    result = subprocess.run(ctx.args, env={"TASKBADGER_TASK_ID": task.id})
-    if result.returncode != 0:
+    try:
+        result = subprocess.run(ctx.args, env={"TASKBADGER_TASK_ID": task.id}, shell=True)
+    except Exception as e:
+        task.error(data={"exception": str(e)})
+        raise typer.Exit(1)
+    
+    if result.returncode == 0:
         task.success()
     else:
         task.error(data={"return_code": result.returncode})
+        raise typer.Exit(result.returncode)
 
 
 @app.command()
