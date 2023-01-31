@@ -34,9 +34,9 @@ def monitor(ctx: typer.Context, name: str):
 @app.command()
 def configure(ctx: typer.Context):
     config = ctx.meta["tb_config"]
-    config.token = typer.prompt(f"Token", default=config.token)
     config.organization_slug = typer.prompt(f"Organization slug", default=config.organization_slug)
     config.project_slug = typer.prompt(f"Project slug", default=config.project_slug)
+    config.token = typer.prompt(f"Token", default=config.token)
     path = write_config(config)
     print(f"Config written to [green]{path}[/green]")
 

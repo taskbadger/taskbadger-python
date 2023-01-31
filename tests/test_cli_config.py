@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+import tomlkit
 from typer.testing import CliRunner
 
 from taskbadger.cli import app
@@ -12,13 +13,18 @@ runner = CliRunner()
 
 
 @pytest.fixture
-def test_config():
-    app_dir = Path(__file__).parent / "_test_config"
-    with mock.patch("taskbadger.config._get_config_path", return_value=app_dir):
-        config = Config(organization_slug="test_org", project_slug="test_project", token="test_token")
-        write_config(config)
-        yield
-        os.remove(app_dir)
+def mock_config_location():
+    config_path = Path(__file__).parent / "_mock_config"
+    with mock.patch("taskbadger.config._get_config_path", return_value=config_path):
+        yield config_path
+    if config_path.exists():
+        os.remove(config_path)
+
+
+@pytest.fixture
+def mock_config(mock_config_location):
+    config = Config(organization_slug="test_org", project_slug="test_project", token="test_token")
+    write_config(config)
 
 
 def test_info_blank():
@@ -50,7 +56,7 @@ def test_info_args_trump_env():
     _check_output(result, "org1", "project1", "-")
 
 
-def test_info_config(test_config):
+def test_info_config(mock_config):
     result = runner.invoke(app, ["info"])
     _check_output(result, "test_org", "test_project", "test_token")
 
@@ -60,12 +66,12 @@ def test_info_config(test_config):
     "TASKBADGER_PROJECT": "project2",
     "TASKBADGER_TOKEN": "token2",
 }, clear=True)
-def test_info_config_env(test_config):
+def test_info_config_env(mock_config):
     result = runner.invoke(app, ["info"])
     _check_output(result, "org2", "project2", "token2")
 
 
-def test_info_config_args(test_config):
+def test_info_config_args(mock_config):
     result = runner.invoke(app, ["-o", "org1", "-p", "project1", "info"])
     _check_output(result, "org1", "project1", "test_token")
 
@@ -75,10 +81,25 @@ def test_info_config_args(test_config):
     "TASKBADGER_PROJECT": "project2",
     "TASKBADGER_TOKEN": "token2",
 }, clear=True)
-def test_info_config_env_args(test_config):
+def test_info_config_env_args(mock_config):
     result = runner.invoke(app, ["-o", "org1", "-p", "project1", "info"])
     _check_output(result, "org1", "project1", "token2")
 
+
+def test_configure(mock_config_location):
+    result = runner.invoke(app, ["configure"], input="an-org\na-project\na-token")
+    assert result.exit_code == 0
+    assert mock_config_location.is_file()
+    with mock_config_location.open("rt", encoding="utf-8") as fp:
+        raw_config = tomlkit.load(fp)
+    config_dict = raw_config.unwrap()
+    assert config_dict == {
+        "defaults": {
+            "org": "an-org",
+            "project": "a-project",
+        },
+        "auth": {"token": "a-token"}
+    }
 
 def _check_output(result, org, project, token):
     assert result.exit_code == 0
