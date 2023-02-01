@@ -32,8 +32,3 @@ repos:
     hooks:
       - id: prettier
         exclude: taskbadger.yaml
-  - repo: https://github.com/rtts/djhtml
-    rev: v2.0.0
-    hooks:
-      - id: djhtml
-        args: [--tabwidth=2]
