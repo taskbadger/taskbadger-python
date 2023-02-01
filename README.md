@@ -1,4 +1,5 @@
 # Task Badger Python Client
+
 This is the official Python SDK for [Task Badger](https://taskbadger.net/)
 
 ---
