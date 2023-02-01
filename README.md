@@ -48,7 +48,7 @@ task.start()
 try:
    for i in range(100):
       do_something(i)
-      if i % 10 == 0:
+      if i!= 0 and i % 10 == 0:
          # update the progress of the task
          task.update_progress(i)
 except Exception as e:
