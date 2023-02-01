@@ -7,7 +7,7 @@ import tomlkit
 from typer.testing import CliRunner
 
 from taskbadger.cli import app
-from taskbadger.config import write_config, Config
+from taskbadger.config import Config, write_config
 
 runner = CliRunner()
 
@@ -37,20 +37,28 @@ def test_info_args():
     _check_output(result, "org1", "project1", "-")
 
 
-@mock.patch.dict(os.environ, {
-    "TASKBADGER_ORG": "org2",
-    "TASKBADGER_PROJECT": "project2",
-    "TASKBADGER_TOKEN": "123",
-}, clear=True)
+@mock.patch.dict(
+    os.environ,
+    {
+        "TASKBADGER_ORG": "org2",
+        "TASKBADGER_PROJECT": "project2",
+        "TASKBADGER_TOKEN": "123",
+    },
+    clear=True,
+)
 def test_info_env():
     result = runner.invoke(app, ["info"])
     _check_output(result, "org2", "project2", "123")
 
 
-@mock.patch.dict(os.environ, {
-    "TASKBADGER_ORG": "org2",
-    "TASKBADGER_PROJECT": "project2",
-}, clear=True)
+@mock.patch.dict(
+    os.environ,
+    {
+        "TASKBADGER_ORG": "org2",
+        "TASKBADGER_PROJECT": "project2",
+    },
+    clear=True,
+)
 def test_info_args_trump_env():
     result = runner.invoke(app, ["-o", "org1", "-p", "project1", "info"])
     _check_output(result, "org1", "project1", "-")
@@ -61,11 +69,15 @@ def test_info_config(mock_config):
     _check_output(result, "test_org", "test_project", "test_token")
 
 
-@mock.patch.dict(os.environ, {
-    "TASKBADGER_ORG": "org2",
-    "TASKBADGER_PROJECT": "project2",
-    "TASKBADGER_TOKEN": "token2",
-}, clear=True)
+@mock.patch.dict(
+    os.environ,
+    {
+        "TASKBADGER_ORG": "org2",
+        "TASKBADGER_PROJECT": "project2",
+        "TASKBADGER_TOKEN": "token2",
+    },
+    clear=True,
+)
 def test_info_config_env(mock_config):
     result = runner.invoke(app, ["info"])
     _check_output(result, "org2", "project2", "token2")
@@ -76,11 +88,15 @@ def test_info_config_args(mock_config):
     _check_output(result, "org1", "project1", "test_token")
 
 
-@mock.patch.dict(os.environ, {
-    "TASKBADGER_ORG": "org2",
-    "TASKBADGER_PROJECT": "project2",
-    "TASKBADGER_TOKEN": "token2",
-}, clear=True)
+@mock.patch.dict(
+    os.environ,
+    {
+        "TASKBADGER_ORG": "org2",
+        "TASKBADGER_PROJECT": "project2",
+        "TASKBADGER_TOKEN": "token2",
+    },
+    clear=True,
+)
 def test_info_config_env_args(mock_config):
     result = runner.invoke(app, ["-o", "org1", "-p", "project1", "info"])
     _check_output(result, "org1", "project1", "token2")
@@ -98,8 +114,9 @@ def test_configure(mock_config_location):
             "org": "an-org",
             "project": "a-project",
         },
-        "auth": {"token": "a-token"}
+        "auth": {"token": "a-token"},
     }
+
 
 def _check_output(result, org, project, token):
     assert result.exit_code == 0

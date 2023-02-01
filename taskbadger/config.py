@@ -35,11 +35,13 @@ class Config:
         )
 
     def __str__(self):
-        return inspect.cleandoc(f"""
-        Organization slug: {self.organization_slug or '-'}
-        Project slug: {self.project_slug or '-'}
-        Auth token: {self.token or '-'}
-        """)
+        return inspect.cleandoc(
+            f"""
+            Organization slug: {self.organization_slug or '-'}
+            Project slug: {self.project_slug or '-'}
+            Auth token: {self.token or '-'}
+            """
+        )
 
 
 def _from_env(name, default=None, prefix="TASKBADGER_"):

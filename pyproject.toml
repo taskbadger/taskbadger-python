@@ -22,6 +22,8 @@ tomlkit = "^0.11.6"
 [tool.poetry.group.dev.dependencies]
 openapi-python-client = "^0.13.1"
 pytest = "^7.2.1"
+isort = "^5.12.0"
+black = "^23.1.0"
 
 [tool.poetry.scripts]
 taskbadger = "taskbadger.cli:app"

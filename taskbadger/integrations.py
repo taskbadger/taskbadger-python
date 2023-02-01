@@ -1,6 +1,6 @@
 import dataclasses
 from enum import Enum
-from typing import Any, Dict, List, Generator, Tuple
+from typing import Any, Dict, Generator, List, Tuple
 
 from taskbadger.internal.models import ActionRequest, ActionRequestConfig
 
@@ -11,7 +11,7 @@ class Integrations(str, Enum):
 
 def from_config(integration: Integrations, config: str):
     if integration == Integrations.email:
-        split_ = [tuple(item.split(':', 1)) for item in config.split(',')]
+        split_ = [tuple(item.split(":", 1)) for item in config.split(",")]
         kwargs = dict(split_)
         return EmailIntegration(**kwargs)
 
