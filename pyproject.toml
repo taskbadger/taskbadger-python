@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "taskbadger-python"
+name = "taskbadger"
 version = "0.1"
-description = "A client library for accessing Task Badger"
+description = "The official Python SDK for Task Badger"
 
 authors = []
 
@@ -9,7 +9,7 @@ readme = "README.md"
 packages = [
     {include = "taskbadger"},
 ]
-include = ["CHANGELOG.md", "taskbadger/py.typed"]
+include = ["CHANGELOG.md", "taskbadger/internal/py.typed"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
