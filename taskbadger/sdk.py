@@ -132,7 +132,7 @@ class Task(TaskAccessorsMixin):
     def pre_processing(self):
         self.update_status(StatusEnum.PRE_PROCESSING)
 
-    def start(self):
+    def starting(self):
         self.processing(value=0)
 
     def processing(self, value: int = UNSET):
@@ -147,7 +147,7 @@ class Task(TaskAccessorsMixin):
     def error(self, value: int = UNSET, data: dict = UNSET):
         self.update(status=StatusEnum.ERROR, value=value, data=data)
 
-    def cancel(self):
+    def canceled(self):
         self.update_status(StatusEnum.CANCELLED)
 
     def update_status(self, status: StatusEnum):

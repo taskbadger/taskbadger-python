@@ -43,8 +43,8 @@ task = Task.create(
     ]
 )
 
-# update the task status to 'processing'
-task.start()
+# update the task status to 'processing' and set the value to 0
+task.started()
 try:
    for i in range(100):
       do_something(i)
