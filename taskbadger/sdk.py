@@ -8,7 +8,7 @@ from taskbadger import Action
 from taskbadger.exceptions import ConfigurationError
 from taskbadger.internal import AuthenticatedClient, errors
 from taskbadger.internal.api.task_endpoints import task_create, task_get, task_partial_update
-from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum
+from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum, TaskRequestData
 from taskbadger.internal.models import Task as CoreTask
 from taskbadger.internal.models import TaskData, TaskRequest
 from taskbadger.internal.types import UNSET
@@ -17,6 +17,10 @@ _local = ContextVar("taskbadger_client")
 
 
 def init(organization_slug: str = None, project_slug: str = None, token: str = None):
+    """Initialize Task Badger client
+
+    Call this function once per thread
+    """
     _init("https://taskbadger.net", organization_slug, project_slug, token)
 
 
@@ -39,7 +43,7 @@ def _init(host: str = None, organization_slug: str = None, project_slug: str = N
         )
 
 
-def get_task(task_id: str):
+def get_task(task_id: str) -> CoreTask:
     return task_get.sync(**_make_args(id=task_id))
 
 
@@ -53,7 +57,7 @@ def create_task(
 ) -> CoreTask:
     task = TaskRequest(name=name, status=status, value=value, value_max=value_max)
     if data:
-        task.data = TaskData.from_dict(data)
+        task.data = TaskRequestData.from_dict(data)
     if actions:
         task.additional_properties = {"actions": [a.to_dict() for a in actions]}
     kwargs = _make_args(json_body=task)
@@ -107,25 +111,23 @@ class Settings:
     project_slug: str
 
 
-class TaskAccessorsMixin:
+class Task:
     @classmethod
     def get(cls, task_id: str) -> "Task":
         return Task(get_task(task_id))
 
     @classmethod
     def create(
-        cls,
-        name: str,
-        status: StatusEnum = StatusEnum.PENDING,
-        value: int = UNSET,
-        value_max: int = UNSET,
-        data: dict = UNSET,
-        actions: List[Action] = None,
+            cls,
+            name: str,
+            status: StatusEnum = StatusEnum.PENDING,
+            value: int = UNSET,
+            value_max: int = UNSET,
+            data: dict = UNSET,
+            actions: List[Action] = None,
     ) -> "Task":
         return Task(create_task(name, status, value, value_max, data, actions))
 
-
-class Task(TaskAccessorsMixin):
     def __init__(self, task):
         self._task = task
 
@@ -154,7 +156,8 @@ class Task(TaskAccessorsMixin):
         self.update(status=status)
 
     def increment_progress(self, amount: int):
-        self.update(value=self._task.value + amount)
+        new_amount = self._task.value + amount if self._task.value is not UNSET else amount
+        self.update(value=new_amount)
 
     def update_progress(self, value: int):
         self.update(value=value)

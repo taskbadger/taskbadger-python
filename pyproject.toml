@@ -25,6 +25,7 @@ pytest = "^7.2.1"
 isort = "^5.12.0"
 black = "^23.1.0"
 pre-commit = "^3.0.2"
+pytest-httpx = "^0.21.3"
 
 [tool.poetry.scripts]
 taskbadger = "taskbadger.cli:app"
