@@ -42,7 +42,11 @@ def _init(host: str = None, organization_slug: str = None, project_slug: str = N
 
 
 def get_task(task_id: str) -> "Task":
-    """Fetch a Task from the API based on its ID."""
+    """Fetch a Task from the API based on its ID.
+
+    Arguments:
+        task_id: The ID of the task to fetch.
+    """
     return Task(task_get.sync(**_make_args(id=task_id)))
 
 
@@ -54,7 +58,19 @@ def create_task(
     data: dict = None,
     actions: List[Action] = None,
 ) -> "Task":
-    """Create a Task."""
+    """Create a Task.
+
+    Arguments:
+        name: The name of the task.
+        status: The task status.
+        value: The current 'value' of the task.
+        value_max: The maximum value the task is expected to achieve.
+        data: Custom task data.
+        actions: Task actions.
+
+    Returns:
+        Task: The created Task object.
+    """
     value = _none_to_unset(value)
     value_max = _none_to_unset(value_max)
     data = _none_to_unset(data)
@@ -81,6 +97,18 @@ def update_task(
 ) -> "Task":
     """Update a task.
     Requires only the task ID and fields to update.
+
+    Arguments:
+        task_id: The ID of the task to update.
+        name: The name of the task.
+        status: The task status.
+        value: The current 'value' of the task.
+        value_max: The maximum value the task is expected to achieve.
+        data: Custom task data.
+        actions: Task actions.
+
+    Returns:
+        Task: The updated Task object.
     """
     name = _none_to_unset(name)
     status = _none_to_unset(status)
@@ -218,7 +246,7 @@ class Task:
         self._task = task._task
 
     def add_actions(self, actions: List[Action]):
-        """Add actions to ta task."""
+        """Add actions to the task."""
         self.update(actions=actions)
 
     @property
