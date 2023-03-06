@@ -15,7 +15,6 @@ include = ["CHANGELOG.md", "taskbadger/internal/py.typed"]
 homepage = "https://taskbadger.net/"
 repository = "https://github.com/taskbadger/taskbadger-docs"
 documentation = "https://docs.taskbadger.net/"
-keywords = "task service client api"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Web Environment",
