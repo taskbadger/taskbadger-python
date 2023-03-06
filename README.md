@@ -1,6 +1,8 @@
 # Task Badger Python Client
 
-This is the official Python SDK for [Task Badger](https://taskbadger.net/)
+This is the official Python SDK for [Task Badger](https://taskbadger.net/).
+
+For full documentation go to https://docs.taskbadger.net/python/.
 
 ---
 
