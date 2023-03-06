@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "taskbadger"
-version = "0.1"
+version = "0.2"
 description = "The official Python SDK for Task Badger"
 
 authors = []
