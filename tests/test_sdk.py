@@ -6,7 +6,7 @@ import pytest
 
 from taskbadger import Action, EmailIntegration, StatusEnum
 from taskbadger.internal.models import Task as TaskInternal, PatchedTaskRequest, TaskData, TaskRequest, \
-    TaskRequestData
+    TaskRequestData, PatchedTaskRequestData
 from taskbadger.internal.types import Response, UNSET
 from taskbadger.sdk import _get_settings, init, Task
 
@@ -93,6 +93,17 @@ def test_update_status(settings, patched_update):
     _verify_update(settings, patched_update, status=StatusEnum.PRE_PROCESSING)
 
 
+def test_update_data(settings, patched_update):
+    api_task = _task_for_test()
+    task = Task(api_task)
+
+    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, api_task)
+    task.update(data={"a": 1})
+
+    # expected request
+    _verify_update(settings, patched_update, data={"a": 1})
+
+
 def test_increment_progress(settings, patched_update):
     api_task = _task_for_test()
     task = Task(api_task)
@@ -142,6 +153,9 @@ def _verify_update(settings, patched_update, **kwargs):
         "data": UNSET,
     }
     request_params.update(kwargs)
+
+    if kwargs.get("data"):
+        request_params["data"] = PatchedTaskRequestData.from_dict(kwargs["data"])
 
     request = PatchedTaskRequest(**request_params)
     if actions:
