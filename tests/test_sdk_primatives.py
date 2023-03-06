@@ -112,4 +112,4 @@ def _verify_task(task, **kwargs):
     assert task.value == expected["value"]
     assert task.value_max == expected["value_max"]
     assert task.value_percent == expected["value_percent"]
-    assert task.data.to_dict() == expected["data"]
+    assert task.data == expected["data"]

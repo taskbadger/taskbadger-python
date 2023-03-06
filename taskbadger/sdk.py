@@ -1,16 +1,14 @@
 import dataclasses
 import os
-from typing import List
-
 from _contextvars import ContextVar
+from typing import List
 
 from taskbadger import Action
 from taskbadger.exceptions import ConfigurationError
 from taskbadger.internal import AuthenticatedClient, errors
 from taskbadger.internal.api.task_endpoints import task_create, task_get, task_partial_update
 from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum, TaskRequestData
-from taskbadger.internal.models import Task as CoreTask
-from taskbadger.internal.models import TaskData, TaskRequest
+from taskbadger.internal.models import TaskRequest
 from taskbadger.internal.types import UNSET
 
 _local = ContextVar("taskbadger_client")
@@ -43,8 +41,9 @@ def _init(host: str = None, organization_slug: str = None, project_slug: str = N
         )
 
 
-def get_task(task_id: str) -> CoreTask:
-    return task_get.sync(**_make_args(id=task_id))
+def get_task(task_id: str) -> "Task":
+    """Fetch a Task from the API based on its ID."""
+    return Task(task_get.sync(**_make_args(id=task_id)))
 
 
 def create_task(
@@ -54,7 +53,8 @@ def create_task(
     value_max: int = None,
     data: dict = None,
     actions: List[Action] = None,
-) -> CoreTask:
+) -> "Task":
+    """Create a Task."""
     value = _none_to_unset(value)
     value_max = _none_to_unset(value_max)
     data = _none_to_unset(data)
@@ -67,11 +67,7 @@ def create_task(
     kwargs = _make_args(json_body=task)
     response = task_create.sync_detailed(**kwargs)
     _check_response(response)
-    return response.parsed
-
-
-def _none_to_unset(value):
-    return UNSET if value is None else value
+    return Task(response.parsed)
 
 
 def update_task(
@@ -82,21 +78,24 @@ def update_task(
     value_max: int = None,
     data: dict = None,
     actions: List[Action] = None,
-) -> CoreTask:
+) -> "Task":
+    """Update a task.
+    Requires only the task ID and fields to update.
+    """
     name = _none_to_unset(name)
     status = _none_to_unset(status)
     value = _none_to_unset(value)
     value_max = _none_to_unset(value_max)
     data = _none_to_unset(data)
 
-    data = UNSET if data is UNSET else PatchedTaskRequestData.from_dict(data)
+    data = UNSET if not data else PatchedTaskRequestData.from_dict(data)
     body = PatchedTaskRequest(name=name, status=status, value=value, value_max=value_max, data=data)
     if actions:
         body.additional_properties = {"actions": [a.to_dict() for a in actions]}
     kwargs = _make_args(id=task_id, json_body=body)
     response = task_partial_update.sync_detailed(**kwargs)
     _check_response(response)
-    return response.parsed
+    return Task(response.parsed)
 
 
 def _make_args(**kwargs):
@@ -133,7 +132,7 @@ class Task:
     @classmethod
     def get(cls, task_id: str) -> "Task":
         """Get an existing task"""
-        return Task(get_task(task_id))
+        return get_task(task_id)
 
     @classmethod
     def create(
@@ -146,7 +145,7 @@ class Task:
             actions: List[Action] = None,
     ) -> "Task":
         """Create a new task"""
-        return Task(create_task(name, status, value, value_max, data, actions))
+        return create_task(name, status, value, value_max, data, actions)
 
     def __init__(self, task):
         self._task = task
@@ -213,9 +212,10 @@ class Task:
 
         This can also be used to add actions.
         """
-        self._task = update_task(
+        task = update_task(
             self._task.id, name=name, status=status, value=value, value_max=value_max, data=data, actions=actions
         )
+        self._task = task._task
 
     def add_actions(self, actions: List[Action]):
         """Add actions to ta task."""
@@ -227,3 +227,7 @@ class Task:
 
     def __getattr__(self, item):
         return getattr(self._task, item)
+
+
+def _none_to_unset(value):
+    return UNSET if value is None else value

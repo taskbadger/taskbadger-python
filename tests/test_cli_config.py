@@ -12,7 +12,7 @@ from taskbadger.config import Config, write_config
 runner = CliRunner()
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_config_location():
     config_path = Path(__file__).parent / "_mock_config"
     with mock.patch("taskbadger.config._get_config_path", return_value=config_path):
