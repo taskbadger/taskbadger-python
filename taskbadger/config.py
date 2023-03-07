@@ -26,6 +26,23 @@ class Config:
 
     @staticmethod
     def from_dict(config_dict, **overrides) -> "Config":
+        """Compile the config from the various sources.
+
+        Arguments:
+            config_dict:
+                Dictionary of configuration values that come from the
+                configuration file.
+            **overrides:
+                These values take precedence over any others.
+                Typically, they come from the command line arguments.
+
+        Config is loaded from 3 places. If a value is present in all three, the
+        value with the highest precedence will be used. The order of precedence is
+        as follows (low to high):
+        1. Config file
+        2. Environment variables
+        3. Command line arguments
+        """
         defaults = config_dict.get("defaults", {})
         auth = config_dict.get("auth", {})
         return Config(
@@ -65,6 +82,9 @@ def write_config(config):
 
 
 def get_config(**overrides):
+    """Get the CLI config.
+    See `Config.from_dict` for details about precedence.
+    """
     config_dict = {}
     config_path = _get_config_path()
     if config_path.is_file():
