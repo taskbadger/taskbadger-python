@@ -1,14 +1,20 @@
 import dataclasses
 import os
-from _contextvars import ContextVar
 from typing import List
+
+from _contextvars import ContextVar
 
 from taskbadger import Action
 from taskbadger.exceptions import ConfigurationError
 from taskbadger.internal import AuthenticatedClient, errors
 from taskbadger.internal.api.task_endpoints import task_create, task_get, task_partial_update
-from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum, TaskRequestData
-from taskbadger.internal.models import TaskRequest
+from taskbadger.internal.models import (
+    PatchedTaskRequest,
+    PatchedTaskRequestData,
+    StatusEnum,
+    TaskRequest,
+    TaskRequestData,
+)
 from taskbadger.internal.types import UNSET
 
 _local = ContextVar("taskbadger_client")
@@ -164,13 +170,13 @@ class Task:
 
     @classmethod
     def create(
-            cls,
-            name: str,
-            status: StatusEnum = StatusEnum.PENDING,
-            value: int = None,
-            value_max: int = None,
-            data: dict = None,
-            actions: List[Action] = None,
+        cls,
+        name: str,
+        status: StatusEnum = StatusEnum.PENDING,
+        value: int = None,
+        value_max: int = None,
+        data: dict = None,
+        actions: List[Action] = None,
     ) -> "Task":
         """Create a new task"""
         return create_task(name, status, value, value_max, data, actions)

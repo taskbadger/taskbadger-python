@@ -5,10 +5,11 @@ from unittest import mock
 import pytest
 
 from taskbadger import Action, EmailIntegration, StatusEnum
-from taskbadger.internal.models import Task as TaskInternal, PatchedTaskRequest, TaskData, TaskRequest, \
-    TaskRequestData, PatchedTaskRequestData
-from taskbadger.internal.types import Response, UNSET
-from taskbadger.sdk import _get_settings, init, Task
+from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData
+from taskbadger.internal.models import Task as TaskInternal
+from taskbadger.internal.models import TaskData, TaskRequest, TaskRequestData
+from taskbadger.internal.types import UNSET, Response
+from taskbadger.sdk import Task, _get_settings, init
 
 
 @pytest.fixture(autouse=True)
@@ -54,31 +55,21 @@ def test_create(settings, patched_create):
 
     action = Action("success", integration=EmailIntegration(to="me@example.com"))
     data = {"a": 1}
-    task = Task.create(
-        name="task name",
-        status=StatusEnum.PRE_PROCESSING,
-        value=13,
-        data=data,
-        actions=[action]
-    )
+    task = Task.create(name="task name", status=StatusEnum.PRE_PROCESSING, value=13, data=data, actions=[action])
     assert task.id == api_task.id
 
     request = TaskRequest(
-        name="task name", status=StatusEnum.PRE_PROCESSING, value=13, value_max=UNSET,
+        name="task name",
+        status=StatusEnum.PRE_PROCESSING,
+        value=13,
+        value_max=UNSET,
         data=TaskRequestData.from_dict(data),
     )
     request.additional_properties = {
-        "actions": [{
-            'trigger': "success",
-            'integration': "email",
-            'config': {"to": "me@example.com"}
-        }]
+        "actions": [{"trigger": "success", "integration": "email", "config": {"to": "me@example.com"}}]
     }
     patched_create.assert_called_with(
-        client=settings.client,
-        organization_slug="org",
-        project_slug="project",
-        json_body=request
+        client=settings.client, organization_slug="org", project_slug="project", json_body=request
     )
 
 
@@ -127,20 +118,18 @@ def test_add_actions(settings, patched_update):
     task.add_actions([action])
 
     # expected request
-    _verify_update(settings, patched_update, actions=[{
-        'trigger': '*/10%,success,error',
-        'integration': 'email',
-        'config': {'to': 'me@example.com'}
-    }])
+    _verify_update(
+        settings,
+        patched_update,
+        actions=[{"trigger": "*/10%,success,error", "integration": "email", "config": {"to": "me@example.com"}}],
+    )
 
 
 def _task_for_test(**kwargs):
     data = kwargs.pop("data", None)
     if data:
         kwargs["data"] = TaskData.from_dict(data)
-    return TaskInternal(
-        "test_id", "org", "project", "task_name", datetime.utcnow(), datetime.utcnow(), None, **kwargs
-    )
+    return TaskInternal("test_id", "org", "project", "task_name", datetime.utcnow(), datetime.utcnow(), None, **kwargs)
 
 
 def _verify_update(settings, patched_update, **kwargs):
@@ -163,9 +152,5 @@ def _verify_update(settings, patched_update, **kwargs):
 
     # verify expected call
     patched_update.assert_called_with(
-        client=settings.client,
-        organization_slug="org",
-        project_slug="project",
-        id="test_id",
-        json_body=request
+        client=settings.client, organization_slug="org", project_slug="project", id="test_id", json_body=request
     )

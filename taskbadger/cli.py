@@ -4,7 +4,7 @@ from typing import Optional, Tuple
 import typer
 from rich import print
 
-from taskbadger import Task, Action, integrations
+from taskbadger import Action, Task, integrations
 from taskbadger.config import get_config, write_config
 from taskbadger.exceptions import ConfigurationError
 
@@ -108,16 +108,24 @@ def info(ctx: typer.Context):
 def main(
     ctx: typer.Context,
     org: Optional[str] = typer.Option(
-        None, "--org", "-o", metavar="ORG", show_default=False,
-        help="Organization Slug. This will override values from the config file and environment variables."
+        None,
+        "--org",
+        "-o",
+        metavar="ORG",
+        show_default=False,
+        help="Organization Slug. This will override values from the config file and environment variables.",
     ),
     project: Optional[str] = typer.Option(
-        None, "--project", "-p", show_envvar=False, metavar="PROJECT", show_default=False,
-        help="Project Slug. This will override values from the config file and environment variables."
+        None,
+        "--project",
+        "-p",
+        show_envvar=False,
+        metavar="PROJECT",
+        show_default=False,
+        help="Project Slug. This will override values from the config file and environment variables.",
     ),
     version: Optional[bool] = typer.Option(  # noqa
-        None, "--version", callback=version_callback, is_eager=True,
-        help="Show CLI Version"
+        None, "--version", callback=version_callback, is_eager=True, help="Show CLI Version"
     ),
 ):
     """
