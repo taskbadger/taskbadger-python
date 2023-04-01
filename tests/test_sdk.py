@@ -54,7 +54,10 @@ def test_create(settings, patched_create):
 
     action = Action("success", integration=EmailIntegration(to="me@example.com"))
     data = {"a": 1}
-    task = Task.create(name="task name", status=StatusEnum.PRE_PROCESSING, value=13, data=data, actions=[action])
+    task = Task.create(
+        name="task name", status=StatusEnum.PRE_PROCESSING, value=13, data=data,
+        max_runtime=10, stale_timeout=2, actions=[action]
+    )
     assert task.id == api_task.id
 
     request = TaskRequest(
@@ -63,6 +66,8 @@ def test_create(settings, patched_create):
         value=13,
         value_max=UNSET,
         data=TaskRequestData.from_dict(data),
+        max_runtime=10,
+        stale_timeout=2,
     )
     request.additional_properties = {
         "actions": [{"trigger": "success", "integration": "email", "config": {"to": "me@example.com"}}]
@@ -105,6 +110,18 @@ def test_increment_progress(settings, patched_update):
 
     task.increment_progress(10)
     _verify_update(settings, patched_update, value=20)
+
+
+def test_update_timeouts(settings, patched_update):
+    api_task = task_for_test()
+    task = Task(api_task)
+
+    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test(
+        max_runtime=10, stale_timeout=2
+    ))
+
+    task.update(max_runtime=10, stale_timeout=2)
+    _verify_update(settings, patched_update, max_runtime=10, stale_timeout=2)
 
 
 def test_add_actions(settings, patched_update):

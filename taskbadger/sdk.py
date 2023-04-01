@@ -62,6 +62,8 @@ def create_task(
     value: int = None,
     value_max: int = None,
     data: dict = None,
+    max_runtime: int = None,
+    stale_timeout: int = None,
     actions: List[Action] = None,
 ) -> "Task":
     """Create a Task.
@@ -72,6 +74,8 @@ def create_task(
         value: The current 'value' of the task.
         value_max: The maximum value the task is expected to achieve.
         data: Custom task data.
+        max_runtime: Maximum expected runtime (minutes).
+        stale_timeout: Maximum allowed time between updates (minutes).
         actions: Task actions.
 
     Returns:
@@ -80,8 +84,17 @@ def create_task(
     value = _none_to_unset(value)
     value_max = _none_to_unset(value_max)
     data = _none_to_unset(data)
+    max_runtime = _none_to_unset(max_runtime)
+    stale_timeout = _none_to_unset(stale_timeout)
 
-    task = TaskRequest(name=name, status=status, value=value, value_max=value_max)
+    task = TaskRequest(
+        name=name,
+        status=status,
+        value=value,
+        value_max=value_max,
+        max_runtime=max_runtime,
+        stale_timeout=stale_timeout
+    )
     if data:
         task.data = TaskRequestData.from_dict(data)
     if actions:
@@ -99,6 +112,8 @@ def update_task(
     value: int = None,
     value_max: int = None,
     data: dict = None,
+    max_runtime: int = None,
+    stale_timeout: int = None,
     actions: List[Action] = None,
 ) -> "Task":
     """Update a task.
@@ -111,6 +126,8 @@ def update_task(
         value: The current 'value' of the task.
         value_max: The maximum value the task is expected to achieve.
         data: Custom task data.
+        max_runtime: Maximum expected runtime (minutes).
+        stale_timeout: Maximum allowed time between updates (minutes).
         actions: Task actions.
 
     Returns:
@@ -121,9 +138,14 @@ def update_task(
     value = _none_to_unset(value)
     value_max = _none_to_unset(value_max)
     data = _none_to_unset(data)
+    max_runtime = _none_to_unset(max_runtime)
+    stale_timeout = _none_to_unset(stale_timeout)
 
     data = UNSET if not data else PatchedTaskRequestData.from_dict(data)
-    body = PatchedTaskRequest(name=name, status=status, value=value, value_max=value_max, data=data)
+    body = PatchedTaskRequest(
+        name=name, status=status, value=value, value_max=value_max, data=data,
+        max_runtime=max_runtime, stale_timeout=stale_timeout
+    )
     if actions:
         body.additional_properties = {"actions": [a.to_dict() for a in actions]}
     kwargs = _make_args(id=task_id, json_body=body)
@@ -176,10 +198,15 @@ class Task:
         value: int = None,
         value_max: int = None,
         data: dict = None,
+        max_runtime: int = None,
+        stale_timeout: int = None,
         actions: List[Action] = None,
     ) -> "Task":
         """Create a new task"""
-        return create_task(name, status, value, value_max, data, actions)
+        return create_task(
+            name, status, value, value_max, data,
+            max_runtime=max_runtime, stale_timeout=stale_timeout, actions=actions
+        )
 
     def __init__(self, task):
         self._task = task
@@ -240,6 +267,8 @@ class Task:
         value: int = None,
         value_max: int = None,
         data: dict = None,
+        max_runtime: int = None,
+        stale_timeout: int = None,
         actions: List[Action] = None,
     ):
         """Generic update method used to update any of the task fields.
@@ -247,7 +276,8 @@ class Task:
         This can also be used to add actions.
         """
         task = update_task(
-            self._task.id, name=name, status=status, value=value, value_max=value_max, data=data, actions=actions
+            self._task.id, name=name, status=status, value=value, value_max=value_max, data=data,
+            max_runtime=max_runtime, stale_timeout=stale_timeout, actions=actions
         )
         self._task = task._task
 
