@@ -24,11 +24,21 @@ class Task:
         name (str): Name of the task
         created (datetime.datetime):
         updated (datetime.datetime):
+        url (str):
+        public_url (str):
         status (Union[Unset, StatusEnum]):  Default: StatusEnum.PENDING.
-        value (Union[Unset, None, int]): Current progress value
+        value (Union[Unset, None, int]): Current progress value.
         value_max (Union[Unset, int]): Maximum value of the task. Defaults to 100.
         value_percent (Optional[int]):
         data (Union[Unset, None, TaskData]): Custom metadata
+        start_time (Union[Unset, None, datetime.datetime]): Datetime when the status is set to a running state. Can be
+            set via the API.
+        end_time (Union[Unset, None, datetime.datetime]): Datetime when status is set to a terminal value.Can be set via
+            the API.
+        max_runtime (Union[Unset, None, int]): Maximum duration the task can be running for before being considered
+            failed. (minutes)
+        stale_timeout (Union[Unset, None, int]): Maximum time to allow between task updates before considering the task
+            stale. Only applies when task is in a running state. (minutes)
     """
 
     id: str
@@ -37,11 +47,17 @@ class Task:
     name: str
     created: datetime.datetime
     updated: datetime.datetime
+    url: str
+    public_url: str
     value_percent: Optional[int]
     status: Union[Unset, StatusEnum] = StatusEnum.PENDING
     value: Union[Unset, None, int] = UNSET
     value_max: Union[Unset, int] = UNSET
     data: Union[Unset, None, "TaskData"] = UNSET
+    start_time: Union[Unset, None, datetime.datetime] = UNSET
+    end_time: Union[Unset, None, datetime.datetime] = UNSET
+    max_runtime: Union[Unset, None, int] = UNSET
+    stale_timeout: Union[Unset, None, int] = UNSET
     additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -53,6 +69,8 @@ class Task:
 
         updated = self.updated.isoformat()
 
+        url = self.url
+        public_url = self.public_url
         status: Union[Unset, str] = UNSET
         if not isinstance(self.status, Unset):
             status = self.status.value
@@ -64,6 +82,17 @@ class Task:
         if not isinstance(self.data, Unset):
             data = self.data.to_dict() if self.data else None
 
+        start_time: Union[Unset, None, str] = UNSET
+        if not isinstance(self.start_time, Unset):
+            start_time = self.start_time.isoformat() if self.start_time else None
+
+        end_time: Union[Unset, None, str] = UNSET
+        if not isinstance(self.end_time, Unset):
+            end_time = self.end_time.isoformat() if self.end_time else None
+
+        max_runtime = self.max_runtime
+        stale_timeout = self.stale_timeout
+
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -74,6 +103,8 @@ class Task:
                 "name": name,
                 "created": created,
                 "updated": updated,
+                "url": url,
+                "public_url": public_url,
                 "value_percent": value_percent,
             }
         )
@@ -85,6 +116,14 @@ class Task:
             field_dict["value_max"] = value_max
         if data is not UNSET:
             field_dict["data"] = data
+        if start_time is not UNSET:
+            field_dict["start_time"] = start_time
+        if end_time is not UNSET:
+            field_dict["end_time"] = end_time
+        if max_runtime is not UNSET:
+            field_dict["max_runtime"] = max_runtime
+        if stale_timeout is not UNSET:
+            field_dict["stale_timeout"] = stale_timeout
 
         return field_dict
 
@@ -104,6 +143,10 @@ class Task:
         created = isoparse(d.pop("created"))
 
         updated = isoparse(d.pop("updated"))
+
+        url = d.pop("url")
+
+        public_url = d.pop("public_url")
 
         _status = d.pop("status", UNSET)
         status: Union[Unset, StatusEnum]
@@ -127,6 +170,28 @@ class Task:
         else:
             data = TaskData.from_dict(_data)
 
+        _start_time = d.pop("start_time", UNSET)
+        start_time: Union[Unset, None, datetime.datetime]
+        if _start_time is None:
+            start_time = None
+        elif isinstance(_start_time, Unset):
+            start_time = UNSET
+        else:
+            start_time = isoparse(_start_time)
+
+        _end_time = d.pop("end_time", UNSET)
+        end_time: Union[Unset, None, datetime.datetime]
+        if _end_time is None:
+            end_time = None
+        elif isinstance(_end_time, Unset):
+            end_time = UNSET
+        else:
+            end_time = isoparse(_end_time)
+
+        max_runtime = d.pop("max_runtime", UNSET)
+
+        stale_timeout = d.pop("stale_timeout", UNSET)
+
         task = cls(
             id=id,
             organization=organization,
@@ -134,11 +199,17 @@ class Task:
             name=name,
             created=created,
             updated=updated,
+            url=url,
+            public_url=public_url,
             status=status,
             value=value,
             value_max=value_max,
             value_percent=value_percent,
             data=data,
+            start_time=start_time,
+            end_time=end_time,
+            max_runtime=max_runtime,
+            stale_timeout=stale_timeout,
         )
 
         task.additional_properties = d
