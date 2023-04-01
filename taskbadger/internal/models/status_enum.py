@@ -9,6 +9,7 @@ class StatusEnum(str, Enum):
     SUCCESS = "success"
     ERROR = "error"
     CANCELLED = "cancelled"
+    STALE = "stale"
 
     def __str__(self) -> str:
         return str(self.value)
