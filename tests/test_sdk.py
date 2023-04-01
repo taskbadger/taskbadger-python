@@ -1,4 +1,3 @@
-from datetime import datetime
 from http import HTTPStatus
 from unittest import mock
 
@@ -6,10 +5,10 @@ import pytest
 
 from taskbadger import Action, EmailIntegration, StatusEnum
 from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData
-from taskbadger.internal.models import Task as TaskInternal
-from taskbadger.internal.models import TaskData, TaskRequest, TaskRequestData
+from taskbadger.internal.models import TaskRequest, TaskRequestData
 from taskbadger.internal.types import UNSET, Response
 from taskbadger.sdk import Task, _get_settings, init
+from tests.utils import task_for_test
 
 
 @pytest.fixture(autouse=True)
@@ -42,7 +41,7 @@ def patched_update():
 
 def test_get(patched_get):
     data = {"a": 1}
-    api_task = _task_for_test(data=data)
+    api_task = task_for_test(data=data)
     patched_get.return_value = api_task
     fetched_task = Task.get("test_id")
     assert fetched_task.id == api_task.id
@@ -50,7 +49,7 @@ def test_get(patched_get):
 
 
 def test_create(settings, patched_create):
-    api_task = _task_for_test()
+    api_task = task_for_test()
     patched_create.return_value = Response(HTTPStatus.OK, b"", {}, api_task)
 
     action = Action("success", integration=EmailIntegration(to="me@example.com"))
@@ -74,7 +73,7 @@ def test_create(settings, patched_create):
 
 
 def test_update_status(settings, patched_update):
-    api_task = _task_for_test()
+    api_task = task_for_test()
     task = Task(api_task)
 
     patched_update.return_value = Response(HTTPStatus.OK, b"", {}, api_task)
@@ -85,7 +84,7 @@ def test_update_status(settings, patched_update):
 
 
 def test_update_data(settings, patched_update):
-    api_task = _task_for_test()
+    api_task = task_for_test()
     task = Task(api_task)
 
     patched_update.return_value = Response(HTTPStatus.OK, b"", {}, api_task)
@@ -96,10 +95,10 @@ def test_update_data(settings, patched_update):
 
 
 def test_increment_progress(settings, patched_update):
-    api_task = _task_for_test()
+    api_task = task_for_test()
     task = Task(api_task)
 
-    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, _task_for_test(value=10))
+    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test(value=10))
 
     task.increment_progress(10)
     _verify_update(settings, patched_update, value=10)
@@ -109,7 +108,7 @@ def test_increment_progress(settings, patched_update):
 
 
 def test_add_actions(settings, patched_update):
-    api_task = TaskInternal("test_id", "org", "project", "task_name", datetime.utcnow(), datetime.utcnow(), None)
+    api_task = task_for_test()
     task = Task(api_task)
 
     patched_update.return_value = Response(HTTPStatus.OK, b"", {}, api_task)
@@ -123,13 +122,6 @@ def test_add_actions(settings, patched_update):
         patched_update,
         actions=[{"trigger": "*/10%,success,error", "integration": "email", "config": {"to": "me@example.com"}}],
     )
-
-
-def _task_for_test(**kwargs):
-    data = kwargs.pop("data", None)
-    if data:
-        kwargs["data"] = TaskData.from_dict(data)
-    return TaskInternal("test_id", "org", "project", "task_name", datetime.utcnow(), datetime.utcnow(), None, **kwargs)
 
 
 def _verify_update(settings, patched_update, **kwargs):

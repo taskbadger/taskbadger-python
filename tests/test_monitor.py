@@ -9,6 +9,7 @@ from taskbadger.cli import app
 from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum, Task, TaskRequest
 from taskbadger.internal.types import Response
 from taskbadger.sdk import _get_settings
+from tests.utils import task_for_test
 
 runner = CliRunner()
 
@@ -62,13 +63,13 @@ def _test_monitor(command, return_code, args=None, action=None):
         mock.patch("taskbadger.sdk.task_create.sync_detailed") as create,
         mock.patch("taskbadger.sdk.task_partial_update.sync_detailed") as update,
     ):
-        task = Task("task_id", "org", "project", "task_name", datetime.utcnow(), datetime.utcnow(), None)
+        task = task_for_test()
         create.return_value = Response(HTTPStatus.OK, b"", {}, task)
 
         update.return_value = Response(HTTPStatus.OK, b"", {}, task)
         args = args or []
-        result = runner.invoke(app, ["monitor", "task_name"] + args + ["--"] + command)
-        assert result.exit_code == return_code
+        result = runner.invoke(app, ["run", "task_name"] + args + ["--"] + command, catch_exceptions=False)
+        assert result.exit_code == return_code, result.output
 
         settings = _get_settings()
         request = TaskRequest(name="task_name", status=StatusEnum.PENDING)
@@ -86,5 +87,5 @@ def _test_monitor(command, return_code, args=None, action=None):
             )
 
         update.assert_called_with(
-            client=settings.client, organization_slug="org", project_slug="project", id="task_id", json_body=body
+            client=settings.client, organization_slug="org", project_slug="project", id="test_id", json_body=body
         )

@@ -89,6 +89,8 @@ def _json_task_response(**kwargs):
         "data": {"custom": "value"},
         "created": "2022-09-22T06:53:40.683555Z",
         "updated": "2022-09-22T06:53:40.683555Z",
+        "url": None,
+        "public_url": None,
     }
     response.update(kwargs)
     return response
