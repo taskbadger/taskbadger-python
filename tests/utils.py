@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from taskbadger.internal.models import TaskData, Task as TaskInternal
+from taskbadger.internal.models import Task as TaskInternal
+from taskbadger.internal.models import TaskData
 
 
 def task_for_test(**kwargs):
@@ -10,6 +11,4 @@ def task_for_test(**kwargs):
     kwargs["url"] = None
     kwargs["public_url"] = None
     kwargs["value_percent"] = None
-    return TaskInternal(
-        "test_id", "org", "project", "task_name", datetime.utcnow(), datetime.utcnow(), **kwargs
-    )
+    return TaskInternal("test_id", "org", "project", "task_name", datetime.utcnow(), datetime.utcnow(), **kwargs)

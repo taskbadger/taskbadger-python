@@ -6,8 +6,7 @@ import typer
 from rich import print
 from rich.console import Console
 
-
-from taskbadger import Action, Task, integrations, StatusEnum
+from taskbadger import Action, StatusEnum, Task, integrations
 from taskbadger.config import get_config, write_config
 from taskbadger.exceptions import ConfigurationError
 
@@ -47,6 +46,7 @@ def _configure_api(ctx):
 def run(
     ctx: typer.Context,
     name: str,
+    monitor_id: str = typer.Option(None, help="Associate this task with a monitor."),
     update_frequency: int = typer.Option(5, metavar="SECONDS", min=5, max=300, help="Seconds between updates."),
     action_def: Tuple[str, integrations.Integrations, str] = typer.Option(
         (None, None, None),
@@ -78,7 +78,8 @@ def run(
         name,
         status=StatusEnum.PROCESSING,
         stale_timeout=stale_timeout,
-        actions=[action] if action else None
+        actions=[action] if action else None,
+        monitor_id=monitor_id,
     )
     try:
         process = subprocess.Popen(ctx.args, env={"TASKBADGER_TASK_ID": task.id}, shell=True)

@@ -4,8 +4,7 @@ from unittest import mock
 import pytest
 
 from taskbadger import Action, EmailIntegration, StatusEnum
-from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData
-from taskbadger.internal.models import TaskRequest, TaskRequestData
+from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, TaskRequest, TaskRequestData
 from taskbadger.internal.types import UNSET, Response
 from taskbadger.sdk import Task, _get_settings, init
 from tests.utils import task_for_test
@@ -55,8 +54,13 @@ def test_create(settings, patched_create):
     action = Action("success", integration=EmailIntegration(to="me@example.com"))
     data = {"a": 1}
     task = Task.create(
-        name="task name", status=StatusEnum.PRE_PROCESSING, value=13, data=data,
-        max_runtime=10, stale_timeout=2, actions=[action]
+        name="task name",
+        status=StatusEnum.PRE_PROCESSING,
+        value=13,
+        data=data,
+        max_runtime=10,
+        stale_timeout=2,
+        actions=[action],
     )
     assert task.id == api_task.id
 
@@ -116,9 +120,7 @@ def test_update_timeouts(settings, patched_update):
     api_task = task_for_test()
     task = Task(api_task)
 
-    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test(
-        max_runtime=10, stale_timeout=2
-    ))
+    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test(max_runtime=10, stale_timeout=2))
 
     task.update(max_runtime=10, stale_timeout=2)
     _verify_update(settings, patched_update, max_runtime=10, stale_timeout=2)

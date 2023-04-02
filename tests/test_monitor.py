@@ -1,12 +1,11 @@
 import os
-from datetime import datetime
 from http import HTTPStatus
 from unittest import mock
 
 from typer.testing import CliRunner
 
 from taskbadger.cli import app
-from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum, Task, TaskRequest
+from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum, TaskRequest
 from taskbadger.internal.types import Response
 from taskbadger.sdk import _get_settings
 from tests.utils import task_for_test
@@ -23,8 +22,8 @@ runner = CliRunner()
     },
     clear=True,
 )
-def test_monitor_success():
-    _test_monitor(["echo", "test"], 0)
+def test_cli_run_success():
+    _test_cli_run(["echo", "test"], 0)
 
 
 @mock.patch.dict(
@@ -36,8 +35,8 @@ def test_monitor_success():
     },
     clear=True,
 )
-def test_monitor_error():
-    _test_monitor(["not-a-command"], 127)
+def test_cli_run_error():
+    _test_cli_run(["not-a-command"], 127)
 
 
 @mock.patch.dict(
@@ -49,8 +48,8 @@ def test_monitor_error():
     },
     clear=True,
 )
-def test_monitor_action():
-    _test_monitor(
+def test_cli_run():
+    _test_cli_run(
         ["echo", "test"],
         0,
         ["-a", "success,error", "email", "to:me@test.com"],
@@ -58,7 +57,7 @@ def test_monitor_action():
     )
 
 
-def _test_monitor(command, return_code, args=None, action=None):
+def _test_cli_run(command, return_code, args=None, action=None):
     with (
         mock.patch("taskbadger.sdk.task_create.sync_detailed") as create,
         mock.patch("taskbadger.sdk.task_partial_update.sync_detailed") as update,

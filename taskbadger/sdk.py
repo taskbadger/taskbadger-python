@@ -67,6 +67,7 @@ def create_task(
     max_runtime: int = None,
     stale_timeout: int = None,
     actions: List[Action] = None,
+    monitor_id: str = None,
 ) -> "Task":
     """Create a Task.
 
@@ -79,6 +80,7 @@ def create_task(
         max_runtime: Maximum expected runtime (minutes).
         stale_timeout: Maximum allowed time between updates (minutes).
         actions: Task actions.
+        monitor_id: ID of the monitor to associate this task with.
 
     Returns:
         Task: The created Task object.
@@ -90,18 +92,15 @@ def create_task(
     stale_timeout = _none_to_unset(stale_timeout)
 
     task = TaskRequest(
-        name=name,
-        status=status,
-        value=value,
-        value_max=value_max,
-        max_runtime=max_runtime,
-        stale_timeout=stale_timeout
+        name=name, status=status, value=value, value_max=value_max, max_runtime=max_runtime, stale_timeout=stale_timeout
     )
     if data:
         task.data = TaskRequestData.from_dict(data)
     if actions:
         task.additional_properties = {"actions": [a.to_dict() for a in actions]}
     kwargs = _make_args(json_body=task)
+    if monitor_id:
+        kwargs["x_taskbadger_monitor"] = monitor_id
     response = task_create.sync_detailed(**kwargs)
     _check_response(response)
     return Task(response.parsed)
@@ -145,8 +144,13 @@ def update_task(
 
     data = UNSET if not data else PatchedTaskRequestData.from_dict(data)
     body = PatchedTaskRequest(
-        name=name, status=status, value=value, value_max=value_max, data=data,
-        max_runtime=max_runtime, stale_timeout=stale_timeout
+        name=name,
+        status=status,
+        value=value,
+        value_max=value_max,
+        data=data,
+        max_runtime=max_runtime,
+        stale_timeout=stale_timeout,
     )
     if actions:
         body.additional_properties = {"actions": [a.to_dict() for a in actions]}
@@ -203,11 +207,19 @@ class Task:
         max_runtime: int = None,
         stale_timeout: int = None,
         actions: List[Action] = None,
+        monitor_id: str = None,
     ) -> "Task":
         """Create a new task"""
         return create_task(
-            name, status, value, value_max, data,
-            max_runtime=max_runtime, stale_timeout=stale_timeout, actions=actions
+            name,
+            status,
+            value,
+            value_max,
+            data,
+            max_runtime=max_runtime,
+            stale_timeout=stale_timeout,
+            actions=actions,
+            monitor_id=monitor_id,
         )
 
     def __init__(self, task):
@@ -278,8 +290,15 @@ class Task:
         This can also be used to add actions.
         """
         task = update_task(
-            self._task.id, name=name, status=status, value=value, value_max=value_max, data=data,
-            max_runtime=max_runtime, stale_timeout=stale_timeout, actions=actions
+            self._task.id,
+            name=name,
+            status=status,
+            value=value,
+            value_max=value_max,
+            data=data,
+            max_runtime=max_runtime,
+            stale_timeout=stale_timeout,
+            actions=actions,
         )
         self._task = task._task
 

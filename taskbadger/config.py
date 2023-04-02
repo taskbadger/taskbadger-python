@@ -7,7 +7,7 @@ import tomlkit
 import typer
 from tomlkit import document, table
 
-from taskbadger.sdk import _init, _TB_HOST
+from taskbadger.sdk import _TB_HOST, _init
 
 APP_NAME = "taskbadger"
 
