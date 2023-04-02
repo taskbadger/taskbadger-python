@@ -285,6 +285,11 @@ class Task:
         """Add actions to the task."""
         self.update(actions=actions)
 
+    def ping(self):
+        """Update the task without changing any values. This can be used in conjunction
+        with 'stale_timeout' to indicate that the task is still running."""
+        self.update()
+
     @property
     def data(self):
         return self._task.data.additional_properties

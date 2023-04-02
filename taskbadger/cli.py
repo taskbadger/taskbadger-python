@@ -1,8 +1,11 @@
 import subprocess
+import time
 from typing import Optional, Tuple
 
 import typer
 from rich import print
+from rich.console import Console
+
 
 from taskbadger import Action, Task, integrations
 from taskbadger.config import get_config, write_config
@@ -20,6 +23,9 @@ try:
     __version__ = importlib_metadata.version(__name__)
 except importlib_metadata.PackageNotFoundError:
     __version__ = "dev"
+
+
+err_console = Console(stderr=True)
 
 
 def version_callback(value: bool):
@@ -41,13 +47,14 @@ def _configure_api(ctx):
 def run(
     ctx: typer.Context,
     name: str,
+    update_frequency: int = typer.Option(5, metavar="SECONDS", min=5, max=300, help="Seconds between updates."),
     action_def: Tuple[str, integrations.Integrations, str] = typer.Option(
         (None, None, None),
         "--action",
         "-a",
         metavar="<trigger integration config>",
         show_default=False,
-        help='Action definition e.g. "success,error email to:me@email.com"',
+        help="Action definition e.g. 'success,error email to:me@email.com'",
     ),
 ):
     """Execute a command using the CLI and create a Task to track its outcome.
@@ -66,18 +73,25 @@ def run(
     if all(action_def):
         trigger, integration, config = action_def
         action = Action(trigger, integrations.from_config(integration, config))
-    task = Task.create(name, actions=[action] if action else None)
+    stale_timeout = update_frequency * 2
+    task = Task.create(name, stale_timeout=stale_timeout, actions=[action] if action else None)
     try:
-        result = subprocess.run(ctx.args, env={"TASKBADGER_TASK_ID": task.id}, shell=True)
+        process = subprocess.Popen(ctx.args, env={"TASKBADGER_TASK_ID": task.id}, shell=True)
+        while process.poll() is None:
+            try:
+                time.sleep(update_frequency)
+                task.ping()
+            except Exception as e:
+                err_console.print(f"Error updating task status: {e}")
     except Exception as e:
         task.error(data={"exception": str(e)})
         raise typer.Exit(1)
 
-    if result.returncode == 0:
-        task.success()
+    if process.returncode == 0:
+        task.success(value=100)
     else:
-        task.error(data={"return_code": result.returncode})
-        raise typer.Exit(result.returncode)
+        task.error(data={"return_code": process.returncode})
+        raise typer.Exit(process.returncode)
 
 
 @app.command()
