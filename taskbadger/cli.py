@@ -43,7 +43,7 @@ def _configure_api(ctx):
         raise typer.Exit(code=1)
 
 
-@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": False})
 def run(
     ctx: typer.Context,
     name: str,
