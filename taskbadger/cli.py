@@ -7,7 +7,7 @@ from rich import print
 from rich.console import Console
 
 
-from taskbadger import Action, Task, integrations
+from taskbadger import Action, Task, integrations, StatusEnum
 from taskbadger.config import get_config, write_config
 from taskbadger.exceptions import ConfigurationError
 
@@ -74,7 +74,12 @@ def run(
         trigger, integration, config = action_def
         action = Action(trigger, integrations.from_config(integration, config))
     stale_timeout = update_frequency * 2
-    task = Task.create(name, stale_timeout=stale_timeout, actions=[action] if action else None)
+    task = Task.create(
+        name,
+        status=StatusEnum.PROCESSING,
+        stale_timeout=stale_timeout,
+        actions=[action] if action else None
+    )
     try:
         process = subprocess.Popen(ctx.args, env={"TASKBADGER_TASK_ID": task.id}, shell=True)
         while process.poll() is None:
