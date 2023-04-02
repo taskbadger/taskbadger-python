@@ -68,8 +68,8 @@ paths:
       description: Create a task
       summary: Create Task
       parameters:
-      - in: query
-        name: monitor_id
+      - in: header
+        name: X-TASKBADGER-MONITOR
         schema:
           type: string
           format: uuid

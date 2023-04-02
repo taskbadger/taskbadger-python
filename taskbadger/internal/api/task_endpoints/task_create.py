@@ -16,7 +16,7 @@ def _get_kwargs(
     *,
     client: AuthenticatedClient,
     json_body: TaskRequest,
-    monitor_id: Union[Unset, None, str] = UNSET,
+    x_taskbadger_monitor: Union[Unset, str] = UNSET,
 ) -> Dict[str, Any]:
     url = "{}/api/{organization_slug}/{project_slug}/tasks/".format(
         client.base_url, organization_slug=organization_slug, project_slug=project_slug
@@ -25,10 +25,8 @@ def _get_kwargs(
     headers: Dict[str, str] = client.get_headers()
     cookies: Dict[str, Any] = client.get_cookies()
 
-    params: Dict[str, Any] = {}
-    params["monitor_id"] = monitor_id
-
-    params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
+    if not isinstance(x_taskbadger_monitor, Unset):
+        headers["X-TASKBADGER-MONITOR"] = x_taskbadger_monitor
 
     json_json_body = json_body.to_dict()
 
@@ -39,7 +37,6 @@ def _get_kwargs(
         "cookies": cookies,
         "timeout": client.get_timeout(),
         "json": json_json_body,
-        "params": params,
     }
 
 
@@ -69,7 +66,7 @@ def sync_detailed(
     *,
     client: AuthenticatedClient,
     json_body: TaskRequest,
-    monitor_id: Union[Unset, None, str] = UNSET,
+    x_taskbadger_monitor: Union[Unset, str] = UNSET,
 ) -> Response[Task]:
     """Create Task
 
@@ -78,7 +75,7 @@ def sync_detailed(
     Args:
         organization_slug (str):
         project_slug (str):
-        monitor_id (Union[Unset, None, str]):
+        x_taskbadger_monitor (Union[Unset, str]):
         json_body (TaskRequest):
 
     Raises:
@@ -94,7 +91,7 @@ def sync_detailed(
         project_slug=project_slug,
         client=client,
         json_body=json_body,
-        monitor_id=monitor_id,
+        x_taskbadger_monitor=x_taskbadger_monitor,
     )
 
     response = httpx.request(
@@ -111,7 +108,7 @@ def sync(
     *,
     client: AuthenticatedClient,
     json_body: TaskRequest,
-    monitor_id: Union[Unset, None, str] = UNSET,
+    x_taskbadger_monitor: Union[Unset, str] = UNSET,
 ) -> Optional[Task]:
     """Create Task
 
@@ -120,7 +117,7 @@ def sync(
     Args:
         organization_slug (str):
         project_slug (str):
-        monitor_id (Union[Unset, None, str]):
+        x_taskbadger_monitor (Union[Unset, str]):
         json_body (TaskRequest):
 
     Raises:
@@ -136,7 +133,7 @@ def sync(
         project_slug=project_slug,
         client=client,
         json_body=json_body,
-        monitor_id=monitor_id,
+        x_taskbadger_monitor=x_taskbadger_monitor,
     ).parsed
 
 
@@ -146,7 +143,7 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient,
     json_body: TaskRequest,
-    monitor_id: Union[Unset, None, str] = UNSET,
+    x_taskbadger_monitor: Union[Unset, str] = UNSET,
 ) -> Response[Task]:
     """Create Task
 
@@ -155,7 +152,7 @@ async def asyncio_detailed(
     Args:
         organization_slug (str):
         project_slug (str):
-        monitor_id (Union[Unset, None, str]):
+        x_taskbadger_monitor (Union[Unset, str]):
         json_body (TaskRequest):
 
     Raises:
@@ -171,7 +168,7 @@ async def asyncio_detailed(
         project_slug=project_slug,
         client=client,
         json_body=json_body,
-        monitor_id=monitor_id,
+        x_taskbadger_monitor=x_taskbadger_monitor,
     )
 
     async with httpx.AsyncClient(verify=client.verify_ssl) as _client:
@@ -186,7 +183,7 @@ async def asyncio(
     *,
     client: AuthenticatedClient,
     json_body: TaskRequest,
-    monitor_id: Union[Unset, None, str] = UNSET,
+    x_taskbadger_monitor: Union[Unset, str] = UNSET,
 ) -> Optional[Task]:
     """Create Task
 
@@ -195,7 +192,7 @@ async def asyncio(
     Args:
         organization_slug (str):
         project_slug (str):
-        monitor_id (Union[Unset, None, str]):
+        x_taskbadger_monitor (Union[Unset, str]):
         json_body (TaskRequest):
 
     Raises:
@@ -212,6 +209,6 @@ async def asyncio(
             project_slug=project_slug,
             client=client,
             json_body=json_body,
-            monitor_id=monitor_id,
+            x_taskbadger_monitor=x_taskbadger_monitor,
         )
     ).parsed
