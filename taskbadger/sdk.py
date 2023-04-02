@@ -19,13 +19,15 @@ from taskbadger.internal.types import UNSET
 
 _local = ContextVar("taskbadger_client")
 
+_TB_HOST = "https://taskbadger.net"
+
 
 def init(organization_slug: str = None, project_slug: str = None, token: str = None):
     """Initialize Task Badger client
 
     Call this function once per thread
     """
-    _init("https://taskbadger.net", organization_slug, project_slug, token)
+    _init(_TB_HOST, organization_slug, project_slug, token)
 
 
 def _init(host: str = None, organization_slug: str = None, project_slug: str = None, token: str = None):

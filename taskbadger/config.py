@@ -7,7 +7,7 @@ import tomlkit
 import typer
 from tomlkit import document, table
 
-import taskbadger as tb
+from taskbadger.sdk import _init, _TB_HOST
 
 APP_NAME = "taskbadger"
 
@@ -17,12 +17,13 @@ class Config:
     token: str = None
     organization_slug: str = None
     project_slug: str = None
+    host: str = _TB_HOST
 
     def is_valid(self):
         return bool(self.token and self.organization_slug and self.project_slug)
 
     def init_api(self):
-        tb.init(self.organization_slug, self.project_slug, self.token)
+        _init(self.host, self.organization_slug, self.project_slug, self.token)
 
     @staticmethod
     def from_dict(config_dict, **overrides) -> "Config":
@@ -49,14 +50,18 @@ class Config:
             token=overrides.get("token") or _from_env("TOKEN", auth.get("token")),
             organization_slug=overrides.get("org") or _from_env("ORG", defaults.get("org")),
             project_slug=overrides.get("project") or _from_env("PROJECT", defaults.get("project")),
+            host=overrides.get("host") or auth.get("host"),
         )
 
     def __str__(self):
+        host = ""
+        if self.host != _TB_HOST:
+            host = f"\n            Host: {self.host}"
         return inspect.cleandoc(
             f"""
             Organization slug: {self.organization_slug or '-'}
             Project slug: {self.project_slug or '-'}
-            Auth token: {self.token or '-'}
+            Auth token: {self.token or '-'}{host}
             """
         )
 
