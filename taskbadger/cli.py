@@ -74,29 +74,37 @@ def run(
         trigger, integration, config = action_def
         action = Action(trigger, integrations.from_config(integration, config))
     stale_timeout = update_frequency * 2
-    task = Task.create(
-        name,
-        status=StatusEnum.PROCESSING,
-        stale_timeout=stale_timeout,
-        actions=[action] if action else None,
-        monitor_id=monitor_id,
-    )
     try:
-        process = subprocess.Popen(ctx.args, env={"TASKBADGER_TASK_ID": task.id}, shell=True)
+        task = Task.create(
+            name,
+            status=StatusEnum.PROCESSING,
+            stale_timeout=stale_timeout,
+            actions=[action] if action else None,
+            monitor_id=monitor_id,
+        )
+    except Exception as e:
+        err_console.print(f"Error creating task: {e}")
+        task = None
+    env = {"TASKBADGER_TASK_ID": task.id} if task else None
+    try:
+        process = subprocess.Popen(ctx.args, env=env, shell=True)
         while process.poll() is None:
             try:
                 time.sleep(update_frequency)
-                task.ping()
+                task and task.ping()
             except Exception as e:
                 err_console.print(f"Error updating task status: {e}")
     except Exception as e:
-        task.error(data={"exception": str(e)})
+        task and task.error(data={"exception": str(e)})
         raise typer.Exit(1)
 
-    if process.returncode == 0:
-        task.success(value=100)
-    else:
-        task.error(data={"return_code": process.returncode})
+    if task:
+        if process.returncode == 0:
+            task.success(value=100)
+        else:
+            task.error(data={"return_code": process.returncode})
+
+    if process.returncode != 0:
         raise typer.Exit(process.returncode)
 
 
