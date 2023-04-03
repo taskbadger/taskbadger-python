@@ -86,6 +86,8 @@ def run(
     except Exception as e:
         err_console.print(f"Error creating task: {e}")
         task = None
+    else:
+        print(f"Task created: {task.public_url}")
     env = {"TASKBADGER_TASK_ID": task.id} if task else None
     last_update = datetime.utcnow()
     try:
@@ -122,7 +124,7 @@ def configure(ctx: typer.Context):
     config = ctx.meta["tb_config"]
     config.organization_slug = typer.prompt(f"Organization slug", default=config.organization_slug)
     config.project_slug = typer.prompt(f"Project slug", default=config.project_slug)
-    config.token = typer.prompt(f"Token", default=config.token)
+    config.token = typer.prompt(f"API Key", default=config.token)
     path = write_config(config)
     print(f"Config written to [green]{path}[/green]")
 
