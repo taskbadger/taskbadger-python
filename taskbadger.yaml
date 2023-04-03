@@ -187,12 +187,6 @@ paths:
           type: string
           format: uuid
         required: true
-      - in: query
-        name: monitor_id
-        schema:
-          type: string
-          format: uuid
-        description: Associate this task with a monitor.
       - in: path
         name: organization_slug
         schema:
@@ -263,12 +257,6 @@ paths:
           type: string
           format: uuid
         required: true
-      - in: query
-        name: monitor_id
-        schema:
-          type: string
-          format: uuid
-        description: Associate this task with a monitor.
       - in: path
         name: organization_slug
         schema:

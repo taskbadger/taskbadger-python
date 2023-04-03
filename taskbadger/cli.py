@@ -95,7 +95,6 @@ def run(
                 time.sleep(0.1)
                 if task and (datetime.utcnow() - last_update).total_seconds() >= update_frequency:
                     last_update = datetime.utcnow()
-                    print('ping')
                     task.ping()
             except Exception as e:
                 err_console.print(f"Error updating task status: {e}")
