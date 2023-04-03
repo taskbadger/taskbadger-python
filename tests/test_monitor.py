@@ -71,7 +71,7 @@ def _test_cli_run(command, return_code, args=None, action=None):
         assert result.exit_code == return_code, result.output
 
         settings = _get_settings()
-        request = TaskRequest(name="task_name", status=StatusEnum.PENDING)
+        request = TaskRequest(name="task_name", status=StatusEnum.PROCESSING, stale_timeout=10)
         if action:
             request.additional_properties = {"actions": [action]}
         create.assert_called_with(
@@ -79,7 +79,7 @@ def _test_cli_run(command, return_code, args=None, action=None):
         )
 
         if return_code == 0:
-            body = PatchedTaskRequest(status=StatusEnum.SUCCESS)
+            body = PatchedTaskRequest(status=StatusEnum.SUCCESS, value=100)
         else:
             body = PatchedTaskRequest(
                 status=StatusEnum.ERROR, data=PatchedTaskRequestData.from_dict({"return_code": return_code})
