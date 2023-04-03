@@ -72,10 +72,11 @@ task.success()
 
 ```shell
 $ taskbadger configure
+
 Organization slug: my-org 
 Project slug: project-x 
 API Key: XYZ.ABC 
-Config written to ~/.config/taskbadger/confi
+Config written to ~/.config/taskbadger/config
 ```
 
 #### Usage Examples
@@ -84,6 +85,7 @@ The CLI `run` command executes your command whilst creating and updating a Task 
 
 ```shell
 $ taskbadger run "demo task" --action "error email to:me@test.com" -- path/to/script.sh
+
 Task created: https://taskbadger.net/public/tasks/xyz/
 ```
 
