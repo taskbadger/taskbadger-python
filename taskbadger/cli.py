@@ -93,7 +93,7 @@ def run(
         while process.poll() is None:
             try:
                 time.sleep(0.1)
-                if task and (datetime.utcnow() - last_update).total_seconds() >= update_frequency:
+                if task and _should_update_task(last_update, update_frequency):
                     last_update = datetime.utcnow()
                     task.ping()
             except Exception as e:
@@ -110,6 +110,10 @@ def run(
 
     if process.returncode != 0:
         raise typer.Exit(process.returncode)
+
+
+def _should_update_task(last_update: datetime, update_frequency_seconds):
+    return (datetime.utcnow() - last_update).total_seconds() >= update_frequency_seconds
 
 
 @app.command()

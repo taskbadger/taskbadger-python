@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from http import HTTPStatus
 from unittest import mock
 
@@ -35,6 +36,23 @@ def test_cli_run_success():
     },
     clear=True,
 )
+def test_cli_long_run():
+    def _should_update_task(last_update, update_frequency_seconds):
+        return True
+
+    with mock.patch("taskbadger.cli._should_update_task", new=_should_update_task):
+        _test_cli_run(["echo test; sleep 0.11"], 0, update_call_count=3)
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "TASKBADGER_ORG": "org",
+        "TASKBADGER_PROJECT": "project",
+        "TASKBADGER_TOKEN": "token",
+    },
+    clear=True,
+)
 def test_cli_run_error():
     _test_cli_run(["not-a-command"], 127)
 
@@ -50,14 +68,14 @@ def test_cli_run_error():
 )
 def test_cli_run():
     _test_cli_run(
-        ["echo", "test"],
+        ["echo test"],
         0,
         ["-a", "success,error", "email", "to:me@test.com"],
         action={"trigger": "success,error", "integration": "email", "config": {"to": "me@test.com"}},
     )
 
 
-def _test_cli_run(command, return_code, args=None, action=None):
+def _test_cli_run(command, return_code, args=None, action=None, update_call_count=1):
     with (
         mock.patch("taskbadger.sdk.task_create.sync_detailed") as create,
         mock.patch("taskbadger.sdk.task_partial_update.sync_detailed") as update,
@@ -85,6 +103,7 @@ def _test_cli_run(command, return_code, args=None, action=None):
                 status=StatusEnum.ERROR, data=PatchedTaskRequestData.from_dict({"return_code": return_code})
             )
 
+        assert update.call_count == update_call_count
         update.assert_called_with(
             client=settings.client, organization_slug="org", project_slug="project", id="test_id", json_body=body
         )
