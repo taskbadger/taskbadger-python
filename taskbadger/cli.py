@@ -1,5 +1,6 @@
 import subprocess
 import time
+from datetime import datetime
 from typing import Optional, Tuple
 
 import typer
@@ -86,12 +87,16 @@ def run(
         err_console.print(f"Error creating task: {e}")
         task = None
     env = {"TASKBADGER_TASK_ID": task.id} if task else None
+    last_update = datetime.utcnow()
     try:
         process = subprocess.Popen(ctx.args, env=env, shell=True)
         while process.poll() is None:
             try:
-                time.sleep(update_frequency)
-                task and task.ping()
+                time.sleep(0.1)
+                if task and (datetime.utcnow() - last_update).total_seconds() >= update_frequency:
+                    last_update = datetime.utcnow()
+                    print('ping')
+                    task.ping()
             except Exception as e:
                 err_console.print(f"Error updating task status: {e}")
     except Exception as e:
