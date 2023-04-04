@@ -7,23 +7,11 @@ import typer
 from rich import print
 from rich.console import Console
 
-from taskbadger import Action, StatusEnum, Task, integrations
+from taskbadger import Action, StatusEnum, Task, integrations, __version__
 from taskbadger.config import get_config, write_config
 from taskbadger.exceptions import ConfigurationError
 
 app = typer.Typer(rich_markup_mode="rich")
-
-try:
-    import importlib.metadata as importlib_metadata
-except ModuleNotFoundError:
-    import importlib_metadata
-
-
-try:
-    __version__ = importlib_metadata.version(__name__)
-except importlib_metadata.PackageNotFoundError:
-    __version__ = "dev"
-
 
 err_console = Console(stderr=True)
 
