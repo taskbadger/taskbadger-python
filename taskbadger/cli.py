@@ -11,7 +11,11 @@ from taskbadger import Action, StatusEnum, Task, integrations, __version__
 from taskbadger.config import get_config, write_config
 from taskbadger.exceptions import ConfigurationError
 
-app = typer.Typer(rich_markup_mode="rich")
+app = typer.Typer(
+    rich_markup_mode="rich",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+
 
 err_console = Console(stderr=True)
 
@@ -137,7 +141,7 @@ def main(
         None,
         "--org",
         "-o",
-        metavar="ORG",
+        metavar="TASKBADGER_ORG",
         show_default=False,
         help="Organization Slug. This will override values from the config file and environment variables.",
     ),
@@ -146,7 +150,7 @@ def main(
         "--project",
         "-p",
         show_envvar=False,
-        metavar="PROJECT",
+        metavar="TASKBADGER_PROJECT",
         show_default=False,
         help="Project Slug. This will override values from the config file and environment variables.",
     ),

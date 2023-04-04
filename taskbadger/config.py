@@ -47,7 +47,7 @@ class Config:
         defaults = config_dict.get("defaults", {})
         auth = config_dict.get("auth", {})
         return Config(
-            token=overrides.get("token") or _from_env("TOKEN", auth.get("token")),
+            token=overrides.get("token") or _from_env("API_KEY", auth.get("token")),
             organization_slug=overrides.get("org") or _from_env("ORG", defaults.get("org")),
             project_slug=overrides.get("project") or _from_env("PROJECT", defaults.get("project")),
             host=overrides.get("host") or auth.get("host"),
