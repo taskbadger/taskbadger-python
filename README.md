@@ -73,9 +73,10 @@ task.success()
 ```shell
 $ taskbadger configure
 
-Organization slug: my-org 
-Project slug: project-x 
-API Key: XYZ.ABC 
+Organization slug: my-org
+Project slug: project-x
+API Key: XYZ.ABC
+
 Config written to ~/.config/taskbadger/config
 ```
 
