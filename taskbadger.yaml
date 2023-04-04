@@ -68,6 +68,12 @@ paths:
       description: Create a task
       summary: Create Task
       parameters:
+      - in: header
+        name: X-TASKBADGER-MONITOR
+        schema:
+          type: string
+          format: uuid
+        description: Associate this task with a monitor.
       - in: path
         name: organization_slug
         schema:
@@ -676,7 +682,7 @@ components:
           minimum: 0
           format: int64
           nullable: true
-          description: Current progress value
+          description: Current progress value.
         value_max:
           type: integer
           maximum: 9223372036854775807
@@ -688,6 +694,32 @@ components:
           additionalProperties: {}
           nullable: true
           description: Custom metadata
+        start_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: Datetime when the status is set to a running state. Can be
+            set via the API.
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: Datetime when status is set to a terminal value.Can be set
+            via the API.
+        max_runtime:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+          description: Maximum duration the task can be running for before being considered
+            failed. (minutes)
+        stale_timeout:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+          description: Maximum time to allow between task updates before considering
+            the task stale. Only applies when task is in a running state. (minutes)
     StatusEnum:
       enum:
       - pending
@@ -697,6 +729,7 @@ components:
       - success
       - error
       - cancelled
+      - stale
       type: string
     Task:
       type: object
@@ -725,7 +758,7 @@ components:
           minimum: 0
           format: int64
           nullable: true
-          description: Current progress value
+          description: Current progress value.
         value_max:
           type: integer
           maximum: 9223372036854775807
@@ -749,13 +782,47 @@ components:
           type: string
           format: date-time
           readOnly: true
+        start_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: Datetime when the status is set to a running state. Can be
+            set via the API.
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: Datetime when status is set to a terminal value.Can be set
+            via the API.
+        max_runtime:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+          description: Maximum duration the task can be running for before being considered
+            failed. (minutes)
+        stale_timeout:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+          description: Maximum time to allow between task updates before considering
+            the task stale. Only applies when task is in a running state. (minutes)
+        url:
+          type: string
+          readOnly: true
+        public_url:
+          type: string
+          readOnly: true
       required:
       - created
       - id
       - name
       - organization
       - project
+      - public_url
       - updated
+      - url
       - value_percent
     TaskRequest:
       type: object
@@ -775,7 +842,7 @@ components:
           minimum: 0
           format: int64
           nullable: true
-          description: Current progress value
+          description: Current progress value.
         value_max:
           type: integer
           maximum: 9223372036854775807
@@ -787,6 +854,32 @@ components:
           additionalProperties: {}
           nullable: true
           description: Custom metadata
+        start_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: Datetime when the status is set to a running state. Can be
+            set via the API.
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: Datetime when status is set to a terminal value.Can be set
+            via the API.
+        max_runtime:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+          description: Maximum duration the task can be running for before being considered
+            failed. (minutes)
+        stale_timeout:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+          description: Maximum time to allow between task updates before considering
+            the task stale. Only applies when task is in a running state. (minutes)
       required:
       - name
   securitySchemes:

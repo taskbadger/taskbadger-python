@@ -1,17 +1,25 @@
 import dataclasses
 import os
-from _contextvars import ContextVar
 from typing import List
+
+from _contextvars import ContextVar
 
 from taskbadger import Action
 from taskbadger.exceptions import ConfigurationError
 from taskbadger.internal import AuthenticatedClient, errors
 from taskbadger.internal.api.task_endpoints import task_create, task_get, task_partial_update
-from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum, TaskRequestData
-from taskbadger.internal.models import TaskRequest
+from taskbadger.internal.models import (
+    PatchedTaskRequest,
+    PatchedTaskRequestData,
+    StatusEnum,
+    TaskRequest,
+    TaskRequestData,
+)
 from taskbadger.internal.types import UNSET
 
 _local = ContextVar("taskbadger_client")
+
+_TB_HOST = "https://taskbadger.net"
 
 
 def init(organization_slug: str = None, project_slug: str = None, token: str = None):
@@ -19,7 +27,7 @@ def init(organization_slug: str = None, project_slug: str = None, token: str = N
 
     Call this function once per thread
     """
-    _init("https://taskbadger.net", organization_slug, project_slug, token)
+    _init(_TB_HOST, organization_slug, project_slug, token)
 
 
 def _init(host: str = None, organization_slug: str = None, project_slug: str = None, token: str = None):
@@ -56,7 +64,10 @@ def create_task(
     value: int = None,
     value_max: int = None,
     data: dict = None,
+    max_runtime: int = None,
+    stale_timeout: int = None,
     actions: List[Action] = None,
+    monitor_id: str = None,
 ) -> "Task":
     """Create a Task.
 
@@ -66,7 +77,10 @@ def create_task(
         value: The current 'value' of the task.
         value_max: The maximum value the task is expected to achieve.
         data: Custom task data.
+        max_runtime: Maximum expected runtime (minutes).
+        stale_timeout: Maximum allowed time between updates (minutes).
         actions: Task actions.
+        monitor_id: ID of the monitor to associate this task with.
 
     Returns:
         Task: The created Task object.
@@ -74,13 +88,19 @@ def create_task(
     value = _none_to_unset(value)
     value_max = _none_to_unset(value_max)
     data = _none_to_unset(data)
+    max_runtime = _none_to_unset(max_runtime)
+    stale_timeout = _none_to_unset(stale_timeout)
 
-    task = TaskRequest(name=name, status=status, value=value, value_max=value_max)
+    task = TaskRequest(
+        name=name, status=status, value=value, value_max=value_max, max_runtime=max_runtime, stale_timeout=stale_timeout
+    )
     if data:
         task.data = TaskRequestData.from_dict(data)
     if actions:
         task.additional_properties = {"actions": [a.to_dict() for a in actions]}
     kwargs = _make_args(json_body=task)
+    if monitor_id:
+        kwargs["x_taskbadger_monitor"] = monitor_id
     response = task_create.sync_detailed(**kwargs)
     _check_response(response)
     return Task(response.parsed)
@@ -93,6 +113,8 @@ def update_task(
     value: int = None,
     value_max: int = None,
     data: dict = None,
+    max_runtime: int = None,
+    stale_timeout: int = None,
     actions: List[Action] = None,
 ) -> "Task":
     """Update a task.
@@ -105,6 +127,8 @@ def update_task(
         value: The current 'value' of the task.
         value_max: The maximum value the task is expected to achieve.
         data: Custom task data.
+        max_runtime: Maximum expected runtime (minutes).
+        stale_timeout: Maximum allowed time between updates (minutes).
         actions: Task actions.
 
     Returns:
@@ -115,9 +139,19 @@ def update_task(
     value = _none_to_unset(value)
     value_max = _none_to_unset(value_max)
     data = _none_to_unset(data)
+    max_runtime = _none_to_unset(max_runtime)
+    stale_timeout = _none_to_unset(stale_timeout)
 
     data = UNSET if not data else PatchedTaskRequestData.from_dict(data)
-    body = PatchedTaskRequest(name=name, status=status, value=value, value_max=value_max, data=data)
+    body = PatchedTaskRequest(
+        name=name,
+        status=status,
+        value=value,
+        value_max=value_max,
+        data=data,
+        max_runtime=max_runtime,
+        stale_timeout=stale_timeout,
+    )
     if actions:
         body.additional_properties = {"actions": [a.to_dict() for a in actions]}
     kwargs = _make_args(id=task_id, json_body=body)
@@ -164,16 +198,29 @@ class Task:
 
     @classmethod
     def create(
-            cls,
-            name: str,
-            status: StatusEnum = StatusEnum.PENDING,
-            value: int = None,
-            value_max: int = None,
-            data: dict = None,
-            actions: List[Action] = None,
+        cls,
+        name: str,
+        status: StatusEnum = StatusEnum.PENDING,
+        value: int = None,
+        value_max: int = None,
+        data: dict = None,
+        max_runtime: int = None,
+        stale_timeout: int = None,
+        actions: List[Action] = None,
+        monitor_id: str = None,
     ) -> "Task":
         """Create a new task"""
-        return create_task(name, status, value, value_max, data, actions)
+        return create_task(
+            name,
+            status,
+            value,
+            value_max,
+            data,
+            max_runtime=max_runtime,
+            stale_timeout=stale_timeout,
+            actions=actions,
+            monitor_id=monitor_id,
+        )
 
     def __init__(self, task):
         self._task = task
@@ -234,6 +281,8 @@ class Task:
         value: int = None,
         value_max: int = None,
         data: dict = None,
+        max_runtime: int = None,
+        stale_timeout: int = None,
         actions: List[Action] = None,
     ):
         """Generic update method used to update any of the task fields.
@@ -241,13 +290,26 @@ class Task:
         This can also be used to add actions.
         """
         task = update_task(
-            self._task.id, name=name, status=status, value=value, value_max=value_max, data=data, actions=actions
+            self._task.id,
+            name=name,
+            status=status,
+            value=value,
+            value_max=value_max,
+            data=data,
+            max_runtime=max_runtime,
+            stale_timeout=stale_timeout,
+            actions=actions,
         )
         self._task = task._task
 
     def add_actions(self, actions: List[Action]):
         """Add actions to the task."""
         self.update(actions=actions)
+
+    def ping(self):
+        """Update the task without changing any values. This can be used in conjunction
+        with 'stale_timeout' to indicate that the task is still running."""
+        self.update()
 
     @property
     def data(self):

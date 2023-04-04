@@ -14,7 +14,9 @@ For full documentation go to https://docs.taskbadger.net/python/.
 pip install --upgrade taskbadger
 ```
 
-### Configuration
+### Client Usage
+
+#### Configuration
 
 ```python
 import taskbadger
@@ -26,7 +28,7 @@ taskbadger.init(
 )
 ```
 
-### Usage
+#### API Example
 
 ```python
 from taskbadger import Task, Action, EmailIntegration
@@ -63,3 +65,25 @@ except Exception as e:
 # record task success
 task.success()
 ```
+
+### CLI USage
+
+#### Configuration
+
+```shell
+$ taskbadger configure
+Organization slug: my-org 
+Project slug: project-x 
+API Key: XYZ.ABC 
+Config written to ~/.config/taskbadger/confi
+```
+
+#### Usage Examples
+
+The CLI `run` command executes your command whilst creating and updating a Task Badger task.
+
+```shell
+$ taskbadger run "demo task" --action "error email to:me@test.com" -- path/to/script.sh
+Task created: https://taskbadger.net/public/tasks/xyz/
+```
+

@@ -1,6 +1,8 @@
+import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union
 
 import attr
+from dateutil.parser import isoparse
 
 from ..models.status_enum import StatusEnum
 from ..types import UNSET, Unset
@@ -18,9 +20,17 @@ class PatchedTaskRequest:
     Attributes:
         name (Union[Unset, str]): Name of the task
         status (Union[Unset, StatusEnum]):  Default: StatusEnum.PENDING.
-        value (Union[Unset, None, int]): Current progress value
+        value (Union[Unset, None, int]): Current progress value.
         value_max (Union[Unset, int]): Maximum value of the task. Defaults to 100.
         data (Union[Unset, None, PatchedTaskRequestData]): Custom metadata
+        start_time (Union[Unset, None, datetime.datetime]): Datetime when the status is set to a running state. Can be
+            set via the API.
+        end_time (Union[Unset, None, datetime.datetime]): Datetime when status is set to a terminal value.Can be set via
+            the API.
+        max_runtime (Union[Unset, None, int]): Maximum duration the task can be running for before being considered
+            failed. (minutes)
+        stale_timeout (Union[Unset, None, int]): Maximum time to allow between task updates before considering the task
+            stale. Only applies when task is in a running state. (minutes)
     """
 
     name: Union[Unset, str] = UNSET
@@ -28,6 +38,10 @@ class PatchedTaskRequest:
     value: Union[Unset, None, int] = UNSET
     value_max: Union[Unset, int] = UNSET
     data: Union[Unset, None, "PatchedTaskRequestData"] = UNSET
+    start_time: Union[Unset, None, datetime.datetime] = UNSET
+    end_time: Union[Unset, None, datetime.datetime] = UNSET
+    max_runtime: Union[Unset, None, int] = UNSET
+    stale_timeout: Union[Unset, None, int] = UNSET
     additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -42,6 +56,17 @@ class PatchedTaskRequest:
         if not isinstance(self.data, Unset):
             data = self.data.to_dict() if self.data else None
 
+        start_time: Union[Unset, None, str] = UNSET
+        if not isinstance(self.start_time, Unset):
+            start_time = self.start_time.isoformat() if self.start_time else None
+
+        end_time: Union[Unset, None, str] = UNSET
+        if not isinstance(self.end_time, Unset):
+            end_time = self.end_time.isoformat() if self.end_time else None
+
+        max_runtime = self.max_runtime
+        stale_timeout = self.stale_timeout
+
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
@@ -55,6 +80,14 @@ class PatchedTaskRequest:
             field_dict["value_max"] = value_max
         if data is not UNSET:
             field_dict["data"] = data
+        if start_time is not UNSET:
+            field_dict["start_time"] = start_time
+        if end_time is not UNSET:
+            field_dict["end_time"] = end_time
+        if max_runtime is not UNSET:
+            field_dict["max_runtime"] = max_runtime
+        if stale_timeout is not UNSET:
+            field_dict["stale_timeout"] = stale_timeout
 
         return field_dict
 
@@ -85,12 +118,38 @@ class PatchedTaskRequest:
         else:
             data = PatchedTaskRequestData.from_dict(_data)
 
+        _start_time = d.pop("start_time", UNSET)
+        start_time: Union[Unset, None, datetime.datetime]
+        if _start_time is None:
+            start_time = None
+        elif isinstance(_start_time, Unset):
+            start_time = UNSET
+        else:
+            start_time = isoparse(_start_time)
+
+        _end_time = d.pop("end_time", UNSET)
+        end_time: Union[Unset, None, datetime.datetime]
+        if _end_time is None:
+            end_time = None
+        elif isinstance(_end_time, Unset):
+            end_time = UNSET
+        else:
+            end_time = isoparse(_end_time)
+
+        max_runtime = d.pop("max_runtime", UNSET)
+
+        stale_timeout = d.pop("stale_timeout", UNSET)
+
         patched_task_request = cls(
             name=name,
             status=status,
             value=value,
             value_max=value_max,
             data=data,
+            start_time=start_time,
+            end_time=end_time,
+            max_runtime=max_runtime,
+            stale_timeout=stale_timeout,
         )
 
         patched_task_request.additional_properties = d

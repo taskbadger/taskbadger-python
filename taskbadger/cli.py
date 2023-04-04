@@ -1,10 +1,13 @@
 import subprocess
+import time
+from datetime import datetime
 from typing import Optional, Tuple
 
 import typer
 from rich import print
+from rich.console import Console
 
-from taskbadger import Task, Action, integrations
+from taskbadger import Action, StatusEnum, Task, integrations
 from taskbadger.config import get_config, write_config
 from taskbadger.exceptions import ConfigurationError
 
@@ -22,6 +25,9 @@ except importlib_metadata.PackageNotFoundError:
     __version__ = "dev"
 
 
+err_console = Console(stderr=True)
+
+
 def version_callback(value: bool):
     if value:
         print(f"Task Badger CLI Version: {__version__}")
@@ -37,17 +43,19 @@ def _configure_api(ctx):
         raise typer.Exit(code=1)
 
 
-@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": False})
 def run(
     ctx: typer.Context,
     name: str,
+    monitor_id: str = typer.Option(None, help="Associate this task with a monitor."),
+    update_frequency: int = typer.Option(5, metavar="SECONDS", min=5, max=300, help="Seconds between updates."),
     action_def: Tuple[str, integrations.Integrations, str] = typer.Option(
         (None, None, None),
         "--action",
         "-a",
         metavar="<trigger integration config>",
         show_default=False,
-        help='Action definition e.g. "success,error email to:me@email.com"',
+        help="Action definition e.g. 'success,error email to:me@email.com'",
     ),
 ):
     """Execute a command using the CLI and create a Task to track its outcome.
@@ -66,18 +74,48 @@ def run(
     if all(action_def):
         trigger, integration, config = action_def
         action = Action(trigger, integrations.from_config(integration, config))
-    task = Task.create(name, actions=[action] if action else None)
+    stale_timeout = update_frequency * 2
     try:
-        result = subprocess.run(ctx.args, env={"TASKBADGER_TASK_ID": task.id}, shell=True)
+        task = Task.create(
+            name,
+            status=StatusEnum.PROCESSING,
+            stale_timeout=stale_timeout,
+            actions=[action] if action else None,
+            monitor_id=monitor_id,
+        )
     except Exception as e:
-        task.error(data={"exception": str(e)})
+        err_console.print(f"Error creating task: {e}")
+        task = None
+    else:
+        print(f"Task created: {task.public_url}")
+    env = {"TASKBADGER_TASK_ID": task.id} if task else None
+    last_update = datetime.utcnow()
+    try:
+        process = subprocess.Popen(ctx.args, env=env, shell=True)
+        while process.poll() is None:
+            try:
+                time.sleep(0.1)
+                if task and _should_update_task(last_update, update_frequency):
+                    last_update = datetime.utcnow()
+                    task.ping()
+            except Exception as e:
+                err_console.print(f"Error updating task status: {e}")
+    except Exception as e:
+        task and task.error(data={"exception": str(e)})
         raise typer.Exit(1)
 
-    if result.returncode == 0:
-        task.success()
-    else:
-        task.error(data={"return_code": result.returncode})
-        raise typer.Exit(result.returncode)
+    if task:
+        if process.returncode == 0:
+            task.success(value=100)
+        else:
+            task.error(data={"return_code": process.returncode})
+
+    if process.returncode != 0:
+        raise typer.Exit(process.returncode)
+
+
+def _should_update_task(last_update: datetime, update_frequency_seconds):
+    return (datetime.utcnow() - last_update).total_seconds() >= update_frequency_seconds
 
 
 @app.command()
@@ -86,7 +124,7 @@ def configure(ctx: typer.Context):
     config = ctx.meta["tb_config"]
     config.organization_slug = typer.prompt(f"Organization slug", default=config.organization_slug)
     config.project_slug = typer.prompt(f"Project slug", default=config.project_slug)
-    config.token = typer.prompt(f"Token", default=config.token)
+    config.token = typer.prompt(f"API Key", default=config.token)
     path = write_config(config)
     print(f"Config written to [green]{path}[/green]")
 
@@ -108,16 +146,24 @@ def info(ctx: typer.Context):
 def main(
     ctx: typer.Context,
     org: Optional[str] = typer.Option(
-        None, "--org", "-o", metavar="ORG", show_default=False,
-        help="Organization Slug. This will override values from the config file and environment variables."
+        None,
+        "--org",
+        "-o",
+        metavar="ORG",
+        show_default=False,
+        help="Organization Slug. This will override values from the config file and environment variables.",
     ),
     project: Optional[str] = typer.Option(
-        None, "--project", "-p", show_envvar=False, metavar="PROJECT", show_default=False,
-        help="Project Slug. This will override values from the config file and environment variables."
+        None,
+        "--project",
+        "-p",
+        show_envvar=False,
+        metavar="PROJECT",
+        show_default=False,
+        help="Project Slug. This will override values from the config file and environment variables.",
     ),
     version: Optional[bool] = typer.Option(  # noqa
-        None, "--version", callback=version_callback, is_eager=True,
-        help="Show CLI Version"
+        None, "--version", callback=version_callback, is_eager=True, help="Show CLI Version"
     ),
 ):
     """

@@ -1,6 +1,6 @@
 import dataclasses
 from enum import Enum
-from typing import Any, Dict, Generator, List, Tuple
+from typing import Any, Dict
 
 from taskbadger.internal.models import ActionRequest, ActionRequestConfig
 

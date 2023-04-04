@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from taskbadger import update_task, StatusEnum, Action, EmailIntegration
-from taskbadger.sdk import _get_settings, init, create_task, get_task
+from taskbadger import Action, EmailIntegration, StatusEnum, update_task
+from taskbadger.sdk import _get_settings, create_task, get_task, init
 
 
 @pytest.fixture(autouse=True)
@@ -58,17 +58,12 @@ def test_update_task(httpx_mock):
         json=_json_task_response(),
         status_code=200,
     )
-    task = update_task(
-        task_id="test_id",
-        **expected_body
-    )
+    task = update_task(task_id="test_id", **expected_body)
     _verify_task(task)
 
 
 def test_update_task_actions(httpx_mock):
-    expected_body = {"actions": [
-        {"trigger": "success", "integration": "email", "config": {"to": "me@example.com"}}
-    ]}
+    expected_body = {"actions": [{"trigger": "success", "integration": "email", "config": {"to": "me@example.com"}}]}
     httpx_mock.add_response(
         url="https://taskbadger.net/api/org/project/tasks/test_id/",
         method="PATCH",
@@ -77,10 +72,7 @@ def test_update_task_actions(httpx_mock):
         json=_json_task_response(),
         status_code=200,
     )
-    task = update_task(
-        task_id="test_id",
-        actions=[Action("success", EmailIntegration("me@example.com"))]
-    )
+    task = update_task(task_id="test_id", actions=[Action("success", EmailIntegration("me@example.com"))])
     _verify_task(task)
 
 
@@ -96,7 +88,9 @@ def _json_task_response(**kwargs):
         "value_percent": None,
         "data": {"custom": "value"},
         "created": "2022-09-22T06:53:40.683555Z",
-        "updated": "2022-09-22T06:53:40.683555Z"
+        "updated": "2022-09-22T06:53:40.683555Z",
+        "url": None,
+        "public_url": None,
     }
     response.update(kwargs)
     return response
