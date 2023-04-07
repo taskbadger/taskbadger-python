@@ -2,6 +2,7 @@ import os
 from http import HTTPStatus
 from unittest import mock
 
+import pytest
 from typer.testing import CliRunner
 
 from taskbadger.cli import app
@@ -13,63 +14,41 @@ from tests.utils import task_for_test
 runner = CliRunner()
 
 
-@mock.patch.dict(
-    os.environ,
-    {
-        "TASKBADGER_ORG": "org",
-        "TASKBADGER_PROJECT": "project",
-        "TASKBADGER_TOKEN": "token",
-    },
-    clear=True,
-)
+@pytest.fixture(autouse=True)
+def mock_env():
+    with mock.patch.dict(
+        os.environ,
+        {
+            "TASKBADGER_ORG": "org",
+            "TASKBADGER_PROJECT": "project",
+            "TASKBADGER_TOKEN": "token",
+        },
+        clear=True,
+    ):
+        yield
+
+
 def test_cli_run_success():
-    _test_cli_run(["echo", "test"], 0)
+    _test_cli_run(["echo", "test"], 0, args=["task_name"])
 
 
-@mock.patch.dict(
-    os.environ,
-    {
-        "TASKBADGER_ORG": "org",
-        "TASKBADGER_PROJECT": "project",
-        "TASKBADGER_TOKEN": "token",
-    },
-    clear=True,
-)
 def test_cli_long_run():
     def _should_update_task(last_update, update_frequency_seconds):
         return True
 
     with mock.patch("taskbadger.cli._should_update_task", new=_should_update_task):
-        _test_cli_run(["echo test; sleep 0.11"], 0, update_call_count=3)
+        _test_cli_run(["echo test; sleep 0.11"], 0, args=["task_name"], update_call_count=3)
 
 
-@mock.patch.dict(
-    os.environ,
-    {
-        "TASKBADGER_ORG": "org",
-        "TASKBADGER_PROJECT": "project",
-        "TASKBADGER_TOKEN": "token",
-    },
-    clear=True,
-)
 def test_cli_run_error():
-    _test_cli_run(["not-a-command"], 127)
+    _test_cli_run(["not-a-command"], 127, args=["task_name"])
 
 
-@mock.patch.dict(
-    os.environ,
-    {
-        "TASKBADGER_ORG": "org",
-        "TASKBADGER_PROJECT": "project",
-        "TASKBADGER_TOKEN": "token",
-    },
-    clear=True,
-)
 def test_cli_run():
     _test_cli_run(
         ["echo test"],
         0,
-        ["-a", "success,error", "email", "to:me@test.com"],
+        ["task_name", "-a", "success,error", "email", "to:me@test.com"],
         action={"trigger": "success,error", "integration": "email", "config": {"to": "me@test.com"}},
     )
 
@@ -84,7 +63,8 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
 
         update.return_value = Response(HTTPStatus.OK, b"", {}, task)
         args = args or []
-        result = runner.invoke(app, ["run", "task_name"] + args + ["--"] + command, catch_exceptions=False)
+        result = runner.invoke(app, ["run"] + args + ["--"] + command, catch_exceptions=False)
+        print(result.output)
         assert result.exit_code == return_code, result.output
 
         settings = _get_settings()
