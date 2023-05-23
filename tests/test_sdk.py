@@ -6,7 +6,7 @@ import pytest
 from taskbadger import Action, EmailIntegration, StatusEnum
 from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, TaskRequest, TaskRequestData
 from taskbadger.internal.types import UNSET, Response
-from taskbadger.sdk import Task, Mug, init
+from taskbadger.sdk import Mug, Task, init
 from tests.utils import task_for_test
 
 

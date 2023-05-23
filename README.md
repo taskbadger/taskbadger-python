@@ -89,4 +89,3 @@ $ taskbadger run "demo task" --action "error email to:me@test.com" -- path/to/sc
 
 Task created: https://taskbadger.net/public/tasks/xyz/
 ```
-

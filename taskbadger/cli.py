@@ -7,13 +7,13 @@ import typer
 from rich import print
 from rich.console import Console
 
-from taskbadger import Action, StatusEnum, Task, integrations, __version__
+from taskbadger import Action, StatusEnum, Task, __version__, integrations
 from taskbadger.config import get_config, write_config
 from taskbadger.exceptions import ConfigurationError
 
 app = typer.Typer(
     rich_markup_mode="rich",
-    context_settings={"help_option_names": ["-h", "--help"]}
+    context_settings={"help_option_names": ["-h", "--help"]},
 )
 
 
