@@ -42,7 +42,7 @@ def test_info_args():
     {
         "TASKBADGER_ORG": "org2",
         "TASKBADGER_PROJECT": "project2",
-        "TASKBADGER_TOKEN": "123",
+        "TASKBADGER_API_KEY": "123",
     },
     clear=True,
 )
@@ -74,7 +74,7 @@ def test_info_config(mock_config):
     {
         "TASKBADGER_ORG": "org2",
         "TASKBADGER_PROJECT": "project2",
-        "TASKBADGER_TOKEN": "token2",
+        "TASKBADGER_API_KEY": "token2",
     },
     clear=True,
 )
@@ -93,7 +93,7 @@ def test_info_config_args(mock_config):
     {
         "TASKBADGER_ORG": "org2",
         "TASKBADGER_PROJECT": "project2",
-        "TASKBADGER_TOKEN": "token2",
+        "TASKBADGER_API_KEY": "token2",
     },
     clear=True,
 )

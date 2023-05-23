@@ -34,7 +34,7 @@ def _init(host: str = None, organization_slug: str = None, project_slug: str = N
     host = host or os.environ.get("TASKBADGER_HOST", "https://taskbadger.net")
     organization_slug = organization_slug or os.environ.get("TASKBADGER_ORG")
     project_slug = project_slug or os.environ.get("TASKBADGER_PROJECT")
-    token = token or os.environ.get("TASKBADGER_TOKEN")
+    token = token or os.environ.get("TASKBADGER_API_KEY")
 
     if host and organization_slug and project_slug and token:
         client = AuthenticatedClient(host, token)

@@ -21,7 +21,7 @@ def mock_env():
         {
             "TASKBADGER_ORG": "org",
             "TASKBADGER_PROJECT": "project",
-            "TASKBADGER_TOKEN": "token",
+            "TASKBADGER_API_KEY": "token",
         },
         clear=True,
     ):
