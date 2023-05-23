@@ -3,17 +3,12 @@ import json
 import pytest
 
 from taskbadger import Action, EmailIntegration, StatusEnum, update_task
-from taskbadger.sdk import _get_settings, create_task, get_task, init
+from taskbadger.sdk import create_task, get_task, init
 
 
 @pytest.fixture(autouse=True)
 def init_skd():
     init("org", "project", "token")
-
-
-@pytest.fixture
-def settings():
-    return _get_settings()
 
 
 def test_get_task(httpx_mock):
