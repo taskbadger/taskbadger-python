@@ -6,7 +6,7 @@ import pytest
 from taskbadger import Action, EmailIntegration, StatusEnum
 from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, TaskRequest, TaskRequestData
 from taskbadger.internal.types import UNSET, Response
-from taskbadger.sdk import Task, _get_settings, init
+from taskbadger.sdk import Task, Mug, init
 from tests.utils import task_for_test
 
 
@@ -17,7 +17,7 @@ def init_skd():
 
 @pytest.fixture
 def settings():
-    return _get_settings()
+    return Mug.current.settings
 
 
 @pytest.fixture

@@ -39,7 +39,7 @@ def _init(host: str = None, organization_slug: str = None, project_slug: str = N
     if host and organization_slug and project_slug and token:
         client = AuthenticatedClient(host, token)
         settings = Settings(client, organization_slug, project_slug)
-        _local.set(settings)
+        Mug.current.bind(settings)
     else:
         raise ConfigurationError(
             host=host,
@@ -161,7 +161,7 @@ def update_task(
 
 
 def _make_args(**kwargs):
-    settings = _local.get()
+    settings = Mug.current.settings
     ret_args = dataclasses.asdict(settings)
     ret_args.update(kwargs)
     return ret_args
@@ -184,6 +184,34 @@ class Settings:
     client: AuthenticatedClient
     organization_slug: str
     project_slug: str
+
+
+class MugMeta(type):
+    @property
+    def current(cls):
+        mug = _local.get(None)
+        if mug is None:
+            mug = Mug(GLOBAL_MUG)
+            _local.set(mug)
+        return mug
+
+
+class Mug(metaclass=MugMeta):
+    def __init__(self, settings_or_mug=None):
+        if isinstance(settings_or_mug, Mug):
+            self.settings = settings_or_mug.settings
+        else:
+            self.settings = settings_or_mug
+
+    def bind(self, settings):
+        self.settings = settings
+
+    def is_configured(self):
+        return self.settings is not None
+
+
+GLOBAL_MUG = Mug()
+_local.set(GLOBAL_MUG)
 
 
 class Task:
