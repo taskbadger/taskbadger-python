@@ -1,4 +1,13 @@
-from invoke import task
+from invoke import Context, task
+
+
+@task
+def tag_release(c: Context):
+    result = c.run("poetry version -s", hide="out")
+    version = result.stdout.strip()
+    if input(f"Ready to release {version} [y/n]: ") == "y":
+        c.run(f"git tag v{version}")
+        c.run("git push origin main --tags")
 
 
 @task
