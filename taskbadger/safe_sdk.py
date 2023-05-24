@@ -1,20 +1,22 @@
 import logging
-from typing import Optional
+from typing import Optional, ParamSpec, Unpack
 
 from .sdk import Mug, create_task, update_task
+
+P = ParamSpec("P")
 
 log = logging.getLogger("taskbadger")
 
 
-def create_task_safe(name: str, **kwargs) -> Optional[str]:
-    """Create a Task.
+def create_task_safe(name: str, **kwargs: P.kwargs) -> Optional[str]:
+    """Safely create a task. Any errors are handled and logged.
 
     Arguments:
         name: The name of the task.
-        **kwargs: See ``taskbadger.create_task``
+        **kwargs: See [taskbadger.create_task][]
 
     Returns:
-        Task ID
+        Task ID or None
     """
     if not Mug.is_configured:
         return None
@@ -27,13 +29,12 @@ def create_task_safe(name: str, **kwargs) -> Optional[str]:
         return task.id
 
 
-def update_task_safe(task_id: str, **kwargs) -> None:
-    """Update a task.
-    Requires only the task ID and fields to update.
+def update_task_safe(task_id: str, **kwargs: P.kwargs) -> None:
+    """Safely update a task. Any errors are handled and logged.
 
     Arguments:
         task_id: The ID of the task to update.
-        **kwargs: See ``taskbadger.update_task``
+        **kwargs: See [taskbadger.update_task][]
     """
     if not Mug.is_configured:
         return
