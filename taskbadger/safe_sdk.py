@@ -1,5 +1,11 @@
 import logging
-from typing import Optional, ParamSpec, Unpack
+from typing import Optional
+
+try:
+    from typing import ParamSpec
+except ImportError:
+    from typing_extensions import ParamSpec
+
 
 from .sdk import Mug, create_task, update_task
 
