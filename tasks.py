@@ -17,7 +17,7 @@ def tag_release(c: Context):
         version = _get_version(c)
         c.run("git add pyproject.toml")
         c.run(f"git commit -m 'Bump version to {version}'")
-        if input(f"New version: {version}. Ready to release? [y/n]") != "y":
+        if input(f"\nNew version: {version}. Ready to release? [y/n]") != "y":
             return
 
     c.run(f"git tag v{version}")
