@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "taskbadger"
-version = "0.4.1"
+version = "0.4.2"
 description = "The official Python SDK for Task Badger"
 license = "Apache-2.0"
 
