@@ -41,7 +41,7 @@ def run(
     name: str,
     monitor_id: str = typer.Option(None, help="Associate this task with a monitor."),
     update_frequency: int = typer.Option(5, metavar="SECONDS", min=5, max=300, help="Seconds between updates."),
-    action_def: Tuple[str, integrations.Integrations, str] = typer.Option(
+    action_def: Tuple[str, str, str] = typer.Option(
         (None, None, None),
         "--action",
         "-a",
@@ -63,7 +63,7 @@ def run(
     """
     _configure_api(ctx)
     action = None
-    if all(action_def):
+    if any(action_def):
         trigger, integration, config = action_def
         action = Action(trigger, integrations.from_config(integration, config))
     stale_timeout = update_frequency * 2

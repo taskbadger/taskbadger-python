@@ -6,15 +6,9 @@ from taskbadger.exceptions import TaskbadgerException
 from taskbadger.internal.models import ActionRequest, ActionRequestConfig
 
 
-class Integrations(str, Enum):
-    email = "email"
-
-
-def from_config(integration: Integrations, config: str):
-    if integration == Integrations.email:
-        split_ = [tuple(item.split(":", 1)) for item in config.split(",")]
-        kwargs = dict(split_)
-        return EmailIntegration(**kwargs)
+def from_config(integration_id: str, config: str):
+    cls = integration_from_id(integration_id)
+    return cls.from_config_string(integration_id, config)
 
 
 class Integration:
@@ -27,6 +21,16 @@ class Integration:
 
     def request_config(self):
         raise NotImplementedError
+
+    @classmethod
+    def from_config_string(cls, integration_id, config):
+        kwargs = {"id": integration_id}
+        if config:
+            # convert config string to dict
+            # "to:me@me.com,from:you@you.com"
+            split_ = [tuple(item.split(":", 1)) for item in config.split(",")]
+            kwargs.update(dict(split_))
+        return cls(**kwargs)
 
 
 @dataclasses.dataclass
@@ -41,8 +45,8 @@ class Action:
 @dataclasses.dataclass
 class EmailIntegration(Integration):
     type = "email"
-    id = "email"
     to: str  # custom type
+    id: str = "email"
 
     def request_config(self) -> ActionRequestConfig:
         return ActionRequestConfig.from_dict({"to": self.to})
@@ -55,3 +59,21 @@ class WebhookIntegration(Integration):
 
     def request_config(self) -> ActionRequestConfig:
         return ActionRequestConfig.from_dict({})
+
+
+ALL = [EmailIntegration, WebhookIntegration]
+BY_TYPE = {cls.type: cls for cls in ALL}
+
+
+def integration_from_id(integration_id):
+    type_, _ = get_type_id(integration_id)
+    try:
+        return BY_TYPE[type_]
+    except KeyError:
+        raise TaskbadgerException(f"Unknown integration type: '{type_}'")
+
+
+def get_type_id(integration_id: str):
+    if ":" in integration_id:
+        return integration_id.split(":", 1)
+    return integration_id, None

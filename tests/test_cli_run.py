@@ -53,6 +53,15 @@ def test_cli_run():
     )
 
 
+def test_cli_run_webhook():
+    _test_cli_run(
+        ["echo test"],
+        0,
+        ["task_name", "-a", "cancelled", "webhook:123", ""],
+        action={"trigger": "cancelled", "integration": "webhook:123", "config": {}},
+    )
+
+
 def _test_cli_run(command, return_code, args=None, action=None, update_call_count=1):
     with (
         mock.patch("taskbadger.sdk.task_create.sync_detailed") as create,
