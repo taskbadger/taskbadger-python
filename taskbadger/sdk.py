@@ -39,7 +39,7 @@ def _init(host: str = None, organization_slug: str = None, project_slug: str = N
     if host and organization_slug and project_slug and token:
         client = AuthenticatedClient(host, token)
         settings = Settings(client, organization_slug, project_slug)
-        Mug.current.bind(settings)
+        Badger.current.bind(settings)
     else:
         raise ConfigurationError(
             host=host,
@@ -161,7 +161,7 @@ def update_task(
 
 
 def _make_args(**kwargs):
-    settings = Mug.current.settings
+    settings = Badger.current.settings
     ret_args = dataclasses.asdict(settings)
     ret_args.update(kwargs)
     return ret_args
@@ -191,14 +191,14 @@ class MugMeta(type):
     def current(cls):
         mug = _local.get(None)
         if mug is None:
-            mug = Mug(GLOBAL_MUG)
+            mug = Badger(GLOBAL_MUG)
             _local.set(mug)
         return mug
 
 
-class Mug(metaclass=MugMeta):
+class Badger(metaclass=MugMeta):
     def __init__(self, settings_or_mug=None):
-        if isinstance(settings_or_mug, Mug):
+        if isinstance(settings_or_mug, Badger):
             self.settings = settings_or_mug.settings
         else:
             self.settings = settings_or_mug
@@ -210,7 +210,7 @@ class Mug(metaclass=MugMeta):
         return self.settings is not None
 
 
-GLOBAL_MUG = Mug()
+GLOBAL_MUG = Badger()
 _local.set(GLOBAL_MUG)
 
 

@@ -8,7 +8,7 @@ from typer.testing import CliRunner
 from taskbadger.cli import app
 from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum, TaskRequest
 from taskbadger.internal.types import Response
-from taskbadger.sdk import Mug
+from taskbadger.sdk import Badger
 from tests.utils import task_for_test
 
 runner = CliRunner()
@@ -70,7 +70,7 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
         request = TaskRequest(name="task_name", status=StatusEnum.PROCESSING, stale_timeout=10)
         if action:
             request.additional_properties = {"actions": [action]}
-        settings = Mug.current.settings
+        settings = Badger.current.settings
         create.assert_called_with(
             client=settings.client, organization_slug="org", project_slug="project", json_body=request
         )
