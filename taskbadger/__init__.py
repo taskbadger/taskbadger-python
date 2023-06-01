@@ -1,4 +1,4 @@
-from .integrations import Action, EmailIntegration
+from .integrations import Action, EmailIntegration, WebhookIntegration
 from .internal.models import StatusEnum
 from .safe_sdk import create_task_safe, update_task_safe
 from .sdk import Task, create_task, get_task, init, update_task

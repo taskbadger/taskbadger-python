@@ -31,7 +31,7 @@ taskbadger.init(
 #### API Example
 
 ```python
-from taskbadger import Task, Action, EmailIntegration
+from taskbadger import Task, Action, EmailIntegration, WebhookIntegration
 
 # create a new task with custom data and an action definition
 task = Task.create(
@@ -40,10 +40,8 @@ task = Task.create(
         "custom": "data"
     },
     actions=[
-        Action(
-            "*/10%,success,error",
-            integration=EmailIntegration(to="me@example.com")
-        )
+        Action("*/10%,success,error", integration=EmailIntegration(to="me@example.com")),
+        Action("cancelled", integration=WebhookIntegration(id="webhook:demo")),
     ]
 )
 

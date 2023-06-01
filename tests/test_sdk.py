@@ -3,7 +3,8 @@ from unittest import mock
 
 import pytest
 
-from taskbadger import Action, EmailIntegration, StatusEnum
+from taskbadger import Action, EmailIntegration, StatusEnum, WebhookIntegration
+from taskbadger.exceptions import TaskbadgerException
 from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, TaskRequest, TaskRequestData
 from taskbadger.internal.types import UNSET, Response
 from taskbadger.sdk import Badger, Task, init
@@ -132,15 +133,28 @@ def test_add_actions(settings, patched_update):
 
     patched_update.return_value = Response(HTTPStatus.OK, b"", {}, api_task)
 
-    action = Action("*/10%,success,error", integration=EmailIntegration(to="me@example.com"))
-    task.add_actions([action])
+    task.add_actions(
+        [
+            Action("*/10%,success,error", integration=EmailIntegration(to="me@example.com")),
+            Action("cancelled", integration=WebhookIntegration(id="webhook:123")),
+        ]
+    )
 
     # expected request
     _verify_update(
         settings,
         patched_update,
-        actions=[{"trigger": "*/10%,success,error", "integration": "email", "config": {"to": "me@example.com"}}],
+        actions=[
+            {"trigger": "*/10%,success,error", "integration": "email", "config": {"to": "me@example.com"}},
+            {"trigger": "cancelled", "integration": "webhook:123", "config": {}},
+        ],
     )
+
+
+def test_action_validation():
+    WebhookIntegration(id="webhook:123")
+    with pytest.raises(TaskbadgerException):
+        WebhookIntegration(id="email:123")
 
 
 def _verify_update(settings, patched_update, **kwargs):

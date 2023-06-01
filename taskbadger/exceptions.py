@@ -4,3 +4,7 @@ class ConfigurationError(Exception):
 
     def __str__(self):
         return f"Missing configuration parameters: {', '.join(self.missing)}"
+
+
+class TaskbadgerException(Exception):
+    pass
