@@ -83,7 +83,7 @@ Config written to ~/.config/taskbadger/config
 The CLI `run` command executes your command whilst creating and updating a Task Badger task.
 
 ```shell
-$ taskbadger run "demo task" --action "error email to:me@test.com" -- path/to/script.sh
+$ taskbadger run "demo task" --action error email to:me@test.com -- path/to/script.sh
 
 Task created: https://taskbadger.net/public/tasks/xyz/
 ```
