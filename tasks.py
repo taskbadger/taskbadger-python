@@ -17,6 +17,8 @@ def tag_release(c: Context):
         c.run(f"git tag v{version}")
         c.run("git push origin main --tags")
 
+        print("Check https://github.com/taskbadger/taskbadger-python/releases and publish the release.")
+
 
 def _get_version(c):
     version = c.run("poetry version -s", hide="out").stdout.strip()
