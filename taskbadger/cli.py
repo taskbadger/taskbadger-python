@@ -113,7 +113,6 @@ def _update_task(task, status=None, **data_kwargs):
         else:
             task_data[key] = value
 
-    print(task_data)
     try:
         task.update(status=status, data=task_data or None)
     except Exception as e:
