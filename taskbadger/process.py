@@ -34,6 +34,9 @@ class ProcessRunner:
                 else:
                     yield
 
+        if self.capture_output and (stdout or stderr):
+            yield {"stdout": stdout.read(), "stderr": stderr.read()}
+
         self.returncode = process.returncode
 
 
@@ -66,6 +69,9 @@ class Reader:
         del self.data[:]
         self._lock.release()
         return outdata
+
+    def __bool__(self):
+        return bool(self.data)
 
 
 def _should_update(last_update: datetime, update_frequency_seconds):
