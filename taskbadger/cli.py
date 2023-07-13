@@ -1,6 +1,3 @@
-import subprocess
-import time
-from datetime import datetime
 from typing import Optional, Tuple
 
 import typer
@@ -10,6 +7,7 @@ from rich.console import Console
 from taskbadger import Action, StatusEnum, Task, __version__, integrations
 from taskbadger.config import get_config, write_config
 from taskbadger.exceptions import ConfigurationError
+from taskbadger.process import ProcessRunner
 
 app = typer.Typer(
     rich_markup_mode="rich",
@@ -49,6 +47,7 @@ def run(
         show_default=False,
         help="Action definition e.g. 'success,error email to:me@email.com'",
     ),
+    capture_output: bool = typer.Option(False, help="Capture stdout and stderr."),
 ):
     """Execute a command using the CLI and create a Task to track its outcome.
 
@@ -81,33 +80,43 @@ def run(
     else:
         print(f"Task created: {task.public_url}")
     env = {"TASKBADGER_TASK_ID": task.id} if task else None
-    last_update = datetime.utcnow()
     try:
-        process = subprocess.Popen(ctx.args, env=env, shell=True)
-        while process.poll() is None:
-            try:
-                time.sleep(0.1)
-                if task and _should_update_task(last_update, update_frequency):
-                    last_update = datetime.utcnow()
-                    task.ping()
-            except Exception as e:
-                err_console.print(f"Error updating task status: {e}")
+        process = ProcessRunner(ctx.args, env, capture_output=capture_output, update_frequency=update_frequency)
+        for output in process.run():
+            _update_task(task, **(output or {}))
     except Exception as e:
-        task and task.error(data={"exception": str(e)})
+        _update_task(task, exception=str(e))
         raise typer.Exit(1)
 
     if task:
         if process.returncode == 0:
             task.success(value=100)
         else:
-            task.error(data={"return_code": process.returncode})
+            _update_task(task, status=StatusEnum.ERROR, return_code=process.returncode)
 
     if process.returncode != 0:
         raise typer.Exit(process.returncode)
 
 
-def _should_update_task(last_update: datetime, update_frequency_seconds):
-    return (datetime.utcnow() - last_update).total_seconds() >= update_frequency_seconds
+def _update_task(task, status=None, **data_kwargs):
+    """Update the task and merge the data"""
+    if not task:
+        return
+
+    task_data = task.data or {}
+    for key, value in data_kwargs.items():
+        if key in ("stdout", "stderr"):
+            if key in task_data and value:
+                task_data[key] += value
+            elif value:
+                task_data[key] = value
+        else:
+            task_data[key] = value
+
+    try:
+        task.update(status=status, data=task_data or None)
+    except Exception as e:
+        err_console.print(f"Error updating task status: {e}")
 
 
 @app.command()

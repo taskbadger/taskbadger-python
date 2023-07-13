@@ -7,7 +7,7 @@ from typer.testing import CliRunner
 
 from taskbadger.cli import app
 from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum, TaskRequest
-from taskbadger.internal.types import Response
+from taskbadger.internal.types import UNSET, Response
 from taskbadger.sdk import Badger
 from tests.utils import task_for_test
 
@@ -36,8 +36,20 @@ def test_cli_long_run():
     def _should_update_task(last_update, update_frequency_seconds):
         return True
 
-    with mock.patch("taskbadger.cli._should_update_task", new=_should_update_task):
-        _test_cli_run(["echo test; sleep 0.11"], 0, args=["task_name"], update_call_count=3)
+    with mock.patch("taskbadger.process._should_update", new=_should_update_task):
+        update_patch = _test_cli_run(
+            ["echo test; sleep 0.11"], 0, args=["task_name", "--capture-output"], update_call_count=3
+        )
+
+    # make sure the output was captured
+    body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n"}))
+    update_patch.assert_any_call(
+        client=Badger.current.settings.client,
+        organization_slug="org",
+        project_slug="project",
+        id="test_id",
+        json_body=body,
+    )
 
 
 def test_cli_run_error():
@@ -95,3 +107,4 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
         update.assert_called_with(
             client=settings.client, organization_slug="org", project_slug="project", id="test_id", json_body=body
         )
+        return update
