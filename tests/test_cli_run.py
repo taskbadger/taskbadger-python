@@ -37,12 +37,32 @@ def test_cli_long_run():
         return True
 
     with mock.patch("taskbadger.process._should_update", new=_should_update_task):
+        _test_cli_run(["echo test; sleep 0.11"], 0, args=["task_name"], update_call_count=3)
+
+
+def test_cli_capture_output():
+    update_patch = _test_cli_run(["echo test"], 0, args=["task_name", "--capture-output"], update_call_count=2)
+
+    body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n"}))
+    update_patch.assert_any_call(
+        client=Badger.current.settings.client,
+        organization_slug="org",
+        project_slug="project",
+        id="test_id",
+        json_body=body,
+    )
+
+
+def test_cli_capture_output_append():
+    def _should_update_task(last_update, update_frequency_seconds):
+        return True
+
+    with mock.patch("taskbadger.process._should_update", new=_should_update_task):
         update_patch = _test_cli_run(
-            ["echo test; sleep 0.11"], 0, args=["task_name", "--capture-output"], update_call_count=3
+            ["echo test; sleep 0.11; echo 123"], 0, args=["task_name", "--capture-output"], update_call_count=3
         )
 
-    # make sure the output was captured
-    body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n"}))
+    body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n123\n"}))
     update_patch.assert_any_call(
         client=Badger.current.settings.client,
         organization_slug="org",
@@ -75,14 +95,22 @@ def test_cli_run_webhook():
 
 
 def _test_cli_run(command, return_code, args=None, action=None, update_call_count=1):
+    update_mock = mock.MagicMock()
+
+    def _update(*args, **kwargs):
+        update_mock(*args, **kwargs)
+
+        # handle updating task data
+        data = kwargs["json_body"].data
+        return Response(HTTPStatus.OK, b"", {}, task_for_test(data=data.additional_properties if data else None))
+
     with (
         mock.patch("taskbadger.sdk.task_create.sync_detailed") as create,
-        mock.patch("taskbadger.sdk.task_partial_update.sync_detailed") as update,
+        mock.patch("taskbadger.sdk.task_partial_update.sync_detailed", new=_update) as update,
     ):
         task = task_for_test()
         create.return_value = Response(HTTPStatus.OK, b"", {}, task)
 
-        update.return_value = Response(HTTPStatus.OK, b"", {}, task)
         args = args or []
         result = runner.invoke(app, ["run"] + args + ["--"] + command, catch_exceptions=False)
         print(result.output)
@@ -103,8 +131,8 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
                 status=StatusEnum.ERROR, data=PatchedTaskRequestData.from_dict({"return_code": return_code})
             )
 
-        assert update.call_count == update_call_count
-        update.assert_called_with(
+        assert update_mock.call_count == update_call_count
+        update_mock.assert_called_with(
             client=settings.client, organization_slug="org", project_slug="project", id="test_id", json_body=body
         )
-        return update
+        return update_mock
