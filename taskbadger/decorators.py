@@ -12,7 +12,6 @@ def track(func=None, *, name=None, monitor_id=None, max_runtime=None):
     ```
     import taskbadger
 
-    @app.task
     @taskbadger.track
     def test(arg):
         print(arg)
