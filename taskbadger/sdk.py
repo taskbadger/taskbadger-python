@@ -4,9 +4,10 @@ from typing import List
 
 from _contextvars import ContextVar
 
-from taskbadger import Action
+from taskbadger.errors import ServerError, Unauthorized, UnexpectedStatus
 from taskbadger.exceptions import ConfigurationError
-from taskbadger.internal import AuthenticatedClient, errors
+from taskbadger.integrations import Action
+from taskbadger.internal import AuthenticatedClient
 from taskbadger.internal.api.task_endpoints import task_create, task_get, task_partial_update
 from taskbadger.internal.models import (
     PatchedTaskRequest,
@@ -174,9 +175,12 @@ def _get_settings():
 def _check_response(response):
     if 200 <= response.status_code < 300:
         return response
-
+    elif response.status_code == 401:
+        raise Unauthorized("Authentication failed")
+    elif response.status_code == 500:
+        raise ServerError(response.status_code, response.content)
     else:
-        raise errors.UnexpectedStatus(f"Unexpected status code: {response.status_code}", response.content)
+        raise UnexpectedStatus(response.status_code, response.content)
 
 
 @dataclasses.dataclass

@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Task Badger
+  title: Taskbadger API
   version: '0.1'
   description: Documentation for the Task Badger API
 paths:
@@ -675,6 +675,15 @@ components:
         status:
           allOf:
           - $ref: '#/components/schemas/StatusEnum'
+          description: |-
+            * `pending` - pending
+            * `pre_processing` - pre_processing
+            * `processing` - processing
+            * `post_processing` - post_processing
+            * `success` - success
+            * `error` - error
+            * `cancelled` - cancelled
+            * `stale` - stale
           default: pending
         value:
           type: integer
@@ -712,14 +721,14 @@ components:
           minimum: 1
           nullable: true
           description: Maximum duration the task can be running for before being considered
-            failed. (minutes)
+            failed. (seconds)
         stale_timeout:
           type: integer
           maximum: 2147483647
           minimum: 1
           nullable: true
           description: Maximum time to allow between task updates before considering
-            the task stale. Only applies when task is in a running state. (minutes)
+            the task stale. (seconds)
     StatusEnum:
       enum:
       - pending
@@ -751,6 +760,15 @@ components:
         status:
           allOf:
           - $ref: '#/components/schemas/StatusEnum'
+          description: |-
+            * `pending` - pending
+            * `pre_processing` - pre_processing
+            * `processing` - processing
+            * `post_processing` - post_processing
+            * `success` - success
+            * `error` - error
+            * `cancelled` - cancelled
+            * `stale` - stale
           default: pending
         value:
           type: integer
@@ -800,14 +818,14 @@ components:
           minimum: 1
           nullable: true
           description: Maximum duration the task can be running for before being considered
-            failed. (minutes)
+            failed. (seconds)
         stale_timeout:
           type: integer
           maximum: 2147483647
           minimum: 1
           nullable: true
           description: Maximum time to allow between task updates before considering
-            the task stale. Only applies when task is in a running state. (minutes)
+            the task stale. (seconds)
         url:
           type: string
           readOnly: true
@@ -835,6 +853,15 @@ components:
         status:
           allOf:
           - $ref: '#/components/schemas/StatusEnum'
+          description: |-
+            * `pending` - pending
+            * `pre_processing` - pre_processing
+            * `processing` - processing
+            * `post_processing` - post_processing
+            * `success` - success
+            * `error` - error
+            * `cancelled` - cancelled
+            * `stale` - stale
           default: pending
         value:
           type: integer
@@ -872,14 +899,14 @@ components:
           minimum: 1
           nullable: true
           description: Maximum duration the task can be running for before being considered
-            failed. (minutes)
+            failed. (seconds)
         stale_timeout:
           type: integer
           maximum: 2147483647
           minimum: 1
           nullable: true
           description: Maximum time to allow between task updates before considering
-            the task stale. Only applies when task is in a running state. (minutes)
+            the task stale. (seconds)
       required:
       - name
   securitySchemes:
