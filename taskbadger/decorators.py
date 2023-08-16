@@ -30,7 +30,7 @@ def track(func=None, *, name=None, monitor_id=None, max_runtime=None):
         if not callable(func):
             raise Exception(f"Function must be callable: {func!r}")
 
-        task_name = name or func.__name__
+        task_name = name or f"{func.__module__}.{func.__qualname__}"
 
         @wraps(func)
         def _inner(*args, **kwargs):
