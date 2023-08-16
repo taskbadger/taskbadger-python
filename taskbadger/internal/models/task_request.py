@@ -28,9 +28,9 @@ class TaskRequest:
         end_time (Union[Unset, None, datetime.datetime]): Datetime when status is set to a terminal value.Can be set via
             the API.
         max_runtime (Union[Unset, None, int]): Maximum duration the task can be running for before being considered
-            failed. (minutes)
+            failed. (seconds)
         stale_timeout (Union[Unset, None, int]): Maximum time to allow between task updates before considering the task
-            stale. Only applies when task is in a running state. (minutes)
+            stale. (seconds)
     """
 
     name: str
