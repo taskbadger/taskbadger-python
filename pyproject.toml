@@ -32,7 +32,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-httpx = ">=0.15.4,<0.24.0"
+httpx = ">=0.20.0,<0.25.0"
 attrs = ">=21.3.0"
 python-dateutil = "^2.8.0"
 typer = {extras = ["all"], version = "^0.7.0"}
@@ -41,7 +41,7 @@ importlib-metadata = {version = "^1.0", python = "<3.8"}
 typing-extensions = {version = "^4.6.1", python = "3.9"}
 
 [tool.poetry.group.dev.dependencies]
-openapi-python-client = "^0.13.1"
+openapi-python-client = "^0.15.1"
 pytest = "^7.2.1"
 isort = "^5.12.0"
 black = "^23.1.0"
