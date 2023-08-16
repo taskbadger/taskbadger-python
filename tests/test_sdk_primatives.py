@@ -3,6 +3,7 @@ import json
 import pytest
 
 from taskbadger import Action, EmailIntegration, StatusEnum, update_task
+from taskbadger.errors import ServerError, Unauthorized, UnexpectedStatus
 from taskbadger.sdk import create_task, get_task, init
 
 
@@ -35,6 +36,36 @@ def test_create_task(httpx_mock):
     )
     task = create_task("name")
     _verify_task(task)
+
+
+def test_create_task_error_unauthed(httpx_mock):
+    httpx_mock.add_response(
+        url="https://taskbadger.net/api/org/project/tasks/",
+        method="POST",
+        status_code=401,
+    )
+    with pytest.raises(Unauthorized):
+        create_task("name")
+
+
+def test_create_task_error_server_error(httpx_mock):
+    httpx_mock.add_response(
+        url="https://taskbadger.net/api/org/project/tasks/",
+        method="POST",
+        status_code=500,
+    )
+    with pytest.raises(ServerError):
+        create_task("name")
+
+
+def test_create_task_error_unknown(httpx_mock):
+    httpx_mock.add_response(
+        url="https://taskbadger.net/api/org/project/tasks/",
+        method="POST",
+        status_code=412,
+    )
+    with pytest.raises(UnexpectedStatus):
+        create_task("name")
 
 
 def test_update_task(httpx_mock):
