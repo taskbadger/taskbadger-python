@@ -176,7 +176,7 @@ def _check_response(response):
         return response
 
     else:
-        raise errors.UnexpectedStatus(f"Unexpected status code: {response.status_code}", response.content)
+        raise errors.UnexpectedStatus(response.status_code, response.content)
 
 
 @dataclasses.dataclass
