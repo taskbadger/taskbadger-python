@@ -13,7 +13,7 @@ from taskbadger.internal.models import (
     TaskRequestData,
 )
 from taskbadger.internal.types import UNSET
-from taskbadger.mug import Badger, Settings
+from taskbadger.mug import Badger, Session, Settings
 
 _TB_HOST = "https://taskbadger.net"
 
@@ -50,7 +50,7 @@ def get_task(task_id: str) -> "Task":
     Arguments:
         task_id: The ID of the task to fetch.
     """
-    with Badger.current.client() as client:
+    with Session() as client:
         task = task_get.sync(client=client, **_make_args(id=task_id))
     return Task(task)
 
@@ -98,7 +98,7 @@ def create_task(
     kwargs = _make_args(json_body=task)
     if monitor_id:
         kwargs["x_taskbadger_monitor"] = monitor_id
-    with Badger.current.client() as client:
+    with Session() as client:
         response = task_create.sync_detailed(client=client, **kwargs)
     _check_response(response)
     return Task(response.parsed)
@@ -153,7 +153,7 @@ def update_task(
     if actions:
         body.additional_properties = {"actions": [a.to_dict() for a in actions]}
     kwargs = _make_args(id=task_id, json_body=body)
-    with Badger.current.client() as client:
+    with Session() as client:
         response = task_partial_update.sync_detailed(client=client, **kwargs)
     _check_response(response)
     return Task(response.parsed)

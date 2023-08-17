@@ -9,6 +9,7 @@ from taskbadger.cli import app
 from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum, TaskRequest
 from taskbadger.internal.types import UNSET, Response
 from taskbadger.mug import Badger
+from taskbadger.sdk import Task
 from tests.utils import task_for_test
 
 runner = CliRunner()
@@ -37,7 +38,7 @@ def test_cli_long_run():
         return True
 
     with mock.patch("taskbadger.process._should_update", new=_should_update_task):
-        _test_cli_run(["echo test; sleep 0.2"], 0, args=["task_name"], update_call_count=3)
+        _test_cli_run(["echo test; sleep 0.11"], 0, args=["task_name"], update_call_count=3)
 
 
 def test_cli_capture_output():
@@ -133,3 +134,25 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
             client=mock.ANY, organization_slug="org", project_slug="project", id="test_id", json_body=body
         )
         return update_mock
+
+
+def test_cli_run_session():
+    def _update(*args, **kwargs):
+        session = Badger.current.session()
+        assert session.client is not None, "Session is not set"
+        return Task(task_for_test())
+
+    def _create(*args, **kwargs):
+        session = Badger.current.session()
+        assert session.client is not None, "Session is not set"
+        return Task(task_for_test())
+
+    with (
+        mock.patch("taskbadger.sdk.create_task", new=_create),
+        mock.patch("taskbadger.sdk.update_task", new=_update),
+        mock.patch("taskbadger.cli.err_console") as err,
+    ):
+        args = ["task_name"]
+        result = runner.invoke(app, ["run"] + args + ["--"] + ["echo", "test"], catch_exceptions=False)
+        assert result.exit_code == 0, result.output
+        assert err.print.call_count == 0, err.print.call_args_list
