@@ -7,7 +7,8 @@ from taskbadger import Action, EmailIntegration, StatusEnum, WebhookIntegration
 from taskbadger.exceptions import TaskbadgerException
 from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, TaskRequest, TaskRequestData
 from taskbadger.internal.types import UNSET, Response
-from taskbadger.sdk import Badger, Task, init
+from taskbadger.mug import Badger
+from taskbadger.sdk import Task, init
 from tests.utils import task_for_test
 
 

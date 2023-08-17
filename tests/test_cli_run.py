@@ -8,7 +8,7 @@ from typer.testing import CliRunner
 from taskbadger.cli import app
 from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum, TaskRequest
 from taskbadger.internal.types import UNSET, Response
-from taskbadger.sdk import Badger
+from taskbadger.mug import Badger
 from tests.utils import task_for_test
 
 runner = CliRunner()

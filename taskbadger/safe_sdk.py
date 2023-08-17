@@ -6,8 +6,8 @@ try:
 except ImportError:
     from typing_extensions import ParamSpec
 
-
-from .sdk import Badger, create_task, update_task
+from .mug import Badger
+from .sdk import create_task, update_task
 
 P = ParamSpec("P")
 
