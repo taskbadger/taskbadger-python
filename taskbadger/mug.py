@@ -85,8 +85,9 @@ class Badger(metaclass=MugMeta):
     def client(self) -> AuthenticatedClient:
         return self.settings.get_client()
 
-    def is_configured(self):
-        return self.settings is not None
+    @classmethod
+    def is_configured(cls):
+        return cls.current.settings is not None
 
 
 GLOBAL_MUG = Badger()
