@@ -37,7 +37,7 @@ def test_cli_long_run():
         return True
 
     with mock.patch("taskbadger.process._should_update", new=_should_update_task):
-        _test_cli_run(["echo test; sleep 0.11"], 0, args=["task_name"], update_call_count=3)
+        _test_cli_run(["echo test; sleep 0.2"], 0, args=["task_name"], update_call_count=3)
 
 
 def test_cli_capture_output():
@@ -45,7 +45,7 @@ def test_cli_capture_output():
 
     body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n"}))
     update_patch.assert_any_call(
-        client=Badger.current.settings.client,
+        client=mock.ANY,
         organization_slug="org",
         project_slug="project",
         id="test_id",
@@ -64,7 +64,7 @@ def test_cli_capture_output_append():
 
     body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n123\n"}))
     update_patch.assert_any_call(
-        client=Badger.current.settings.client,
+        client=mock.ANY,
         organization_slug="org",
         project_slug="project",
         id="test_id",
@@ -119,10 +119,7 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
         request = TaskRequest(name="task_name", status=StatusEnum.PROCESSING, stale_timeout=10)
         if action:
             request.additional_properties = {"actions": [action]}
-        settings = Badger.current.settings
-        create.assert_called_with(
-            client=settings.client, organization_slug="org", project_slug="project", json_body=request
-        )
+        create.assert_called_with(client=mock.ANY, organization_slug="org", project_slug="project", json_body=request)
 
         if return_code == 0:
             body = PatchedTaskRequest(status=StatusEnum.SUCCESS, value=100)
@@ -133,6 +130,6 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
 
         assert update_mock.call_count == update_call_count
         update_mock.assert_called_with(
-            client=settings.client, organization_slug="org", project_slug="project", id="test_id", json_body=body
+            client=mock.ANY, organization_slug="org", project_slug="project", id="test_id", json_body=body
         )
         return update_mock

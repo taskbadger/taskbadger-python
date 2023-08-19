@@ -38,8 +38,7 @@ def _init(host: str = None, organization_slug: str = None, project_slug: str = N
     token = token or os.environ.get("TASKBADGER_API_KEY")
 
     if host and organization_slug and project_slug and token:
-        client = AuthenticatedClient(host, token)
-        settings = Settings(client, organization_slug, project_slug)
+        settings = Settings(host, token, organization_slug, project_slug)
         Badger.current.bind(settings)
     else:
         raise ConfigurationError(
@@ -56,7 +55,9 @@ def get_task(task_id: str) -> "Task":
     Arguments:
         task_id: The ID of the task to fetch.
     """
-    return Task(task_get.sync(**_make_args(id=task_id)))
+    with Badger.current.client() as client:
+        task = task_get.sync(client=client, **_make_args(id=task_id))
+    return Task(task)
 
 
 def create_task(
@@ -102,7 +103,8 @@ def create_task(
     kwargs = _make_args(json_body=task)
     if monitor_id:
         kwargs["x_taskbadger_monitor"] = monitor_id
-    response = task_create.sync_detailed(**kwargs)
+    with Badger.current.client() as client:
+        response = task_create.sync_detailed(client=client, **kwargs)
     _check_response(response)
     return Task(response.parsed)
 
@@ -156,14 +158,15 @@ def update_task(
     if actions:
         body.additional_properties = {"actions": [a.to_dict() for a in actions]}
     kwargs = _make_args(id=task_id, json_body=body)
-    response = task_partial_update.sync_detailed(**kwargs)
+    with Badger.current.client() as client:
+        response = task_partial_update.sync_detailed(client=client, **kwargs)
     _check_response(response)
     return Task(response.parsed)
 
 
 def _make_args(**kwargs):
     settings = Badger.current.settings
-    ret_args = dataclasses.asdict(settings)
+    ret_args = settings.as_kwargs()
     ret_args.update(kwargs)
     return ret_args
 
@@ -185,9 +188,19 @@ def _check_response(response):
 
 @dataclasses.dataclass
 class Settings:
-    client: AuthenticatedClient
+    base_url: str
+    token: str
     organization_slug: str
     project_slug: str
+
+    def get_client(self):
+        return AuthenticatedClient(self.base_url, self.token)
+
+    def as_kwargs(self):
+        return {
+            "organization_slug": self.organization_slug,
+            "project_slug": self.project_slug,
+        }
 
 
 class MugMeta(type):
@@ -209,6 +222,9 @@ class Badger(metaclass=MugMeta):
 
     def bind(self, settings):
         self.settings = settings
+
+    def client(self) -> AuthenticatedClient:
+        return self.settings.get_client()
 
     def is_configured(self):
         return self.settings is not None
