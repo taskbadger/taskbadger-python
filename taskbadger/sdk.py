@@ -1,8 +1,7 @@
 import os
 from typing import List
 
-from taskbadger.errors import ServerError, Unauthorized, UnexpectedStatus
-from taskbadger.exceptions import ConfigurationError
+from taskbadger.exceptions import ConfigurationError, ServerError, Unauthorized, UnexpectedStatus
 from taskbadger.integrations import Action
 from taskbadger.internal.api.task_endpoints import task_create, task_get, task_partial_update
 from taskbadger.internal.models import (

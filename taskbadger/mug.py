@@ -1,4 +1,6 @@
 import dataclasses
+from contextlib import ContextDecorator
+from typing import Union
 
 from _contextvars import ContextVar
 
@@ -24,18 +26,20 @@ class Settings:
         }
 
 
-class Session:
+class Session(ContextDecorator):
     def __init__(self):
         self._session = None
 
-    def __enter__(self) -> AuthenticatedClient:
-        self._session = Badger.current.session()
-        return self._session.__enter__()
+    def __enter__(self) -> Union[AuthenticatedClient, None]:
+        if Badger.is_configured():
+            self._session = Badger.current.session()
+            return self._session.__enter__()
 
-    def __exit__(self, *args, **kwargs):
-        sess = self._session
-        self._session = None
-        sess.__exit__(*args, **kwargs)
+    def __exit__(self, *args, **kwargs) -> None:
+        if self._session:
+            sess = self._session
+            self._session = None
+            sess.__exit__(*args, **kwargs)
 
 
 class ReentrantSession:
@@ -85,8 +89,9 @@ class Badger(metaclass=MugMeta):
     def client(self) -> AuthenticatedClient:
         return self.settings.get_client()
 
-    def is_configured(self):
-        return self.settings is not None
+    @classmethod
+    def is_configured(cls):
+        return cls.current.settings is not None
 
 
 GLOBAL_MUG = Badger()
