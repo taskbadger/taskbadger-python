@@ -1,4 +1,5 @@
 import dataclasses
+from contextlib import ContextDecorator
 
 from _contextvars import ContextVar
 
@@ -24,18 +25,20 @@ class Settings:
         }
 
 
-class Session:
+class Session(ContextDecorator):
     def __init__(self):
         self._session = None
 
-    def __enter__(self) -> AuthenticatedClient:
-        self._session = Badger.current.session()
-        return self._session.__enter__()
+    def __enter__(self) -> AuthenticatedClient | None:
+        if Badger.is_configured():
+            self._session = Badger.current.session()
+            return self._session.__enter__()
 
-    def __exit__(self, *args, **kwargs):
-        sess = self._session
-        self._session = None
-        sess.__exit__(*args, **kwargs)
+    def __exit__(self, *args, **kwargs) -> None:
+        if self._session:
+            sess = self._session
+            self._session = None
+            sess.__exit__(*args, **kwargs)
 
 
 class ReentrantSession:

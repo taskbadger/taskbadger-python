@@ -1,6 +1,7 @@
 from unittest import mock
 
 from taskbadger import track
+from taskbadger.mug import Badger, Settings
 
 
 @mock.patch("taskbadger.decorators.create_task_safe")
@@ -55,3 +56,33 @@ def test_track_decorator_badger_not_configured(update):
 
     assert test("test") == "test"
     assert update.call_count == 0
+
+
+def test_decorator_session():
+    Badger.current.bind(Settings("https://taskbadger.net", "token", "org", "proj"))
+
+    @track
+    def test(arg):
+        return arg
+
+    calls = []
+
+    def _update(*args, **kwargs):
+        session = Badger.current.session()
+        assert session.client is not None, "Session is not set"
+        calls.append("_update")
+        return mock.Mock()
+
+    def _create(*args, **kwargs):
+        session = Badger.current.session()
+        assert session.client is not None, "Session is not set"
+        calls.append("_create")
+        return mock.Mock()
+
+    with (
+        mock.patch("taskbadger.decorators.create_task_safe", new=_create),
+        mock.patch("taskbadger.decorators.update_task_safe", new=_update),
+    ):
+        assert test("test") == "test"
+
+    assert calls == ["_create", "_update"]

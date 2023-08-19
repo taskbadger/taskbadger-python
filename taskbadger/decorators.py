@@ -1,5 +1,6 @@
 from functools import wraps
 
+from .mug import Session
 from .safe_sdk import create_task_safe, update_task_safe
 from .sdk import StatusEnum
 
@@ -33,6 +34,7 @@ def track(func=None, *, name=None, monitor_id=None, max_runtime=None):
         task_name = name or f"{func.__module__}.{func.__qualname__}"
 
         @wraps(func)
+        @Session()
         def _inner(*args, **kwargs):
             task_id = create_task_safe(
                 task_name, status=StatusEnum.PROCESSING, max_runtime=max_runtime, monitor_id=monitor_id
