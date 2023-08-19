@@ -1,5 +1,6 @@
 import dataclasses
 from contextlib import ContextDecorator
+from typing import Union
 
 from _contextvars import ContextVar
 
@@ -29,7 +30,7 @@ class Session(ContextDecorator):
     def __init__(self):
         self._session = None
 
-    def __enter__(self) -> AuthenticatedClient | None:
+    def __enter__(self) -> Union[AuthenticatedClient, None]:
         if Badger.is_configured():
             self._session = Badger.current.session()
             return self._session.__enter__()
