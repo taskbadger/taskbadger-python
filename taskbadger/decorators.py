@@ -5,7 +5,7 @@ from .safe_sdk import create_task_safe, update_task_safe
 from .sdk import StatusEnum
 
 
-def track(func=None, *, name=None, monitor_id=None, max_runtime=None):
+def track(func=None, *, name: str = None, monitor_id: str = None, max_runtime: int = None):
     """
     Decorator to track a function as a task.
 
@@ -19,7 +19,7 @@ def track(func=None, *, name=None, monitor_id=None, max_runtime=None):
     ```
 
     Arguments:
-        name: The name of the task. Defaults to the function name.
+        name: The name of the task. Defaults to the fully qualified name of the function.
         monitor_id: The ID of the monitor to associate the task with.
         max_runtime: The maximum runtime of the task in seconds. If the task takes longer than this,
                      it will be marked as an error.
