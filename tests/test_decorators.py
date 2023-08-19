@@ -12,7 +12,7 @@ def test_track_decorator(update, create):
 
     assert test("test") == "test"
     assert create.call_count == 1
-    assert create.call_args.args[0] == "test"
+    assert create.call_args.args[0] == "tests.test_decorators.test_track_decorator.<locals>.test"
     assert update.call_count == 1
     assert update.call_args.kwargs["status"] == "success"
 
