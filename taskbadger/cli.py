@@ -4,7 +4,7 @@ import typer
 from rich import print
 from rich.console import Console
 
-from taskbadger import Action, StatusEnum, Task, __version__, integrations
+from taskbadger import Action, Session, StatusEnum, Task, __version__, integrations
 from taskbadger.config import get_config, write_config
 from taskbadger.exceptions import ConfigurationError
 from taskbadger.process import ProcessRunner
@@ -66,33 +66,34 @@ def run(
         trigger, integration, config = action_def
         action = Action(trigger, integrations.from_config(integration, config))
     stale_timeout = update_frequency * 2
-    try:
-        task = Task.create(
-            name,
-            status=StatusEnum.PROCESSING,
-            stale_timeout=stale_timeout,
-            actions=[action] if action else None,
-            monitor_id=monitor_id,
-        )
-    except Exception as e:
-        err_console.print(f"Error creating task: {e}")
-        task = None
-    else:
-        print(f"Task created: {task.public_url}")
-    env = {"TASKBADGER_TASK_ID": task.id} if task else None
-    try:
-        process = ProcessRunner(ctx.args, env, capture_output=capture_output, update_frequency=update_frequency)
-        for output in process.run():
-            _update_task(task, **(output or {}))
-    except Exception as e:
-        _update_task(task, exception=str(e))
-        raise typer.Exit(1)
-
-    if task:
-        if process.returncode == 0:
-            task.success(value=100)
+    with Session():
+        try:
+            task = Task.create(
+                name,
+                status=StatusEnum.PROCESSING,
+                stale_timeout=stale_timeout,
+                actions=[action] if action else None,
+                monitor_id=monitor_id,
+            )
+        except Exception as e:
+            err_console.print(f"Error creating task: {e}")
+            task = None
         else:
-            _update_task(task, status=StatusEnum.ERROR, return_code=process.returncode)
+            print(f"Task created: {task.public_url}")
+        env = {"TASKBADGER_TASK_ID": task.id} if task else None
+        try:
+            process = ProcessRunner(ctx.args, env, capture_output=capture_output, update_frequency=update_frequency)
+            for output in process.run():
+                _update_task(task, **(output or {}))
+        except Exception as e:
+            _update_task(task, exception=str(e))
+            raise typer.Exit(1)
+
+        if task:
+            if process.returncode == 0:
+                task.success(value=100)
+            else:
+                _update_task(task, status=StatusEnum.ERROR, return_code=process.returncode)
 
     if process.returncode != 0:
         raise typer.Exit(process.returncode)
@@ -116,7 +117,7 @@ def _update_task(task, status=None, **data_kwargs):
     try:
         task.update(status=status, data=task_data or None)
     except Exception as e:
-        err_console.print(f"Error updating task status: {e}")
+        err_console.print(f"Error updating task status: {e!r}")
 
 
 @app.command()

@@ -1,6 +1,7 @@
 from .decorators import track
 from .integrations import Action, EmailIntegration, WebhookIntegration
 from .internal.models import StatusEnum
+from .mug import Session
 from .safe_sdk import create_task_safe, update_task_safe
 from .sdk import Task, create_task, get_task, init, update_task
 
