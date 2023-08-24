@@ -13,8 +13,6 @@ log = logging.getLogger("taskbadger")
 
 class Task(celery.Task):
     """A Celery Task that tracks itself with TaskBadger.
-    The TaskBadger task will go through the following states:
-    - PENDING
 
     Examples:
         .. code-block:: python
@@ -58,7 +56,7 @@ class Task(celery.Task):
             try:
                 task = get_task(self.taskbadger_task_id)
                 self.request.update({"taskbadger_task": task})
-            except Exception as e:
+            except Exception:
                 log.exception("Error fetching task '%s'", self.taskbadger_task_id)
                 task = None
         return task
@@ -70,7 +68,10 @@ def task_publish_handler(sender=None, headers=None, **kwargs):
         return
 
     name = headers["task"]
-    task_id = create_task_safe(name, status=StatusEnum.PENDING)
+    task_id = create_task_safe(
+        name,
+        status=StatusEnum.PRE_PROCESSING,
+    )
     if task_id:
         headers.update({"taskbadger_task_id": task_id})
 
@@ -83,19 +84,16 @@ def task_prerun_handler(sender=None, **kwargs):
 @task_success.connect
 def task_success_handler(sender=None, **kwargs):
     _update_task(sender, StatusEnum.SUCCESS)
-    exit_session()
 
 
 @task_failure.connect
 def task_failure_handler(sender=None, einfo=None, **kwargs):
     _update_task(sender, StatusEnum.ERROR, einfo)
-    exit_session()
 
 
 @task_retry.connect
 def task_retry_handler(sender=None, einfo=None, **kwargs):
     _update_task(sender, StatusEnum.ERROR, einfo)
-    exit_session()
 
 
 def _update_task(signal_sender, status, einfo=None):
@@ -105,25 +103,7 @@ def _update_task(signal_sender, status, einfo=None):
     if not task:
         return
 
-    enter_session()
-
     data = None
     if einfo:
         data = DefaultMergeStrategy().merge(task.data, {"exception": str(einfo)})
     update_task_safe(task.id, status=status, data=data)
-
-
-def enter_session():
-    if not Badger.is_configured():
-        return
-    session = Badger.current.session()
-    if not session.client:
-        session.__enter__()
-
-
-def exit_session():
-    if not Badger.is_configured():
-        return
-    session = Badger.current.session()
-    if session.client:
-        session.__exit__()
