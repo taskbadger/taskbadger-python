@@ -28,6 +28,24 @@ taskbadger.init(
 )
 ```
 
+#### Usage with Celery
+
+```python
+import taskbadger
+from celery import Celery
+
+app = Celery("tasks")
+
+@app.task(bind=True, base=taskbadger.Task)
+def my_task(self):
+    task = self.taskbadger_task
+    for i in range(1000):
+        do_something(i)
+        if i % 100 == 0:
+            task.update(value=i, value_max=1000)
+    task.success(value=1000)
+```
+
 #### API Example
 
 ```python
