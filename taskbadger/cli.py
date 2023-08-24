@@ -4,7 +4,7 @@ import typer
 from rich import print
 from rich.console import Console
 
-from taskbadger import Action, DefaultMergeStrategy, Session, StatusEnum, Task, __version__, integrations
+from taskbadger import Action, Session, StatusEnum, Task, __version__, integrations
 from taskbadger.config import get_config, write_config
 from taskbadger.exceptions import ConfigurationError
 from taskbadger.process import ProcessRunner
@@ -104,9 +104,18 @@ def _update_task(task, status=None, **data_kwargs):
     if not task:
         return
 
-    merge_strategy = DefaultMergeStrategy(append_keys=("stdout", "stderr"))
+    task_data = task.data or {}
+    for key, value in data_kwargs.items():
+        if key in ("stdout", "stderr"):
+            if key in task_data and value:
+                task_data[key] += value
+            elif value:
+                task_data[key] = value
+        else:
+            task_data[key] = value
+
     try:
-        task.update(status=status, data=data_kwargs or None, data_merge_strategy=merge_strategy)
+        task.update(status=status, data=task_data or None)
     except Exception as e:
         err_console.print(f"Error updating task status: {e!r}")
 

@@ -1,40 +1,18 @@
 import logging
+from typing import Any
 
 import celery
-from celery.signals import before_task_publish, task_failure, task_prerun, task_retry, task_success
+from celery.signals import before_task_publish, task_failure, task_retry, task_success
 
 from .internal.models import StatusEnum
 from .mug import Badger
-from .safe_sdk import create_task_safe, update_task_safe
-from .sdk import DefaultMergeStrategy, get_task
+from .sdk import create_task, get_task, update_task
 
 log = logging.getLogger("taskbadger")
 
 
 class Task(celery.Task):
-    """A Celery Task that tracks itself with TaskBadger.
-
-    Examples:
-        .. code-block:: python
-
-            @app.task(base=taskbadger.Task)
-            def refresh_feed(url):
-                store_feed(feedparser.parse(url))
-
-        with access to the task in the function body:
-
-        .. code-block:: python
-
-            @app.task(bind=True, base=taskbadger.Task)
-            def scrape_urls(self, urls):
-                task = self.taskbadger_task
-                total_urls = len(urls)
-                for i, url in enumerate(urls):
-                    scrape_url(url)
-                    if i % 10 == 0:
-                        task.update(value=i, value_max=total_urls)
-                task.success(value=total_urls)
-    """
+    """A Celery Task that tracks itself with TaskBadger."""
 
     def apply_async(self, *args, **kwargs):
         headers = kwargs.setdefault("headers", {})
@@ -52,7 +30,6 @@ class Task(celery.Task):
 
         task = self.request.get("taskbadger_task")
         if not task:
-            log.debug("Fetching task '%s'", self.taskbadger_task_id)
             try:
                 task = get_task(self.taskbadger_task_id)
                 self.request.update({"taskbadger_task": task})
@@ -68,42 +45,41 @@ def task_publish_handler(sender=None, headers=None, **kwargs):
         return
 
     name = headers["task"]
-    task_id = create_task_safe(
-        name,
-        status=StatusEnum.PRE_PROCESSING,
-    )
-    if task_id:
-        headers.update({"taskbadger_task_id": task_id})
-
-
-@task_prerun.connect
-def task_prerun_handler(sender=None, **kwargs):
-    _update_task(sender, StatusEnum.PROCESSING)
+    try:
+        task = create_task(
+            name,
+            status=StatusEnum.PRE_PROCESSING,
+        )
+    except Exception:
+        log.exception("Error creating task '%s'", name)
+    else:
+        headers.update(
+            {
+                "taskbadger_task_id": task.id,
+            }
+        )
 
 
 @task_success.connect
-def task_success_handler(sender=None, **kwargs):
-    _update_task(sender, StatusEnum.SUCCESS)
+def task_success_handler(sender=None, result=None, **kwargs):
+    log.debug("celery_task_success %s", sender)
+    headers = sender.request.get("headers") or {}
+
+    task_id = headers.get("taskbadger_task_id")
+    if not task_id:
+        return
+
+    try:
+        update_task(task_id, status=StatusEnum.SUCCESS)
+    except Exception:
+        log.exception("Error updating task '%s'", task_id)
 
 
 @task_failure.connect
-def task_failure_handler(sender=None, einfo=None, **kwargs):
-    _update_task(sender, StatusEnum.ERROR, einfo)
+def task_failure_handler(sender=None, result=None, **kwargs):
+    pass
 
 
 @task_retry.connect
-def task_retry_handler(sender=None, einfo=None, **kwargs):
-    _update_task(sender, StatusEnum.ERROR, einfo)
-
-
-def _update_task(signal_sender, status, einfo=None):
-    log.debug("celery_task_success %s", signal_sender)
-
-    task = signal_sender.taskbadger_task
-    if not task:
-        return
-
-    data = None
-    if einfo:
-        data = DefaultMergeStrategy().merge(task.data, {"exception": str(einfo)})
-    update_task_safe(task.id, status=status, data=data)
+def task_retry_handler(sender=None, result=None, **kwargs):
+    pass

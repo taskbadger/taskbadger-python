@@ -3,7 +3,7 @@ from .integrations import Action, EmailIntegration, WebhookIntegration
 from .internal.models import StatusEnum
 from .mug import Session
 from .safe_sdk import create_task_safe, update_task_safe
-from .sdk import DefaultMergeStrategy, Task, create_task, get_task, init, update_task
+from .sdk import Task, create_task, get_task, init, update_task
 
 try:
     import importlib.metadata as importlib_metadata

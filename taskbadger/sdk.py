@@ -1,5 +1,5 @@
 import os
-from typing import Any, List
+from typing import List
 
 from taskbadger.exceptions import ConfigurationError, ServerError, Unauthorized, UnexpectedStatus
 from taskbadger.integrations import Action
@@ -274,15 +274,11 @@ class Task:
         max_runtime: int = None,
         stale_timeout: int = None,
         actions: List[Action] = None,
-        data_merge_strategy: Any = None,
     ):
         """Generic update method used to update any of the task fields.
 
         This can also be used to add actions.
         """
-        if data and data_merge_strategy:
-            data = data_merge_strategy.merge(self.data, data)
-
         task = update_task(
             self._task.id,
             name=name,
@@ -315,20 +311,3 @@ class Task:
 
 def _none_to_unset(value):
     return UNSET if value is None else value
-
-
-class DefaultMergeStrategy:
-    def __init__(self, append_keys=None):
-        self.append_keys = append_keys or []
-
-    def merge(self, existing, new):
-        task_data = existing or {}
-        for key, value in new.items():
-            if key in self.append_keys:
-                if key in task_data and value:
-                    task_data[key] += value
-                elif value:
-                    task_data[key] = value
-            else:
-                task_data[key] = value
-        return task_data
