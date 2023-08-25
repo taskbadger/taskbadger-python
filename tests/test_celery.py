@@ -155,3 +155,26 @@ def test_task_shared_task(celery_session_worker, bind_settings):
     create.assert_called()
     update.assert_called()
     assert Badger.current.session().client is None
+
+
+def test_task_signature(celery_session_worker, bind_settings):
+    @celery.shared_task(bind=True, base=Task)
+    def task_signature(self, a):
+        assert self.taskbadger_task is not None
+        assert Badger.current.session().client is not None
+        return a * 2
+
+    celery_session_worker.reload()
+
+    chain = task_signature.s(2) | task_signature.s() | task_signature.s()
+
+    with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
+        "taskbadger.celery.update_task_safe"
+    ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
+        result = chain()
+        assert result.get(timeout=10, propagate=True) == 16
+
+    assert create.call_count == 3
+    assert get_task.call_count == 3
+    assert update.call_count == 6
+    assert Badger.current.session().client is None

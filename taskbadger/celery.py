@@ -13,8 +13,21 @@ log = logging.getLogger("taskbadger")
 
 class Task(celery.Task):
     """A Celery Task that tracks itself with TaskBadger.
+
     The TaskBadger task will go through the following states:
-    - PENDING
+
+    - PENDING: The task has been created by calling `.delay()` or `.apply_async()`.
+    - PROCESSING: Set when the task starts executing.
+    - SUCCESS: The task completed successfully.
+    - ERROR: The task failed.
+
+    No tracking is done for tasks that ar executed synchronously either via `.appy()` or
+    if Celery is configured to run tasks eagerly.
+
+    Access to the task is provided via the `taskbadger_task` property of the Celery task.
+    The task ID may also be accessed via the `taskbadger_task_id` property. These may
+    be `None` if the task is not being tracked (e.g. Task Badger is not configured or
+    there was an error creating the task).
 
     Examples:
         .. code-block:: python

@@ -220,7 +220,7 @@ class Task:
         self.update_status(StatusEnum.PRE_PROCESSING)
 
     def starting(self):
-        """Update the task status to `pre_processing` and set the value to `0`."""
+        """Update the task status to `processing` and set the value to `0`."""
         self.processing(value=0)
 
     def processing(self, value: int = None):
