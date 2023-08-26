@@ -7,14 +7,14 @@ except ImportError:
     from typing_extensions import ParamSpec
 
 from .mug import Badger
-from .sdk import create_task, update_task
+from .sdk import Task, create_task, update_task
 
 P = ParamSpec("P")
 
 log = logging.getLogger("taskbadger")
 
 
-def create_task_safe(name: str, **kwargs: P.kwargs) -> Optional[str]:
+def create_task_safe(name: str, **kwargs: P.kwargs) -> Optional[Task]:
     """Safely create a task. Any errors are handled and logged.
 
     Arguments:
@@ -28,14 +28,12 @@ def create_task_safe(name: str, **kwargs: P.kwargs) -> Optional[str]:
         return None
 
     try:
-        task = create_task(name, **kwargs)
+        return create_task(name, **kwargs)
     except Exception:
         log.exception("Error creating task '%s'", name)
-    else:
-        return task.id
 
 
-def update_task_safe(task_id: str, **kwargs: P.kwargs) -> None:
+def update_task_safe(task_id: str, **kwargs: P.kwargs) -> Optional[Task]:
     """Safely update a task. Any errors are handled and logged.
 
     Arguments:
@@ -46,6 +44,6 @@ def update_task_safe(task_id: str, **kwargs: P.kwargs) -> None:
         return
 
     try:
-        update_task(task_id, **kwargs)
+        return update_task(task_id, **kwargs)
     except Exception:
         log.exception("Error updating task '%s'", task_id)

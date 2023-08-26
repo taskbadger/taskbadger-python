@@ -1,11 +1,14 @@
+import logging
 from functools import wraps
 
 from .mug import Session
-from .safe_sdk import create_task_safe, update_task_safe
+from .safe_sdk import create_task_safe
 from .sdk import StatusEnum
 
+log = logging.getLogger("taskbadger")
 
-def track(func=None, *, name: str = None, monitor_id: str = None, max_runtime: int = None):
+
+def track(func=None, *, name: str = None, monitor_id: str = None, max_runtime: int = None, **kwargs):
     """
     Decorator to track a function as a task.
 
@@ -23,6 +26,7 @@ def track(func=None, *, name: str = None, monitor_id: str = None, max_runtime: i
         monitor_id: The ID of the monitor to associate the task with.
         max_runtime: The maximum runtime of the task in seconds. If the task takes longer than this,
                      it will be marked as an error.
+        **kwargs: See [taskbadger.create_task][]
 
     If you use this with celery, put the `@taskbadger.track` decorator below Celery's `@app.task` decorator.
     """
@@ -36,18 +40,30 @@ def track(func=None, *, name: str = None, monitor_id: str = None, max_runtime: i
         @wraps(func)
         @Session()
         def _inner(*args, **kwargs):
-            task_id = create_task_safe(
-                task_name, status=StatusEnum.PROCESSING, max_runtime=max_runtime, monitor_id=monitor_id
+            task = create_task_safe(
+                task_name, status=StatusEnum.PROCESSING, max_runtime=max_runtime, monitor_id=monitor_id, **kwargs
             )
             try:
                 result = func(*args, **kwargs)
             except Exception as e:
-                task_id and update_task_safe(task_id, status=StatusEnum.ERROR, data={"exception": str(e)})
+                _update_task(task, status=StatusEnum.ERROR, data={"exception": str(e)}, data_merge_strategy="default")
                 raise
 
-            task_id and update_task_safe(task_id, status=StatusEnum.SUCCESS)
+            _update_task(task, status=StatusEnum.SUCCESS)
             return result
 
         return _inner
 
     return _decorator if func is None else _decorator(func)
+
+
+def _update_task(task, **kwargs):
+    if task:
+        _update_safe(task, **kwargs)
+
+
+def _update_safe(task, **kwargs):
+    try:
+        task.update(**kwargs)
+    except Exception:
+        log.exception("Error updating task '%s'", task.id)

@@ -1,7 +1,7 @@
 import os
 from typing import Any, List
 
-from taskbadger.exceptions import ConfigurationError, ServerError, Unauthorized, UnexpectedStatus
+from taskbadger.exceptions import ConfigurationError, ServerError, TaskbadgerException, Unauthorized, UnexpectedStatus
 from taskbadger.integrations import Action
 from taskbadger.internal.api.task_endpoints import task_create, task_get, task_partial_update
 from taskbadger.internal.models import (
@@ -281,7 +281,12 @@ class Task:
         This can also be used to add actions.
         """
         if data and data_merge_strategy:
-            data = data_merge_strategy.merge(self.data, data)
+            if hasattr(data_merge_strategy, "merge"):
+                data = data_merge_strategy.merge(self.data, data)
+            elif data_merge_strategy == "default":
+                data = DefaultMergeStrategy().merge(self.data, data)
+            else:
+                raise TaskbadgerException(f"Unknown data_merge_strategy: {data_merge_strategy!r}")
 
         task = update_task(
             self._task.id,
