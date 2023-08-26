@@ -27,8 +27,6 @@ def track(func=None, *, name: str = None, monitor_id: str = None, max_runtime: i
         max_runtime: The maximum runtime of the task in seconds. If the task takes longer than this,
                      it will be marked as an error.
         **kwargs: See [taskbadger.create_task][]
-
-    If you use this with celery, put the `@taskbadger.track` decorator below Celery's `@app.task` decorator.
     """
 
     def _decorator(func):
