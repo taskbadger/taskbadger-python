@@ -5,7 +5,7 @@ from taskbadger.mug import Badger, Settings
 
 
 @mock.patch("taskbadger.decorators.create_task_safe")
-@mock.patch("taskbadger.decorators.update_task_safe")
+@mock.patch("taskbadger.decorators._update_safe")
 def test_track_decorator(update, create):
     @track
     def test(arg):
@@ -32,7 +32,7 @@ def test_track_decorator_args(create):
 
 
 @mock.patch("taskbadger.decorators.create_task_safe")
-@mock.patch("taskbadger.decorators.update_task_safe")
+@mock.patch("taskbadger.decorators._update_safe")
 def test_track_decorator_error(update, create):
     @track
     def test(arg):
@@ -48,7 +48,7 @@ def test_track_decorator_error(update, create):
     assert update.call_args.kwargs["data"]["exception"] == "test"
 
 
-@mock.patch("taskbadger.decorators.update_task_safe")
+@mock.patch("taskbadger.decorators._update_safe")
 def test_track_decorator_badger_not_configured(update):
     @track
     def test(arg):
@@ -81,7 +81,7 @@ def test_decorator_session():
 
     with (
         mock.patch("taskbadger.decorators.create_task_safe", new=_create),
-        mock.patch("taskbadger.decorators.update_task_safe", new=_update),
+        mock.patch("taskbadger.decorators._update_safe", new=_update),
     ):
         assert test("test") == "test"
 
