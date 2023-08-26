@@ -8,6 +8,12 @@ from .mug import Badger
 from .safe_sdk import create_task_safe, update_task_safe
 from .sdk import DefaultMergeStrategy, get_task
 
+KWARG_PREFIX = "taskbadger_"
+TB_KWARGS_ARG = f"{KWARG_PREFIX}kwargs"
+IGNORE_ARGS = {TB_KWARGS_ARG, f"{KWARG_PREFIX}task", f"{KWARG_PREFIX}task_id"}
+
+TERMINAL_STATES = {StatusEnum.SUCCESS, StatusEnum.ERROR, StatusEnum.CANCELLED, StatusEnum.STALE}
+
 log = logging.getLogger("taskbadger")
 
 
@@ -54,6 +60,12 @@ class Task(celery.Task):
     def apply_async(self, *args, **kwargs):
         headers = kwargs.setdefault("headers", {})
         headers["taskbadger_track"] = True
+        tb_kwargs = kwargs.pop(TB_KWARGS_ARG, {})
+        for name in list(kwargs):
+            if name.startswith(KWARG_PREFIX):
+                val = kwargs.pop(name)
+                tb_kwargs[name.removeprefix(KWARG_PREFIX)] = val
+        headers[TB_KWARGS_ARG] = tb_kwargs
         return super().apply_async(*args, **kwargs)
 
     @property
@@ -82,8 +94,20 @@ def task_publish_handler(sender=None, headers=None, **kwargs):
     if not headers.get("taskbadger_track") or not Badger.is_configured():
         return
 
-    name = headers["task"]
-    task_id = create_task_safe(name, status=StatusEnum.PENDING)
+    task = celery.current_app.tasks.get(sender)
+
+    # get kwargs from the task class (set via decorator)
+    kwargs = getattr(task, TB_KWARGS_ARG, {})
+    for attr in dir(task):
+        if attr.startswith(KWARG_PREFIX) and attr not in IGNORE_ARGS:
+            kwargs[attr.removeprefix(KWARG_PREFIX)] = getattr(task, attr)
+
+    # get kwargs from the task headers (set via apply_async)
+    kwargs.update(headers[TB_KWARGS_ARG])
+    kwargs["status"] = StatusEnum.PENDING
+    name = kwargs.pop("name", headers["task"])
+
+    task_id = create_task_safe(name, **kwargs)
     if task_id:
         headers.update({"taskbadger_task_id": task_id})
 
@@ -116,6 +140,10 @@ def _update_task(signal_sender, status, einfo=None):
 
     task = signal_sender.taskbadger_task
     if not task:
+        return
+
+    if task.status in TERMINAL_STATES:
+        # ignore tasks that have already been set to a terminal state (probably in the task body)
         return
 
     enter_session()
