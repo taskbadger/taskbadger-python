@@ -11,6 +11,8 @@ from .sdk import DefaultMergeStrategy, get_task
 KWARG_PREFIX = "taskbadger_"
 TB_KWARGS_ARG = KWARG_PREFIX + "kwargs"
 
+TERMINAL_STATES = {StatusEnum.SUCCESS, StatusEnum.ERROR, StatusEnum.CANCELLED, StatusEnum.STALE}
+
 log = logging.getLogger("taskbadger")
 
 
@@ -127,6 +129,10 @@ def _update_task(signal_sender, status, einfo=None):
 
     task = signal_sender.taskbadger_task
     if not task:
+        return
+
+    if task.status in TERMINAL_STATES:
+        # ignore tasks that have already been set to a terminal state (probably in the task body)
         return
 
     enter_session()

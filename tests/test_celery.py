@@ -200,3 +200,25 @@ def test_task_signature(celery_session_worker, bind_settings):
     assert get_task.call_count == 3
     assert update.call_count == 6
     assert Badger.current.session().client is None
+
+
+def test_celery_task_already_in_terminal_state(celery_session_worker, bind_settings):
+    @celery.shared_task(bind=True, base=Task)
+    def add_manual_update(self, a, b, is_retry=False):
+        # simulate updating the task to a terminal state
+        self.request.update({"taskbadger_task": task_for_test(status=StatusEnum.SUCCESS)})
+        return a + b
+
+    celery_session_worker.reload()
+
+    with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
+        "taskbadger.celery.update_task_safe"
+    ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
+        get_task.return_value = task_for_test()
+        result = add_manual_update.delay(2, 2)
+        assert result.get(timeout=10, propagate=True) == 4
+
+    assert create.call_count == 1
+    assert update.call_args_list == [
+        mock.call(mock.ANY, status=StatusEnum.PROCESSING, data=mock.ANY),
+    ]
