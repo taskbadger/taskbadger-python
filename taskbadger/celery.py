@@ -107,9 +107,9 @@ def task_publish_handler(sender=None, headers=None, **kwargs):
     kwargs["status"] = StatusEnum.PENDING
     name = kwargs.pop("name", headers["task"])
 
-    task_id = create_task_safe(name, **kwargs)
-    if task_id:
-        headers.update({"taskbadger_task_id": task_id})
+    task = create_task_safe(name, **kwargs)
+    if task:
+        headers.update({"taskbadger_task_id": task.id})
 
 
 @task_prerun.connect
