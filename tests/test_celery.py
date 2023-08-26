@@ -38,6 +38,28 @@ def test_celery_task(celery_session_app, celery_session_worker, bind_settings):
     assert Badger.current.session().client is None
 
 
+def test_celery_task_with_args(celery_session_app, celery_session_worker, bind_settings):
+    @celery_session_app.task(bind=True, base=Task)
+    def add_with_task_args(self, a, b):
+        assert self.taskbadger_task is not None
+        return a + b
+
+    celery_session_worker.reload()
+
+    with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
+        "taskbadger.celery.update_task_safe"
+    ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
+        result = add_with_task_args.apply_async(
+            (2, 2), taskbadger_name="new_name", taskbadger_value_max=10, taskbadger_kwargs={"data": {"foo": "bar"}}
+        )
+        assert result.get(timeout=10, propagate=True) == 4
+
+    create.assert_called_once_with("new_name", value_max=10, data={"foo": "bar"}, status=StatusEnum.PENDING)
+    get_task.assert_called_once()
+    assert update.call_count == 2
+    assert Badger.current.session().client is None
+
+
 def test_celery_task_error(celery_session_app, celery_session_worker, bind_settings):
     @celery_session_app.task(bind=True, base=Task)
     def add_error(self, a, b):

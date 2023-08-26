@@ -8,6 +8,9 @@ from .mug import Badger
 from .safe_sdk import create_task_safe, update_task_safe
 from .sdk import DefaultMergeStrategy, get_task
 
+KWARG_PREFIX = "taskbadger_"
+TB_KWARGS_ARG = KWARG_PREFIX + "kwargs"
+
 log = logging.getLogger("taskbadger")
 
 
@@ -54,6 +57,12 @@ class Task(celery.Task):
     def apply_async(self, *args, **kwargs):
         headers = kwargs.setdefault("headers", {})
         headers["taskbadger_track"] = True
+        tb_kwargs = kwargs.pop(TB_KWARGS_ARG, {})
+        for name in list(kwargs):
+            if name.startswith(KWARG_PREFIX):
+                val = kwargs.pop(name)
+                tb_kwargs[name.removeprefix(KWARG_PREFIX)] = val
+        headers[TB_KWARGS_ARG] = tb_kwargs
         return super().apply_async(*args, **kwargs)
 
     @property
@@ -82,8 +91,10 @@ def task_publish_handler(sender=None, headers=None, **kwargs):
     if not headers.get("taskbadger_track") or not Badger.is_configured():
         return
 
-    name = headers["task"]
-    task_id = create_task_safe(name, status=StatusEnum.PENDING)
+    kwargs = headers[TB_KWARGS_ARG]
+    kwargs["status"] = StatusEnum.PENDING
+    name = kwargs.pop("name", headers["task"])
+    task_id = create_task_safe(name, **kwargs)
     if task_id:
         headers.update({"taskbadger_task_id": task_id})
 
