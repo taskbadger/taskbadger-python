@@ -9,7 +9,8 @@ from .safe_sdk import create_task_safe, update_task_safe
 from .sdk import DefaultMergeStrategy, get_task
 
 KWARG_PREFIX = "taskbadger_"
-TB_KWARGS_ARG = KWARG_PREFIX + "kwargs"
+TB_KWARGS_ARG = f"{KWARG_PREFIX}kwargs"
+IGNORE_ARGS = {TB_KWARGS_ARG, f"{KWARG_PREFIX}task", f"{KWARG_PREFIX}task_id"}
 
 TERMINAL_STATES = {StatusEnum.SUCCESS, StatusEnum.ERROR, StatusEnum.CANCELLED, StatusEnum.STALE}
 
@@ -93,9 +94,19 @@ def task_publish_handler(sender=None, headers=None, **kwargs):
     if not headers.get("taskbadger_track") or not Badger.is_configured():
         return
 
-    kwargs = headers[TB_KWARGS_ARG]
+    task = celery.current_app.tasks.get(sender)
+
+    # get kwargs from the task class (set via decorator)
+    kwargs = getattr(task, TB_KWARGS_ARG, {})
+    for attr in dir(task):
+        if attr.startswith(KWARG_PREFIX) and attr not in IGNORE_ARGS:
+            kwargs[attr.removeprefix(KWARG_PREFIX)] = getattr(task, attr)
+
+    # get kwargs from the task headers (set via apply_async)
+    kwargs.update(headers[TB_KWARGS_ARG])
     kwargs["status"] = StatusEnum.PENDING
     name = kwargs.pop("name", headers["task"])
+
     task_id = create_task_safe(name, **kwargs)
     if task_id:
         headers.update({"taskbadger_task_id": task_id})

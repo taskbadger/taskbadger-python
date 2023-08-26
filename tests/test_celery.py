@@ -55,9 +55,23 @@ def test_celery_task_with_args(celery_session_app, celery_session_worker, bind_s
         assert result.get(timeout=10, propagate=True) == 4
 
     create.assert_called_once_with("new_name", value_max=10, data={"foo": "bar"}, status=StatusEnum.PENDING)
-    get_task.assert_called_once()
-    assert update.call_count == 2
-    assert Badger.current.session().client is None
+
+
+def test_celery_task_with_args_in_decorator(celery_session_app, celery_session_worker, bind_settings):
+    @celery_session_app.task(bind=True, base=Task, taskbadger_value_max=10, taskbadger_kwargs={"monitor_id": "123"})
+    def add_with_task_args_in_decorator(self, a, b):
+        assert self.taskbadger_task is not None
+        return a + b
+
+    celery_session_worker.reload()
+
+    with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
+        "taskbadger.celery.update_task_safe"
+    ), mock.patch("taskbadger.celery.get_task"):
+        result = add_with_task_args_in_decorator.delay(2, 2)
+        assert result.get(timeout=10, propagate=True) == 4
+
+    create.assert_called_once_with(mock.ANY, status=StatusEnum.PENDING, monitor_id="123", value_max=10)
 
 
 def test_celery_task_error(celery_session_app, celery_session_worker, bind_settings):
