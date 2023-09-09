@@ -1,8 +1,7 @@
 import dataclasses
 from contextlib import ContextDecorator
+from contextvars import ContextVar
 from typing import Union
-
-from _contextvars import ContextVar
 
 from taskbadger.internal import AuthenticatedClient
 
@@ -64,6 +63,9 @@ class ReentrantSession:
 class MugMeta(type):
     @property
     def current(cls):
+        # Note that changes in the parent thread are not propagated to child threads
+        # i.e. if this is called in a child thread before configuration is set in the parent thread
+        # the config will not propagate to the child thread.
         mug = _local.get(None)
         if mug is None:
             mug = Badger(GLOBAL_MUG)
