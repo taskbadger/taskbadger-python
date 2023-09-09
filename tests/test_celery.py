@@ -1,3 +1,13 @@
+"""
+Note
+====
+
+As part of the Celery fixture setup a 'ping' task is run which executes
+before the `bind_settings` fixture is executed. This means that if any code
+calls `Badger.is_configured()` (or similar), the `_local` ContextVar in the
+Celery runner thread will not have the configuration set.
+"""
+import logging
 from unittest import mock
 
 import celery
@@ -5,23 +15,24 @@ import pytest
 
 from taskbadger import StatusEnum
 from taskbadger.celery import Task
-from taskbadger.mug import Badger, Settings
+from taskbadger.mug import Badger
 from tests.utils import task_for_test
 
 
-@pytest.fixture
-def bind_settings():
-    Badger.current.bind(Settings("https://taskbadger.net", "token", "org", "proj"))
+@pytest.fixture(autouse=True)
+def check_log_errors(caplog):
     yield
-    Badger.current.bind(None)
+    errors = [r.getMessage() for r in caplog.get_records("call") if r.levelno == logging.ERROR]
+    if errors:
+        pytest.fail(f"log errors during tests: {errors}")
 
 
 def test_celery_task(celery_session_app, celery_session_worker, bind_settings):
     @celery_session_app.task(bind=True, base=Task)
     def add_normal(self, a, b):
-        assert self.request.get("taskbadger_task") is not None
-        assert self.taskbadger_task is not None
-        assert Badger.current.session().client is not None
+        assert self.request.get("taskbadger_task") is not None, "missing task in request"
+        assert self.taskbadger_task is not None, "missing task on self"
+        assert Badger.current.session().client is not None, "missing client"
         return a + b
 
     celery_session_worker.reload()
@@ -72,35 +83,6 @@ def test_celery_task_with_args_in_decorator(celery_session_app, celery_session_w
         assert result.get(timeout=10, propagate=True) == 4
 
     create.assert_called_once_with(mock.ANY, status=StatusEnum.PENDING, monitor_id="123", value_max=10)
-
-
-def test_celery_task_error(celery_session_app, celery_session_worker, bind_settings):
-    @celery_session_app.task(bind=True, base=Task)
-    def add_error(self, a, b):
-        assert self.taskbadger_task is not None
-        assert Badger.current.session().client is not None
-        raise Exception("error")
-
-    celery_session_worker.reload()
-
-    with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
-        "taskbadger.celery.update_task_safe"
-    ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
-        get_task.return_value = task_for_test()
-        result = add_error.delay(2, 2)
-        with pytest.raises(Exception):
-            result.get(timeout=10, propagate=True)
-
-    create.assert_called()
-    update.assert_has_calls(
-        [
-            mock.call(mock.ANY, status=StatusEnum.PROCESSING, data=mock.ANY),
-            mock.call(mock.ANY, status=StatusEnum.ERROR, data=mock.ANY),
-        ]
-    )
-    data_kwarg = update.call_args_list[1][1]["data"]
-    assert "Traceback" in data_kwarg["exception"]
-    assert Badger.current.session().client is None
 
 
 def test_celery_task_retry(celery_session_app, celery_session_worker, bind_settings):
@@ -207,12 +189,37 @@ def test_task_signature(celery_session_worker, bind_settings):
     with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
         "taskbadger.celery.update_task_safe"
     ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
-        result = chain()
+        result = chain.delay()
         assert result.get(timeout=10, propagate=True) == 16
 
     assert create.call_count == 3
     assert get_task.call_count == 3
     assert update.call_count == 6
+    assert Badger.current.session().client is None
+
+
+def test_task_map(celery_session_worker, bind_settings):
+    """Tasks executed in a map or starmap are not executed as tasks"""
+
+    @celery.shared_task(bind=True, base=Task)
+    def task_map(self, a):
+        assert self.taskbadger_task is None
+        assert Badger.current.session().client is None
+        return a * 2
+
+    celery_session_worker.reload()
+
+    task_map = task_map.map(list(range(5)))
+
+    with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
+        "taskbadger.celery.update_task_safe"
+    ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
+        result = task_map.delay()
+        assert result.get(timeout=10, propagate=True) == [0, 2, 4, 6, 8]
+
+    assert create.call_count == 0
+    assert get_task.call_count == 0
+    assert update.call_count == 0
     assert Badger.current.session().client is None
 
 

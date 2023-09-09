@@ -120,26 +120,28 @@ def task_prerun_handler(sender=None, **kwargs):
 @task_success.connect
 def task_success_handler(sender=None, **kwargs):
     _update_task(sender, StatusEnum.SUCCESS)
-    exit_session()
+    exit_session(sender)
 
 
 @task_failure.connect
 def task_failure_handler(sender=None, einfo=None, **kwargs):
     _update_task(sender, StatusEnum.ERROR, einfo)
-    exit_session()
+    exit_session(sender)
 
 
 @task_retry.connect
 def task_retry_handler(sender=None, einfo=None, **kwargs):
     _update_task(sender, StatusEnum.ERROR, einfo)
-    exit_session()
+    exit_session(sender)
 
 
 def _update_task(signal_sender, status, einfo=None):
-    log.debug("celery_task_success %s", signal_sender)
+    log.debug("celery_task_update %s %s", signal_sender, status)
+    if not hasattr(signal_sender, "taskbadger_task"):
+        return
 
     task = signal_sender.taskbadger_task
-    if not task:
+    if task is None:
         return
 
     if task.status in TERMINAL_STATES:
@@ -162,8 +164,8 @@ def enter_session():
         session.__enter__()
 
 
-def exit_session():
-    if not Badger.is_configured():
+def exit_session(signal_sender):
+    if not hasattr(signal_sender, "taskbadger_task") or not Badger.is_configured():
         return
     session = Badger.current.session()
     if session.client:
