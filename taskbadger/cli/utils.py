@@ -1,11 +1,15 @@
+import json
+from typing import Any, Optional
+
 import typer
 from rich import print
 from rich.console import Console
 
+from taskbadger import Action, integrations
 from taskbadger.exceptions import ConfigurationError
 
 
-def _configure_api(ctx):
+def configure_api(ctx):
     config = ctx.meta["tb_config"]
     try:
         config.init_api()
@@ -15,3 +19,22 @@ def _configure_api(ctx):
 
 
 err_console = Console(stderr=True)
+
+
+def get_actions(action_def: tuple[str, str, str]) -> list[Action]:
+    if any(action_def):
+        trigger, integration, config = action_def
+        return [Action(trigger, integrations.from_config(integration, config))]
+    return []
+
+
+def get_metadata(metadata_kv: list[str], metadata_json: str) -> dict:
+    metadata = {}
+    for kv in metadata_kv:
+        k, v = kv.strip().split("=", 1)
+        metadata[k] = v
+
+    if metadata_json:
+        metadata.update(json.loads(metadata_json))
+
+    return metadata

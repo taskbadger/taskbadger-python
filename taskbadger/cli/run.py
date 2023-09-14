@@ -3,14 +3,14 @@ from typing import Tuple
 import typer
 from rich import print
 
-from taskbadger import Action, DefaultMergeStrategy, Session, StatusEnum, Task, integrations
-from taskbadger.cli.utils import _configure_api, err_console
+from taskbadger import DefaultMergeStrategy, Session, StatusEnum, Task
+from taskbadger.cli.utils import configure_api, err_console, get_actions
 from taskbadger.process import ProcessRunner
 
 
 def run(
     ctx: typer.Context,
-    name: str,
+    name: str = typer.Argument(..., show_default=False, help="The task name"),
     monitor_id: str = typer.Option(None, help="Associate this task with a monitor."),
     update_frequency: int = typer.Option(5, metavar="SECONDS", min=5, max=300, help="Seconds between updates."),
     action_def: Tuple[str, str, str] = typer.Option(
@@ -34,11 +34,8 @@ def run(
 
         [on black]taskbadger run 'my task' -- ./my-script.sh arg -v[/]
     """
-    _configure_api(ctx)
-    action = None
-    if any(action_def):
-        trigger, integration, config = action_def
-        action = Action(trigger, integrations.from_config(integration, config))
+    configure_api(ctx)
+    actions = get_actions(action_def)
     stale_timeout = update_frequency * 2
     with Session():
         try:
@@ -46,7 +43,7 @@ def run(
                 name,
                 status=StatusEnum.PROCESSING,
                 stale_timeout=stale_timeout,
-                actions=[action] if action else None,
+                actions=actions,
                 monitor_id=monitor_id,
             )
         except Exception as e:
