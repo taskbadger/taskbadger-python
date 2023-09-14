@@ -5,7 +5,7 @@ from unittest import mock
 import pytest
 from typer.testing import CliRunner
 
-from taskbadger.cli import app
+from taskbadger.cli_main import app
 from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum, TaskRequest
 from taskbadger.internal.types import UNSET, Response
 from taskbadger.mug import Badger
@@ -150,7 +150,7 @@ def test_cli_run_session():
     with (
         mock.patch("taskbadger.sdk.create_task", new=_create),
         mock.patch("taskbadger.sdk.update_task", new=_update),
-        mock.patch("taskbadger.cli.err_console") as err,
+        mock.patch("taskbadger.cli.run.err_console") as err,
     ):
         args = ["task_name"]
         result = runner.invoke(app, ["run"] + args + ["--"] + ["echo", "test"], catch_exceptions=False)
