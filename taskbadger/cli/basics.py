@@ -1,10 +1,35 @@
+import csv
+import json
+import sys
 from typing import Tuple
 
 import typer
 from rich import print
 
-from taskbadger import StatusEnum, create_task, update_task
-from taskbadger.cli.utils import configure_api, err_console, get_actions, get_metadata
+from taskbadger import StatusEnum, create_task, get_task, update_task
+from taskbadger.cli.utils import OutputFormat, configure_api, err_console, get_actions, get_metadata
+
+
+def get(
+    ctx: typer.Context,
+    task_id: str = typer.Argument(..., show_default=False, help="The ID of the task."),
+    output_format: OutputFormat = typer.Option(OutputFormat.pretty, "--format", "-f", help="Output format"),
+):
+    """Get a task."""
+    configure_api(ctx)
+    task = get_task(task_id)
+    if output_format == OutputFormat.pretty:
+        print(f"Task ID: {task.id}")
+        print(f"Created: {task.created.isoformat()}")
+        print(f"Name: {task.name}")
+        print(f"Status: {task.status}")
+        print(f"Percent: {task.value_percent}%")
+    elif output_format == OutputFormat.json:
+        print(json.dumps(task.to_dict(), indent=2))
+    elif output_format == OutputFormat.csv:
+        writer = csv.writer(sys.stdout)
+        writer.writerow("Task ID,Created,Name,Status,Percent".split(","))
+        writer.writerow([task.id, task.created.isoformat(), task.name, task.status, str(task.value_percent)])
 
 
 def create(

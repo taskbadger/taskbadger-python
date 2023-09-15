@@ -1,57 +1,53 @@
 import csv
 import json
 import sys
-from enum import Enum
 from urllib.parse import parse_qs, urlparse
 
 import typer
-from rich import Console, print
+from rich import print
+from rich.console import Console
 from rich.table import Table
 
-from taskbadger.cli.utils import configure_api
+from taskbadger.cli.utils import OutputFormat, configure_api
 from taskbadger.sdk import list_tasks
-
-
-class ListFormat(str, Enum):
-    table = "table"
-    json = "json"
-    csv = "csv"
-
-    def render(self, ctx, result):
-        if self == ListFormat.table:
-            _render_table(ctx, result)
-        elif self == ListFormat.json:
-            _render_json(ctx, result)
-        elif self == ListFormat.csv:
-            _render_csv(ctx, result)
-        else:
-            raise ValueError(f"Unknown format: {self}")
 
 
 def list_tasks_command(
     ctx: typer.Context,
-    output_format: ListFormat = typer.Option(ListFormat.table, "--format", "-f", help="Output format"),
+    output_format: OutputFormat = typer.Option(OutputFormat.pretty, "--format", "-f", help="Output format"),
     limit: int = typer.Option(100, help="Limit the number of results."),
     start_token: str = typer.Option(None, show_default=False, help="Start token."),
 ):
     """List tasks."""
     configure_api(ctx)
     tasks = list_tasks(page_size=limit, cursor=start_token)
-    output_format.render(ctx, tasks)
+    render(output_format, ctx, tasks)
 
 
-def _render_table(ctx, result):
+def render(format_: OutputFormat, ctx, result):
+    if format_ == OutputFormat.pretty:
+        _render_pretty(ctx, result)
+    elif format_ == OutputFormat.json:
+        _render_json(ctx, result)
+    elif format_ == OutputFormat.csv:
+        _render_csv(ctx, result)
+    else:
+        raise ValueError(f"Unknown format: {format_}")
+
+
+def _render_pretty(ctx, result):
     table = Table(
         title=f"Project: {ctx.meta['tb_config'].project_slug}, Organization: {ctx.meta['tb_config'].organization_slug}"
     )
 
+    table.add_column("Task ID", no_wrap=True)
     table.add_column("Created", no_wrap=True)
     table.add_column("Name")
     table.add_column("Status", no_wrap=True)
     table.add_column("Percent", no_wrap=True)
 
     for task in result.results:
-        table.add_row(task.created.isoformat(), task.name, task.status, str(task.value_percent))
+        table.add_row(task.id, task.created.isoformat(), task.name, task.status, str(task.value_percent))
     Console().print(table)
 
     cursor = _get_cursor(result.next_)
@@ -61,9 +57,9 @@ def _render_table(ctx, result):
 
 def _render_csv(ctx, result):
     writer = csv.writer(sys.stdout)
-    writer.writerow("Created,Name,Status,Percent".split(","))
+    writer.writerow("Task ID,Created,Name,Status,Percent".split(","))
     for task in result.results:
-        writer.writerow([task.created.isoformat(), task.name, task.status, str(task.value_percent)])
+        writer.writerow([task.id, task.created.isoformat(), task.name, task.status, str(task.value_percent)])
 
     cursor = _get_cursor(result.next_)
     if cursor:

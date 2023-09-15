@@ -1,4 +1,5 @@
 import json
+from enum import Enum
 from typing import Any, Optional
 
 import typer
@@ -38,3 +39,9 @@ def get_metadata(metadata_kv: list[str], metadata_json: str) -> dict:
         metadata.update(json.loads(metadata_json))
 
     return metadata
+
+
+class OutputFormat(str, Enum):
+    pretty = "pretty"
+    json = "json"
+    csv = "csv"
