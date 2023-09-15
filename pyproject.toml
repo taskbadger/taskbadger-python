@@ -55,7 +55,7 @@ invoke = "^2.0.0"
 pytest-celery = "^0.0.0"
 
 [tool.poetry.scripts]
-taskbadger = "taskbadger.cli:app"
+taskbadger = "taskbadger.cli_main:app"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
