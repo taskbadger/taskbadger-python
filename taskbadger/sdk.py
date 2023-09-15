@@ -3,7 +3,7 @@ from typing import Any, List
 
 from taskbadger.exceptions import ConfigurationError, ServerError, TaskbadgerException, Unauthorized, UnexpectedStatus
 from taskbadger.integrations import Action
-from taskbadger.internal.api.task_endpoints import task_create, task_get, task_partial_update
+from taskbadger.internal.api.task_endpoints import task_create, task_get, task_list, task_partial_update
 from taskbadger.internal.models import (
     PatchedTaskRequest,
     PatchedTaskRequestData,
@@ -156,6 +156,13 @@ def update_task(
         response = task_partial_update.sync_detailed(client=client, **kwargs)
     _check_response(response)
     return Task(response.parsed)
+
+
+def list_tasks(page_size: int = None, cursor: str = None):
+    """List tasks."""
+    kwargs = _make_args(page_size=page_size, cursor=cursor)
+    with Session() as client:
+        return task_list.sync(client=client, **kwargs)
 
 
 def _make_args(**kwargs):

@@ -4,7 +4,7 @@ import typer
 from rich import print
 
 from taskbadger import __version__
-from taskbadger.cli import create, run, update
+from taskbadger.cli import create, list_tasks_command, run, update
 from taskbadger.config import get_config, write_config
 
 app = typer.Typer(
@@ -16,6 +16,7 @@ app = typer.Typer(
 app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": False})(run)
 app.command(context_settings={"ignore_unknown_options": False})(create)
 app.command(context_settings={"ignore_unknown_options": False})(update)
+app.command("list", context_settings={"ignore_unknown_options": False})(list_tasks_command)
 
 
 def version_callback(value: bool):
