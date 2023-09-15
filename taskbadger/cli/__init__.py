@@ -1,2 +1,3 @@
-from .basics import create, list_tasks_command, update
+from .basics import create, update
+from .list_tasks import list_tasks_command
 from .wrapper import run
