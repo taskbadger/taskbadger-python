@@ -31,7 +31,7 @@ class PatchedTaskRequest:
         max_runtime (Union[Unset, None, int]): Maximum duration the task can be running for before being considered
             failed. (seconds)
         stale_timeout (Union[Unset, None, int]): Maximum time to allow between task updates before considering the task
-            stale. (seconds)
+            stale. Only applies when task is in a running state. (seconds)
     """
 
     name: Union[Unset, str] = UNSET

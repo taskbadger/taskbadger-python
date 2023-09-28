@@ -92,7 +92,7 @@ class Task(celery.Task):
             try:
                 task = get_task(self.taskbadger_task_id)
                 self.request.update({"taskbadger_task": task})
-            except Exception as e:
+            except Exception:
                 log.exception("Error fetching task '%s'", self.taskbadger_task_id)
                 task = None
         return task

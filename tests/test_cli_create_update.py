@@ -6,16 +6,8 @@ import pytest
 from typer.testing import CliRunner
 
 from taskbadger.cli_main import app
-from taskbadger.internal.models import (
-    PatchedTaskRequest,
-    PatchedTaskRequestData,
-    StatusEnum,
-    TaskRequest,
-    TaskRequestData,
-)
-from taskbadger.internal.types import UNSET, Response
-from taskbadger.mug import Badger
-from taskbadger.sdk import Task
+from taskbadger.internal.models import PatchedTaskRequest, StatusEnum, TaskRequest, TaskRequestData
+from taskbadger.internal.types import Response
 from tests.utils import task_for_test
 
 runner = CliRunner()
