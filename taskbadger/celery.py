@@ -1,3 +1,4 @@
+import functools
 import logging
 
 import celery
@@ -67,8 +68,13 @@ class Task(celery.Task):
                 tb_kwargs[name.removeprefix(KWARG_PREFIX)] = val
         headers[TB_KWARGS_ARG] = tb_kwargs
         result = super().apply_async(*args, **kwargs)
+
         tb_task_id = result.info.get("taskbadger_task_id") if result.info else None
         setattr(result, "taskbadger_task_id", tb_task_id)
+
+        _get_task = functools.partial(get_task, tb_task_id) if tb_task_id else lambda: None
+        setattr(result, "get_taskbadger_task", _get_task)
+
         return result
 
     @property
