@@ -45,10 +45,11 @@ def test_celery_task(celery_session_app, celery_session_worker, bind_settings):
         result = add_normal.delay(2, 2)
         assert result.info.get("taskbadger_task_id") == tb_task.id
         assert result.taskbadger_task_id == tb_task.id
+        assert result.get_taskbadger_task() is not None
         assert result.get(timeout=10, propagate=True) == 4
 
     create.assert_called_once()
-    get_task.assert_called_once()
+    assert get_task.call_count == 2
     assert update.call_count == 2
     assert Badger.current.session().client is None
 
