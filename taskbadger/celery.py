@@ -66,7 +66,10 @@ class Task(celery.Task):
                 val = kwargs.pop(name)
                 tb_kwargs[name.removeprefix(KWARG_PREFIX)] = val
         headers[TB_KWARGS_ARG] = tb_kwargs
-        return super().apply_async(*args, **kwargs)
+        result = super().apply_async(*args, **kwargs)
+        tb_task_id = result.info.get("taskbadger_task_id") if result.info else None
+        setattr(result, "taskbadger_task_id", tb_task_id)
+        return result
 
     @property
     def taskbadger_task_id(self):
@@ -94,13 +97,13 @@ def task_publish_handler(sender=None, headers=None, **kwargs):
     if not headers.get("taskbadger_track") or not Badger.is_configured():
         return
 
-    task = celery.current_app.tasks.get(sender)
+    ctask = celery.current_app.tasks.get(sender)
 
     # get kwargs from the task class (set via decorator)
-    kwargs = getattr(task, TB_KWARGS_ARG, {})
-    for attr in dir(task):
+    kwargs = getattr(ctask, TB_KWARGS_ARG, {})
+    for attr in dir(ctask):
         if attr.startswith(KWARG_PREFIX) and attr not in IGNORE_ARGS:
-            kwargs[attr.removeprefix(KWARG_PREFIX)] = getattr(task, attr)
+            kwargs[attr.removeprefix(KWARG_PREFIX)] = getattr(ctask, attr)
 
     # get kwargs from the task headers (set via apply_async)
     kwargs.update(headers[TB_KWARGS_ARG])
@@ -109,7 +112,9 @@ def task_publish_handler(sender=None, headers=None, **kwargs):
 
     task = create_task_safe(name, **kwargs)
     if task:
-        headers.update({"taskbadger_task_id": task.id})
+        meta = {"taskbadger_task_id": task.id}
+        headers.update(meta)
+        ctask.update_state(task_id=headers["id"], state="PENDING", meta=meta)
 
 
 @task_prerun.connect
