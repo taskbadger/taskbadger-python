@@ -73,8 +73,8 @@ def create_task(
         value: The current 'value' of the task.
         value_max: The maximum value the task is expected to achieve.
         data: Custom task data.
-        max_runtime: Maximum expected runtime (minutes).
-        stale_timeout: Maximum allowed time between updates (minutes).
+        max_runtime: Maximum expected runtime (seconds).
+        stale_timeout: Maximum allowed time between updates (seconds).
         actions: Task actions.
         monitor_id: ID of the monitor to associate this task with.
 
@@ -124,8 +124,8 @@ def update_task(
         value: The current 'value' of the task.
         value_max: The maximum value the task is expected to achieve.
         data: Custom task data.
-        max_runtime: Maximum expected runtime (minutes).
-        stale_timeout: Maximum allowed time between updates (minutes).
+        max_runtime: Maximum expected runtime (seconds).
+        stale_timeout: Maximum allowed time between updates (seconds).
         actions: Task actions.
 
     Returns:
