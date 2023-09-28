@@ -728,7 +728,7 @@ components:
           minimum: 1
           nullable: true
           description: Maximum time to allow between task updates before considering
-            the task stale. (seconds)
+            the task stale. Only applies when task is in a running state. (seconds)
     StatusEnum:
       enum:
       - pending
@@ -825,7 +825,7 @@ components:
           minimum: 1
           nullable: true
           description: Maximum time to allow between task updates before considering
-            the task stale. (seconds)
+            the task stale. Only applies when task is in a running state. (seconds)
         url:
           type: string
           readOnly: true
@@ -906,7 +906,7 @@ components:
           minimum: 1
           nullable: true
           description: Maximum time to allow between task updates before considering
-            the task stale. (seconds)
+            the task stale. Only applies when task is in a running state. (seconds)
       required:
       - name
   securitySchemes:
