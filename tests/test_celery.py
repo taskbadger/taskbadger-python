@@ -40,7 +40,11 @@ def test_celery_task(celery_session_app, celery_session_worker, bind_settings):
     with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
         "taskbadger.celery.update_task_safe"
     ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
+        tb_task = task_for_test()
+        create.return_value = tb_task
         result = add_normal.delay(2, 2)
+        assert result.info.get("taskbadger_task_id") == tb_task.id
+        assert result.taskbadger_task_id == tb_task.id
         assert result.get(timeout=10, propagate=True) == 4
 
     create.assert_called_once()
@@ -60,6 +64,8 @@ def test_celery_task_with_args(celery_session_app, celery_session_worker, bind_s
     with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
         "taskbadger.celery.update_task_safe"
     ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
+        create.return_value = task_for_test()
+
         result = add_with_task_args.apply_async(
             (2, 2), taskbadger_name="new_name", taskbadger_value_max=10, taskbadger_kwargs={"data": {"foo": "bar"}}
         )
@@ -79,6 +85,8 @@ def test_celery_task_with_args_in_decorator(celery_session_app, celery_session_w
     with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
         "taskbadger.celery.update_task_safe"
     ), mock.patch("taskbadger.celery.get_task"):
+        create.return_value = task_for_test()
+
         result = add_with_task_args_in_decorator.delay(2, 2)
         assert result.get(timeout=10, propagate=True) == 4
 
@@ -86,6 +94,12 @@ def test_celery_task_with_args_in_decorator(celery_session_app, celery_session_w
 
 
 def test_celery_task_retry(celery_session_app, celery_session_worker, bind_settings):
+    """Note: When a task is retried, the celery task ID remains the same but a new TB task
+    will be created.
+
+    TODO: How to handle this in TB? Should we update the existing TB task or create a new one?
+    """
+
     @celery_session_app.task(bind=True, base=Task)
     def add_retry(self, a, b, is_retry=False):
         assert self.taskbadger_task is not None
@@ -100,6 +114,7 @@ def test_celery_task_retry(celery_session_app, celery_session_worker, bind_setti
     with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
         "taskbadger.celery.update_task_safe"
     ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
+        create.return_value = task_for_test()
         get_task.return_value = task_for_test()
         result = add_retry.delay(2, 2)
         assert result.get(timeout=10, propagate=True) == 4
@@ -167,6 +182,8 @@ def test_task_shared_task(celery_session_worker, bind_settings):
     with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
         "taskbadger.celery.update_task_safe"
     ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
+        create.return_value = task_for_test()
+
         result = add_shared_task.delay(2, 2)
         assert result.get(timeout=10, propagate=True) == 4
 
@@ -189,6 +206,8 @@ def test_task_signature(celery_session_worker, bind_settings):
     with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
         "taskbadger.celery.update_task_safe"
     ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
+        create.return_value = task_for_test()
+
         result = chain.delay()
         assert result.get(timeout=10, propagate=True) == 16
 
@@ -235,6 +254,8 @@ def test_celery_task_already_in_terminal_state(celery_session_worker, bind_setti
     with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
         "taskbadger.celery.update_task_safe"
     ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
+        create.return_value = task_for_test()
+
         get_task.return_value = task_for_test()
         result = add_manual_update.delay(2, 2)
         assert result.get(timeout=10, propagate=True) == 4

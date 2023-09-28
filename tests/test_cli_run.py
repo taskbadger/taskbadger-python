@@ -49,7 +49,7 @@ def test_cli_capture_output():
         client=mock.ANY,
         organization_slug="org",
         project_slug="project",
-        id="test_id",
+        id=mock.ANY,
         json_body=body,
     )
 
@@ -68,7 +68,7 @@ def test_cli_capture_output_append():
         client=mock.ANY,
         organization_slug="org",
         project_slug="project",
-        id="test_id",
+        id=mock.ANY,
         json_body=body,
     )
 
@@ -99,15 +99,17 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
     update_mock = mock.MagicMock()
 
     def _update(*args, **kwargs):
+        task_id = kwargs["id"]
         update_mock(*args, **kwargs)
 
         # handle updating task data
         data = kwargs["json_body"].data
-        return Response(HTTPStatus.OK, b"", {}, task_for_test(data=data.additional_properties if data else None))
+        task_return = task_for_test(id=task_id, data=data.additional_properties if data else None)
+        return Response(HTTPStatus.OK, b"", {}, task_return)
 
     with (
         mock.patch("taskbadger.sdk.task_create.sync_detailed") as create,
-        mock.patch("taskbadger.sdk.task_partial_update.sync_detailed", new=_update) as update,
+        mock.patch("taskbadger.sdk.task_partial_update.sync_detailed", new=_update),
     ):
         task = task_for_test()
         create.return_value = Response(HTTPStatus.OK, b"", {}, task)
@@ -131,7 +133,7 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
 
         assert update_mock.call_count == update_call_count
         update_mock.assert_called_with(
-            client=mock.ANY, organization_slug="org", project_slug="project", id="test_id", json_body=body
+            client=mock.ANY, organization_slug="org", project_slug="project", id=task.id, json_body=body
         )
         return update_mock
 
