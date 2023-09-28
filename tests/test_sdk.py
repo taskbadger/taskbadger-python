@@ -178,5 +178,5 @@ def _verify_update(settings, patched_update, **kwargs):
 
     # verify expected call
     patched_update.assert_called_with(
-        client=mock.ANY, organization_slug="org", project_slug="project", id="test_id", json_body=request
+        client=mock.ANY, organization_slug="org", project_slug="project", id=mock.ANY, json_body=request
     )

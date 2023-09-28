@@ -114,6 +114,7 @@ def test_celery_task_retry(celery_session_app, celery_session_worker, bind_setti
     with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
         "taskbadger.celery.update_task_safe"
     ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
+        create.return_value = task_for_test()
         get_task.return_value = task_for_test()
         result = add_retry.delay(2, 2)
         assert result.get(timeout=10, propagate=True) == 4

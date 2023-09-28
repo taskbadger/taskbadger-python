@@ -6,10 +6,11 @@ from taskbadger.internal.models import TaskData
 
 
 def task_for_test(**kwargs):
+    task_id = kwargs.pop("id", uuid4().hex)
     data = kwargs.pop("data", None)
     if data:
         kwargs["data"] = TaskData.from_dict(data)
     kwargs["url"] = None
     kwargs["public_url"] = None
     kwargs["value_percent"] = None
-    return TaskInternal(uuid4().hex, "org", "project", "task_name", datetime.utcnow(), datetime.utcnow(), **kwargs)
+    return TaskInternal(task_id, "org", "project", "task_name", datetime.utcnow(), datetime.utcnow(), **kwargs)
