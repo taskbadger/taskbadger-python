@@ -1,14 +1,9 @@
-import dataclasses
 import os
-from typing import List
+from typing import Any, List
 
-from _contextvars import ContextVar
-
-from taskbadger.errors import ServerError, Unauthorized, UnexpectedStatus
-from taskbadger.exceptions import ConfigurationError
+from taskbadger.exceptions import ConfigurationError, ServerError, TaskbadgerException, Unauthorized, UnexpectedStatus
 from taskbadger.integrations import Action
-from taskbadger.internal import AuthenticatedClient
-from taskbadger.internal.api.task_endpoints import task_create, task_get, task_partial_update
+from taskbadger.internal.api.task_endpoints import task_create, task_get, task_list, task_partial_update
 from taskbadger.internal.models import (
     PatchedTaskRequest,
     PatchedTaskRequestData,
@@ -17,8 +12,7 @@ from taskbadger.internal.models import (
     TaskRequestData,
 )
 from taskbadger.internal.types import UNSET
-
-_local = ContextVar("taskbadger_client")
+from taskbadger.mug import Badger, Session, Settings
 
 _TB_HOST = "https://taskbadger.net"
 
@@ -38,8 +32,7 @@ def _init(host: str = None, organization_slug: str = None, project_slug: str = N
     token = token or os.environ.get("TASKBADGER_API_KEY")
 
     if host and organization_slug and project_slug and token:
-        client = AuthenticatedClient(host, token)
-        settings = Settings(client, organization_slug, project_slug)
+        settings = Settings(host, token, organization_slug, project_slug)
         Badger.current.bind(settings)
     else:
         raise ConfigurationError(
@@ -56,7 +49,9 @@ def get_task(task_id: str) -> "Task":
     Arguments:
         task_id: The ID of the task to fetch.
     """
-    return Task(task_get.sync(**_make_args(id=task_id)))
+    with Session() as client:
+        task = task_get.sync(client=client, **_make_args(id=task_id))
+    return Task(task)
 
 
 def create_task(
@@ -102,7 +97,8 @@ def create_task(
     kwargs = _make_args(json_body=task)
     if monitor_id:
         kwargs["x_taskbadger_monitor"] = monitor_id
-    response = task_create.sync_detailed(**kwargs)
+    with Session() as client:
+        response = task_create.sync_detailed(client=client, **kwargs)
     _check_response(response)
     return Task(response.parsed)
 
@@ -156,20 +152,26 @@ def update_task(
     if actions:
         body.additional_properties = {"actions": [a.to_dict() for a in actions]}
     kwargs = _make_args(id=task_id, json_body=body)
-    response = task_partial_update.sync_detailed(**kwargs)
+    with Session() as client:
+        response = task_partial_update.sync_detailed(client=client, **kwargs)
     _check_response(response)
     return Task(response.parsed)
 
 
+def list_tasks(page_size: int = None, cursor: str = None):
+    """List tasks."""
+    kwargs = _make_args(page_size=page_size, cursor=cursor)
+    with Session() as client:
+        response = task_list.sync_detailed(client=client, **kwargs)
+    _check_response(response)
+    return response.parsed
+
+
 def _make_args(**kwargs):
     settings = Badger.current.settings
-    ret_args = dataclasses.asdict(settings)
+    ret_args = settings.as_kwargs()
     ret_args.update(kwargs)
     return ret_args
-
-
-def _get_settings():
-    return _local.get()
 
 
 def _check_response(response):
@@ -181,41 +183,6 @@ def _check_response(response):
         raise ServerError(response.status_code, response.content)
     else:
         raise UnexpectedStatus(response.status_code, response.content)
-
-
-@dataclasses.dataclass
-class Settings:
-    client: AuthenticatedClient
-    organization_slug: str
-    project_slug: str
-
-
-class MugMeta(type):
-    @property
-    def current(cls):
-        mug = _local.get(None)
-        if mug is None:
-            mug = Badger(GLOBAL_MUG)
-            _local.set(mug)
-        return mug
-
-
-class Badger(metaclass=MugMeta):
-    def __init__(self, settings_or_mug=None):
-        if isinstance(settings_or_mug, Badger):
-            self.settings = settings_or_mug.settings
-        else:
-            self.settings = settings_or_mug
-
-    def bind(self, settings):
-        self.settings = settings
-
-    def is_configured(self):
-        return self.settings is not None
-
-
-GLOBAL_MUG = Badger()
-_local.set(GLOBAL_MUG)
 
 
 class Task:
@@ -262,7 +229,7 @@ class Task:
         self.update_status(StatusEnum.PRE_PROCESSING)
 
     def starting(self):
-        """Update the task status to `pre_processing` and set the value to `0`."""
+        """Update the task status to `processing` and set the value to `0`."""
         self.processing(value=0)
 
     def processing(self, value: int = None):
@@ -316,11 +283,20 @@ class Task:
         max_runtime: int = None,
         stale_timeout: int = None,
         actions: List[Action] = None,
+        data_merge_strategy: Any = None,
     ):
         """Generic update method used to update any of the task fields.
 
         This can also be used to add actions.
         """
+        if data and data_merge_strategy:
+            if hasattr(data_merge_strategy, "merge"):
+                data = data_merge_strategy.merge(self.data, data)
+            elif data_merge_strategy == "default":
+                data = DefaultMergeStrategy().merge(self.data, data)
+            else:
+                raise TaskbadgerException(f"Unknown data_merge_strategy: {data_merge_strategy!r}")
+
         task = update_task(
             self._task.id,
             name=name,
@@ -353,3 +329,20 @@ class Task:
 
 def _none_to_unset(value):
     return UNSET if value is None else value
+
+
+class DefaultMergeStrategy:
+    def __init__(self, append_keys=None):
+        self.append_keys = append_keys or []
+
+    def merge(self, existing, new):
+        task_data = existing or {}
+        for key, value in new.items():
+            if key in self.append_keys:
+                if key in task_data and value:
+                    task_data[key] += value
+                elif value:
+                    task_data[key] = value
+            else:
+                task_data[key] = value
+        return task_data

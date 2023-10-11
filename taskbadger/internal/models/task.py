@@ -1,7 +1,8 @@
 import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, TypeVar, Union
 
-import attr
+from attrs import define as _attrs_define
+from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
 from ..models.status_enum import StatusEnum
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
 T = TypeVar("T", bound="Task")
 
 
-@attr.s(auto_attribs=True)
+@_attrs_define
 class Task:
     """
     Attributes:
@@ -58,7 +59,7 @@ class Task:
     end_time: Union[Unset, None, datetime.datetime] = UNSET
     max_runtime: Union[Unset, None, int] = UNSET
     stale_timeout: Union[Unset, None, int] = UNSET
-    additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
+    additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         id = self.id

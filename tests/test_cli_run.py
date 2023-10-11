@@ -5,10 +5,11 @@ from unittest import mock
 import pytest
 from typer.testing import CliRunner
 
-from taskbadger.cli import app
+from taskbadger.cli_main import app
 from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum, TaskRequest
 from taskbadger.internal.types import UNSET, Response
-from taskbadger.sdk import Badger
+from taskbadger.mug import Badger
+from taskbadger.sdk import Task
 from tests.utils import task_for_test
 
 runner = CliRunner()
@@ -45,10 +46,10 @@ def test_cli_capture_output():
 
     body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n"}))
     update_patch.assert_any_call(
-        client=Badger.current.settings.client,
+        client=mock.ANY,
         organization_slug="org",
         project_slug="project",
-        id="test_id",
+        id=mock.ANY,
         json_body=body,
     )
 
@@ -64,10 +65,10 @@ def test_cli_capture_output_append():
 
     body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n123\n"}))
     update_patch.assert_any_call(
-        client=Badger.current.settings.client,
+        client=mock.ANY,
         organization_slug="org",
         project_slug="project",
-        id="test_id",
+        id=mock.ANY,
         json_body=body,
     )
 
@@ -98,15 +99,17 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
     update_mock = mock.MagicMock()
 
     def _update(*args, **kwargs):
+        task_id = kwargs["id"]
         update_mock(*args, **kwargs)
 
         # handle updating task data
         data = kwargs["json_body"].data
-        return Response(HTTPStatus.OK, b"", {}, task_for_test(data=data.additional_properties if data else None))
+        task_return = task_for_test(id=task_id, data=data.additional_properties if data else None)
+        return Response(HTTPStatus.OK, b"", {}, task_return)
 
     with (
         mock.patch("taskbadger.sdk.task_create.sync_detailed") as create,
-        mock.patch("taskbadger.sdk.task_partial_update.sync_detailed", new=_update) as update,
+        mock.patch("taskbadger.sdk.task_partial_update.sync_detailed", new=_update),
     ):
         task = task_for_test()
         create.return_value = Response(HTTPStatus.OK, b"", {}, task)
@@ -119,10 +122,7 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
         request = TaskRequest(name="task_name", status=StatusEnum.PROCESSING, stale_timeout=10)
         if action:
             request.additional_properties = {"actions": [action]}
-        settings = Badger.current.settings
-        create.assert_called_with(
-            client=settings.client, organization_slug="org", project_slug="project", json_body=request
-        )
+        create.assert_called_with(client=mock.ANY, organization_slug="org", project_slug="project", json_body=request)
 
         if return_code == 0:
             body = PatchedTaskRequest(status=StatusEnum.SUCCESS, value=100)
@@ -133,6 +133,28 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
 
         assert update_mock.call_count == update_call_count
         update_mock.assert_called_with(
-            client=settings.client, organization_slug="org", project_slug="project", id="test_id", json_body=body
+            client=mock.ANY, organization_slug="org", project_slug="project", id=task.id, json_body=body
         )
         return update_mock
+
+
+def test_cli_run_session():
+    def _update(*args, **kwargs):
+        session = Badger.current.session()
+        assert session.client is not None, "Session is not set"
+        return Task(task_for_test())
+
+    def _create(*args, **kwargs):
+        session = Badger.current.session()
+        assert session.client is not None, "Session is not set"
+        return Task(task_for_test())
+
+    with (
+        mock.patch("taskbadger.sdk.create_task", new=_create),
+        mock.patch("taskbadger.sdk.update_task", new=_update),
+        mock.patch("taskbadger.cli.wrapper.err_console") as err,
+    ):
+        args = ["task_name"]
+        result = runner.invoke(app, ["run"] + args + ["--"] + ["echo", "test"], catch_exceptions=False)
+        assert result.exit_code == 0, result.output
+        assert err.print.call_count == 0, err.print.call_args_list

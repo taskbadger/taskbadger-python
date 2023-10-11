@@ -6,7 +6,7 @@ import pytest
 import tomlkit
 from typer.testing import CliRunner
 
-from taskbadger.cli import app
+from taskbadger.cli_main import app
 from taskbadger.config import Config, write_config
 
 runner = CliRunner()
