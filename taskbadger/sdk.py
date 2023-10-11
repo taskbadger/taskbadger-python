@@ -162,7 +162,9 @@ def list_tasks(page_size: int = None, cursor: str = None):
     """List tasks."""
     kwargs = _make_args(page_size=page_size, cursor=cursor)
     with Session() as client:
-        return task_list.sync(client=client, **kwargs)
+        response = task_list.sync_detailed(client=client, **kwargs)
+    _check_response(response)
+    return response.parsed
 
 
 def _make_args(**kwargs):
