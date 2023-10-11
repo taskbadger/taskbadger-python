@@ -3,7 +3,7 @@ import json
 import pytest
 
 from taskbadger import Action, EmailIntegration, StatusEnum, update_task
-from taskbadger.errors import ServerError, Unauthorized, UnexpectedStatus
+from taskbadger.exceptions import ServerError, Unauthorized, UnexpectedStatus
 from taskbadger.sdk import create_task, get_task, init
 
 
