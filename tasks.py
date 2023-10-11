@@ -17,6 +17,7 @@ def tag_release(c: Context):
         c.run(f"git tag v{version}")
         c.run("git push origin main --tags")
 
+        print("Check https://github.com/taskbadger/taskbadger-python/actions/workflows/release.yml for release build.")
         print("Check https://github.com/taskbadger/taskbadger-python/releases and publish the release.")
 
 
@@ -26,8 +27,9 @@ def _get_version(c):
 
 
 @task
-def update_api(c):
-    c.run("curl http://localhost:8000/api/schema.json > taskbadger.yaml")
+def update_api(c, local=False):
+    if not local:
+        c.run("curl http://localhost:8000/api/schema.json > taskbadger.yaml")
     c.run(
         "cd .. && openapi-python-client update --path taskbadger-python/taskbadger.yaml --config taskbadger-python/generator_config.yml"
     )

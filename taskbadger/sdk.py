@@ -158,6 +158,13 @@ def update_task(
     return Task(response.parsed)
 
 
+def list_tasks(page_size: int = None, cursor: str = None):
+    """List tasks."""
+    kwargs = _make_args(page_size=page_size, cursor=cursor)
+    with Session() as client:
+        return task_list.sync(client=client, **kwargs)
+
+
 def _make_args(**kwargs):
     settings = Badger.current.settings
     ret_args = settings.as_kwargs()
@@ -320,3 +327,20 @@ class Task:
 
 def _none_to_unset(value):
     return UNSET if value is None else value
+
+
+class DefaultMergeStrategy:
+    def __init__(self, append_keys=None):
+        self.append_keys = append_keys or []
+
+    def merge(self, existing, new):
+        task_data = existing or {}
+        for key, value in new.items():
+            if key in self.append_keys:
+                if key in task_data and value:
+                    task_data[key] += value
+                elif value:
+                    task_data[key] = value
+            else:
+                task_data[key] = value
+        return task_data
