@@ -22,7 +22,7 @@ def create_task_safe(name: str, **kwargs: P.kwargs) -> Optional[Task]:
         **kwargs: See [taskbadger.create_task][]
 
     Returns:
-        Task ID or None
+        The created task or None
     """
     if not Badger.is_configured():
         return None
@@ -39,6 +39,9 @@ def update_task_safe(task_id: str, **kwargs: P.kwargs) -> Optional[Task]:
     Arguments:
         task_id: The ID of the task to update.
         **kwargs: See [taskbadger.update_task][]
+
+    Returns:
+        The updated task or None
     """
     if not Badger.is_configured():
         return
