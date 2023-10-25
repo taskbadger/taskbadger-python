@@ -28,6 +28,6 @@ jobs:
       - name: Run integration tests
         run: poetry run pytest integration_tests -vs
         env:
-          TASKBADGER_ORG: ${{ secrets.TASKBADGER_ORG }}
-          TASKBADGER_PROJECT: ${{ secrets.TASKBADGER_PROJECT }}
+          TASKBADGER_ORG: ${{ vars.TASKBADGER_ORG }}
+          TASKBADGER_PROJECT: ${{ vars.TASKBADGER_PROJECT }}
           TASKBADGER_API_KEY: ${{ secrets.TASKBADGER_API_KEY }}
