@@ -77,3 +77,7 @@ exclude = '''
 [tool.isort]
 line_length = 120
 profile = "black"
+
+[tool.pytest.ini_options]
+# don't run integration tests unless specifically requested
+norecursedirs = ".* integration_tests"

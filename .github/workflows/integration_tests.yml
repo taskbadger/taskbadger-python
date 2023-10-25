@@ -1,0 +1,29 @@
+name: Integration Tests
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install Poetry
+        uses: Gr1N/setup-poetry@v8
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/pypoetry/virtualenvs
+          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
+      - name: Checks
+        run: |
+          poetry --version
+          poetry check --no-interaction
+      - name: Install project
+        run: poetry install --no-interaction
+      - name: Run integration tests
+        run: poetry run pytest integration_tests -v
