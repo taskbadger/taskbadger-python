@@ -4,6 +4,8 @@ This is the official Python SDK for [Task Badger](https://taskbadger.net/).
 
 For full documentation go to https://docs.taskbadger.net/python/.
 
+![Integration Tests](https://github.com/taskbadger/taskbadger-python/actions/workflows/integration_tests.yml/badge.svg)
+
 ---
 
 ## Getting Started
