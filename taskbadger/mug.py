@@ -24,6 +24,14 @@ class Settings:
             "project_slug": self.project_slug,
         }
 
+    def __str__(self):
+        return (
+            f"Settings(base_url='{self.base_url}',"
+            f" token='{self.token[:6]}...',"
+            f" organization_slug='{self.organization_slug}',"
+            f" project_slug='{self.project_slug}')"
+        )
+
 
 class Session(ContextDecorator):
     def __init__(self):

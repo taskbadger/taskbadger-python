@@ -26,7 +26,7 @@ jobs:
       - name: Install project
         run: poetry install --no-interaction
       - name: Run integration tests
-        run: poetry run pytest integration_tests -v
+        run: poetry run pytest integration_tests -vs
         env:
           TASKBADGER_ORG: ${{ secrets.TASKBADGER_ORG }}
           TASKBADGER_PROJECT: ${{ secrets.TASKBADGER_PROJECT }}
