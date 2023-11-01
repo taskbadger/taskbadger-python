@@ -11,3 +11,6 @@ class CelerySystemIntegration(System):
                 `taskbadger.celery.Task` base class.
         """
         self.auto_track_tasks = auto_track_tasks
+        if auto_track_tasks:
+            # Importing this here ensures that the Celery signal handlers are registered
+            import taskbadger.celery  # noqa
