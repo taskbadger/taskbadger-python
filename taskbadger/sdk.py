@@ -100,8 +100,10 @@ def create_task(
     task = TaskRequest(
         name=name, status=status, value=value, value_max=value_max, max_runtime=max_runtime, stale_timeout=stale_timeout
     )
-    if data:
-        task.data = TaskRequestData.from_dict(data)
+    scope_data = Badger.current.scope().context
+    if scope_data or data:
+        data = data or {}
+        task.data = TaskRequestData.from_dict({**scope_data, **data})
     if actions:
         task.additional_properties = {"actions": [a.to_dict() for a in actions]}
     kwargs = _make_args(json_body=task)
