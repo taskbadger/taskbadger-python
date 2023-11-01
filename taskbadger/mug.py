@@ -73,6 +73,29 @@ class ReentrantSession:
             self.client = None
 
 
+class Scope:
+    """Scope holds global data which will be added to every task created within the current scope.
+
+    Scope data will be merged with task data when creating a task where data provided directly to the task
+    will override scope data.
+    """
+
+    def __init__(self):
+        self.stack = []
+        self.context = {}
+
+    def __enter__(self):
+        self.stack.append(self.context)
+        self.context = self.context.copy()
+        return self
+
+    def __exit__(self, *args):
+        self.context = self.stack.pop()
+
+    def __setitem__(self, key, value):
+        self.context[key] = value
+
+
 class MugMeta(type):
     @property
     def current(cls):
@@ -94,6 +117,7 @@ class Badger(metaclass=MugMeta):
             self.settings = settings_or_mug
 
         self._session = ReentrantSession()
+        self._scope = Scope()
 
     def bind(self, settings):
         self.settings = settings
@@ -103,6 +127,9 @@ class Badger(metaclass=MugMeta):
 
     def client(self) -> AuthenticatedClient:
         return self.settings.get_client()
+
+    def scope(self) -> Scope:
+        return self._scope
 
     @classmethod
     def is_configured(cls):
