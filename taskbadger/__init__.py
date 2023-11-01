@@ -1,3 +1,4 @@
+from .decorators import track
 from .integrations import Action, EmailIntegration, WebhookIntegration
 from .internal.models import StatusEnum
 from .mug import Badger, Session
