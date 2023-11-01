@@ -16,5 +16,5 @@ except importlib_metadata.PackageNotFoundError:
     __version__ = "dev"
 
 
-def with_scope():
+def current_scope():
     return Badger.current.scope()
