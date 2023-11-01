@@ -138,7 +138,7 @@ class Task(celery.Task):
 
 @before_task_publish.connect
 def task_publish_handler(sender=None, headers=None, **kwargs):
-    if sender.startswith("celery.") or not Badger.is_configured():
+    if sender.startswith("celery.") or not headers or not Badger.is_configured():
         return
 
     celery_system = Badger.current.settings.get_system_by_id("celery")
