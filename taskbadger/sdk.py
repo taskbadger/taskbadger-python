@@ -13,26 +13,36 @@ from taskbadger.internal.models import (
 )
 from taskbadger.internal.types import UNSET
 from taskbadger.mug import Badger, Session, Settings
+from taskbadger.systems import System
 
 _TB_HOST = "https://taskbadger.net"
 
 
-def init(organization_slug: str = None, project_slug: str = None, token: str = None):
+def init(organization_slug: str = None, project_slug: str = None, token: str = None, systems: List[System] = None):
     """Initialize Task Badger client
 
     Call this function once per thread
     """
-    _init(_TB_HOST, organization_slug, project_slug, token)
+    _init(_TB_HOST, organization_slug, project_slug, token, systems)
 
 
-def _init(host: str = None, organization_slug: str = None, project_slug: str = None, token: str = None):
+def _init(
+    host: str = None,
+    organization_slug: str = None,
+    project_slug: str = None,
+    token: str = None,
+    systems: List[System] = None,
+):
     host = host or os.environ.get("TASKBADGER_HOST", "https://taskbadger.net")
     organization_slug = organization_slug or os.environ.get("TASKBADGER_ORG")
     project_slug = project_slug or os.environ.get("TASKBADGER_PROJECT")
     token = token or os.environ.get("TASKBADGER_API_KEY")
 
     if host and organization_slug and project_slug and token:
-        settings = Settings(host, token, organization_slug, project_slug)
+        systems = systems or []
+        settings = Settings(
+            host, token, organization_slug, project_slug, systems={system.identifier: system for system in systems}
+        )
         Badger.current.bind(settings)
     else:
         raise ConfigurationError(

@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 import taskbadger as badger
+from taskbadger.systems.celery import CelerySystemIntegration
 
 
 def _load_config():
@@ -30,5 +31,6 @@ else:
         os.environ.get("TASKBADGER_ORG", ""),
         os.environ.get("TASKBADGER_PROJECT", ""),
         os.environ.get("TASKBADGER_API_KEY", ""),
+        systems=[CelerySystemIntegration()],
     )
     print(f"\nIntegration tests configuration:\n    {badger.mug.Badger.current.settings}\n")

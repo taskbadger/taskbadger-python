@@ -1,3 +1,4 @@
+import collections
 import functools
 import logging
 
@@ -16,6 +17,46 @@ IGNORE_ARGS = {TB_KWARGS_ARG, f"{KWARG_PREFIX}task", f"{KWARG_PREFIX}task_id"}
 TERMINAL_STATES = {StatusEnum.SUCCESS, StatusEnum.ERROR, StatusEnum.CANCELLED, StatusEnum.STALE}
 
 log = logging.getLogger("taskbadger")
+
+
+class Cache:
+    def __init__(self, maxsize=128):
+        self.cache = collections.OrderedDict()
+        self.maxsize = maxsize
+
+    def set(self, key, value):
+        self.cache[key] = value
+
+    def unset(self, key):
+        self.cache.pop(key, None)
+
+    def get(self, key):
+        return self.cache.get(key)
+
+    def prune(self):
+        if len(self.cache) > self.maxsize:
+            self.cache.popitem(last=False)
+
+
+def cached(cache_none=True, maxsize=128):
+    cache = Cache(maxsize=maxsize)
+
+    def _wrapper(func):
+        @functools.wraps(func)
+        def _inner(*args, **kwargs):
+            key = args + tuple(sorted(kwargs.items()))
+            if key in cache.cache:
+                return cache.get(key)
+
+            result = func(*args, **kwargs)
+            if result is not None or cache_none:
+                cache.set(key, result)
+            return result
+
+        _inner.cache = cache
+        return _inner
+
+    return _wrapper
 
 
 class Task(celery.Task):
@@ -89,18 +130,21 @@ class Task(celery.Task):
         task = self.request.get("taskbadger_task")
         if not task:
             log.debug("Fetching task '%s'", self.taskbadger_task_id)
-            try:
-                task = get_task(self.taskbadger_task_id)
+            task = safe_get_task(self.taskbadger_task_id)
+            if task:
                 self.request.update({"taskbadger_task": task})
-            except Exception:
-                log.exception("Error fetching task '%s'", self.taskbadger_task_id)
-                task = None
         return task
 
 
 @before_task_publish.connect
 def task_publish_handler(sender=None, headers=None, **kwargs):
-    if not headers.get("taskbadger_track") or not Badger.is_configured():
+    if sender.startswith("celery.") or not headers or not Badger.is_configured():
+        return
+
+    celery_system = Badger.current.settings.get_system_by_id("celery")
+    auto_track = celery_system and celery_system.auto_track_tasks
+    manual_track = headers.get("taskbadger_track")
+    if not manual_track and not auto_track:
         return
 
     ctask = celery.current_app.tasks.get(sender)
@@ -112,7 +156,7 @@ def task_publish_handler(sender=None, headers=None, **kwargs):
             kwargs[attr.removeprefix(KWARG_PREFIX)] = getattr(ctask, attr)
 
     # get kwargs from the task headers (set via apply_async)
-    kwargs.update(headers[TB_KWARGS_ARG])
+    kwargs.update(headers.get(TB_KWARGS_ARG, {}))
     kwargs["status"] = StatusEnum.PENDING
     name = kwargs.pop("name", headers["task"])
 
@@ -147,11 +191,20 @@ def task_retry_handler(sender=None, einfo=None, **kwargs):
 
 
 def _update_task(signal_sender, status, einfo=None):
-    log.debug("celery_task_update %s %s", signal_sender, status)
-    if not hasattr(signal_sender, "taskbadger_task"):
+    headers = signal_sender.request.headers
+    if not headers:
         return
 
-    task = signal_sender.taskbadger_task
+    task_id = headers.get("taskbadger_task_id")
+    if not task_id:
+        return
+
+    log.debug("celery_task_update %s %s", signal_sender, status)
+    if hasattr(signal_sender, "taskbadger_task"):
+        task = signal_sender.taskbadger_task
+    else:
+        task = safe_get_task(task_id)
+
     if task is None:
         return
 
@@ -164,7 +217,9 @@ def _update_task(signal_sender, status, einfo=None):
     data = None
     if einfo:
         data = DefaultMergeStrategy().merge(task.data, {"exception": str(einfo)})
-    update_task_safe(task.id, status=status, data=data)
+    task = update_task_safe(task.id, status=status, data=data)
+    if task:
+        safe_get_task.cache.set((task_id,), task)
 
 
 def enter_session():
@@ -176,8 +231,25 @@ def enter_session():
 
 
 def exit_session(signal_sender):
-    if not hasattr(signal_sender, "taskbadger_task") or not Badger.is_configured():
+    headers = signal_sender.request.headers
+    if not headers:
         return
+
+    task_id = headers.get("taskbadger_task_id")
+    if not task_id or not Badger.is_configured():
+        return
+
+    safe_get_task.cache.unset((task_id,))
+    safe_get_task.cache.prune()
+
     session = Badger.current.session()
     if session.client:
         session.__exit__()
+
+
+@cached(cache_none=False)
+def safe_get_task(task_id: str):
+    try:
+        return get_task(task_id)
+    except Exception:
+        log.exception("Error fetching task '%s'", task_id)

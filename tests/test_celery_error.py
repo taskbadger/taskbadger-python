@@ -20,7 +20,9 @@ def test_celery_task_error(celery_session_app, celery_session_worker, bind_setti
     with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
         "taskbadger.celery.update_task_safe"
     ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
-        get_task.return_value = task_for_test()
+        task = task_for_test()
+        get_task.return_value = task
+        update.return_value = task
         result = add_error.delay(2, 2)
         with pytest.raises(Exception):
             result.get(timeout=10, propagate=True)
