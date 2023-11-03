@@ -144,7 +144,7 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
         return
 
     celery_system = Badger.current.settings.get_system_by_id("celery")
-    auto_track = celery_system and celery_system.auto_track_tasks
+    auto_track = celery_system and celery_system.track_task(sender)
     manual_track = headers.get("taskbadger_track")
     if not manual_track and not auto_track:
         return

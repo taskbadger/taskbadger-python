@@ -60,3 +60,20 @@ def test_celery_auto_track_task(celery_session_app, celery_session_worker, bind_
     assert get_task.call_count == 1
     assert update.call_count == 2
     assert Badger.current.session().client is None
+
+
+@pytest.mark.parametrize(
+    "include,exclude,expected",
+    [
+        (None, None, True),
+        (["myapp.tasks.export_data"], None, True),
+        ([".*export_data"], [], True),
+        ([".*export_da"], [], False),
+        (["myapp.tasks.export_data"], ["myapp.tasks.export_data"], False),
+        ([".*"], ["myapp.tasks.export_data"], False),
+        ([".*"], [".*tasks.*"], False),
+    ],
+)
+def test_task_name_matching(include, exclude, expected: bool):
+    integration = CelerySystemIntegration(includes=include, excludes=exclude)
+    assert integration.track_task("myapp.tasks.export_data") is expected
