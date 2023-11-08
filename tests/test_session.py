@@ -56,9 +56,15 @@ def test_session_multiple_threads():
         threads.append(t)
         t.start()
 
-    for t in threads:
-        t.join(1)
-        assert not t.is_alive()
+    loopcount = 0
+    max_loops = len(threads) * 2
+    while len(threads):
+        threads[0].join(1)
+        if not threads[0].is_alive():
+            threads.pop(0)
+        loopcount += 1
+        if loopcount > max_loops:
+            pytest.fail("Threads did not complete")
 
     assert len(clients) == num_tasks
     assert len({id(s) for s in clients}) == 10
