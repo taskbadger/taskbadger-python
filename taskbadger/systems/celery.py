@@ -21,6 +21,10 @@ class CelerySystemIntegration(System):
         self.includes = includes
         self.excludes = excludes
 
+        if auto_track_tasks:
+            # Importing this here ensures that the Celery signal handlers are registered
+            import taskbadger.celery  # noqa
+
     def track_task(self, task_name):
         if not self.auto_track_tasks:
             return False
