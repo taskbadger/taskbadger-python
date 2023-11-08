@@ -8,9 +8,12 @@ calls `Badger.is_configured()` (or similar), the `_local` ContextVar in the
 Celery runner thread will not have the configuration set.
 """
 import logging
+import sys
+import weakref
 from unittest import mock
 
 import pytest
+from celery.signals import task_prerun
 
 from taskbadger.mug import Badger, Settings
 from taskbadger.systems.celery import CelerySystemIntegration
@@ -77,3 +80,36 @@ def test_celery_auto_track_task(celery_session_app, celery_session_worker, bind_
 def test_task_name_matching(include, exclude, expected: bool):
     integration = CelerySystemIntegration(includes=include, excludes=exclude)
     assert integration.track_task("myapp.tasks.export_data") is expected
+
+
+def test_celery_system_integration_connects_signals():
+    # clean the slate
+    _disconnect_signals()
+    if "taskbadger.celery" in sys.modules:
+        del sys.modules["taskbadger.celery"]
+    assert "taskbadger.celery" not in sys.modules
+
+    # this should result in the signals being connected
+    CelerySystemIntegration()
+
+    assert "taskbadger.celery" in sys.modules
+    _assert_signals()
+
+
+def _assert_signals(check_is_connected=True):
+    # test that signals are actually connected
+    receivers = [rcv[1] for rcv in task_prerun.receivers]
+    receiver_names = set()
+    for receiver in receivers:
+        if isinstance(receiver, weakref.ReferenceType):
+            receiver = receiver()
+        receiver_names.add(f"{receiver.__module__}.{receiver.__name__}")
+    is_connected = "taskbadger.celery.task_prerun_handler" in receiver_names
+    assert check_is_connected == is_connected
+
+
+def _disconnect_signals():
+    from taskbadger.celery import task_prerun_handler
+
+    task_prerun.disconnect(task_prerun_handler)
+    _assert_signals(check_is_connected=False)
