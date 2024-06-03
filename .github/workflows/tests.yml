@@ -29,6 +29,7 @@ jobs:
         celery-version: [">=5.4"]
         include:
           - celery-version: ">=5.3,<5.4"
+            python-version: "3.12"
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
