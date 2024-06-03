@@ -13,7 +13,7 @@ packages = [
 include = ["CHANGELOG.md", "taskbadger/internal/py.typed"]
 
 homepage = "https://taskbadger.net/"
-repository = "https://github.com/taskbadger/taskbadger-docs"
+repository = "https://github.com/taskbadger/taskbadger-python"
 documentation = "https://docs.taskbadger.net/"
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -29,6 +29,9 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+
+[tool.poetry.urls]
+"Changelog" = "https://github.com/taskbadger/taskbadger-python/releases"
 
 [tool.poetry.dependencies]
 python = "^3.8"
