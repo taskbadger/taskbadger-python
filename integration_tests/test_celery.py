@@ -2,6 +2,7 @@ import logging
 import random
 
 import pytest
+from pytest_celery import CeleryBackendCluster, CeleryBrokerCluster, RedisTestBackend, RedisTestBroker
 
 from taskbadger import StatusEnum
 
@@ -17,14 +18,29 @@ def check_log_errors(caplog):
             pytest.fail(f"log errors during '{when}': {errors}")
 
 
-@pytest.fixture(scope="session", autouse=True)
-def celery_includes():
-    return [
-        "integration_tests.tasks",
-    ]
+@pytest.fixture
+def celery_broker_cluster(celery_redis_broker: RedisTestBroker) -> CeleryBrokerCluster:
+    cluster = CeleryBrokerCluster(celery_redis_broker)
+    yield cluster
+    cluster.teardown()
 
 
-def test_celery(celery_session_app, celery_session_worker):
+@pytest.fixture
+def celery_backend_cluster(celery_redis_backend: RedisTestBackend) -> CeleryBackendCluster:
+    cluster = CeleryBackendCluster(celery_redis_backend)
+    yield cluster
+    cluster.teardown()
+
+
+@pytest.fixture
+def default_worker_tasks(default_worker_tasks: set) -> set:
+    from integration_tests import tasks
+
+    default_worker_tasks.add(tasks)
+    return default_worker_tasks
+
+
+def test_celery(celery_setup):
     a, b = random.randint(1, 1000), random.randint(1, 1000)
     result = add.delay(a, b)
     assert result.get(timeout=10, propagate=True) == a + b
@@ -36,7 +52,7 @@ def test_celery(celery_session_app, celery_session_worker):
     assert tb_task.data == {"result": a + b}
 
 
-def test_celery_auto_track(celery_session_app, celery_session_worker):
+def test_celery_auto_track(celery_setup):
     a, b = random.randint(1, 1000), random.randint(1, 1000)
     result = add_auto_track.delay(a, b)
     assert result.get(timeout=10, propagate=True) == a + b
