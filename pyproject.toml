@@ -55,7 +55,7 @@ black = "^23.1.0"
 pre-commit = "^3.0.2"
 pytest-httpx = "^0.21.3"
 invoke = "^2.0.0"
-pytest-celery = "^0.0.0"
+pytest-celery = ">0.0.0"
 
 [tool.poetry.scripts]
 taskbadger = "taskbadger.cli_main:app"
