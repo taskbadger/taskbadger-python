@@ -21,6 +21,7 @@ def test_celery_task_error(celery_session_app, celery_session_worker, bind_setti
         "taskbadger.celery.update_task_safe"
     ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
         task = task_for_test()
+        create.return_value = task
         get_task.return_value = task
         update.return_value = task
         result = add_error.delay(2, 2)

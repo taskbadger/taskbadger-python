@@ -13,7 +13,7 @@ from unittest import mock
 import celery
 import pytest
 
-from taskbadger import StatusEnum
+from taskbadger import Action, EmailIntegration, StatusEnum
 from taskbadger.celery import Task
 from taskbadger.mug import Badger
 from tests.utils import task_for_test
@@ -73,6 +73,32 @@ def test_celery_task_with_args(celery_session_app, celery_session_worker, bind_s
         assert result.get(timeout=10, propagate=True) == 4
 
     create.assert_called_once_with("new_name", value_max=10, data={"foo": "bar"}, status=StatusEnum.PENDING)
+
+
+def test_celery_task_with_kwargs(celery_session_app, celery_session_worker, bind_settings):
+    @celery_session_app.task(bind=True, base=Task)
+    def add_with_task_args(self, a, b):
+        assert self.taskbadger_task is not None
+        return a + b
+
+    celery_session_worker.reload()
+
+    with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
+        "taskbadger.celery.update_task_safe"
+    ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
+        create.return_value = task_for_test()
+
+        actions = [Action("stale", integration=EmailIntegration(to="test@test.com"))]
+        result = add_with_task_args.delay(
+            2,
+            2,
+            taskbadger_name="new_name",
+            taskbadger_value_max=10,
+            taskbadger_kwargs={"actions": actions},
+        )
+        assert result.get(timeout=10, propagate=True) == 4
+
+    create.assert_called_once_with("new_name", value_max=10, actions=actions, status=StatusEnum.PENDING)
 
 
 def test_celery_task_with_args_in_decorator(celery_session_app, celery_session_worker, bind_settings):

@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Any, List
 
@@ -14,6 +15,8 @@ from taskbadger.internal.models import (
 from taskbadger.internal.types import UNSET
 from taskbadger.mug import Badger, Session, Settings
 from taskbadger.systems import System
+
+log = logging.getLogger("taskbadger")
 
 _TB_HOST = "https://taskbadger.net"
 
@@ -337,6 +340,12 @@ class Task:
 
     def __getattr__(self, item):
         return getattr(self._task, item)
+
+    def safe_update(self, **kwargs):
+        try:
+            self.update(**kwargs)
+        except Exception as e:
+            log.exception("Error updating task '%s'", self._task.id)
 
 
 def _none_to_unset(value):

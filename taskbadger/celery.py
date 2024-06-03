@@ -103,11 +103,13 @@ class Task(celery.Task):
     def apply_async(self, *args, **kwargs):
         headers = kwargs.setdefault("headers", {})
         headers["taskbadger_track"] = True
-        tb_kwargs = kwargs.pop(TB_KWARGS_ARG, {})
-        for name in list(kwargs):
-            if name.startswith(KWARG_PREFIX):
-                val = kwargs.pop(name)
-                tb_kwargs[name.removeprefix(KWARG_PREFIX)] = val
+        tb_kwargs = self._get_tb_kwargs(kwargs)
+        if kwargs.get("kwargs"):
+            # extract taskbadger options from task kwargs when supplied as keyword argument
+            tb_kwargs.update(self._get_tb_kwargs(kwargs["kwargs"]))
+        elif len(args) > 1 and isinstance(args[1], dict):
+            # extract taskbadger options from task kwargs when supplied as positional argument
+            tb_kwargs.update(self._get_tb_kwargs(args[1]))
         headers[TB_KWARGS_ARG] = tb_kwargs
         result = super().apply_async(*args, **kwargs)
 
@@ -118,6 +120,14 @@ class Task(celery.Task):
         setattr(result, "get_taskbadger_task", _get_task)
 
         return result
+
+    def _get_tb_kwargs(self, kwargs):
+        tb_kwargs = kwargs.pop(TB_KWARGS_ARG, {})
+        for name in list(kwargs):
+            if name.startswith(KWARG_PREFIX):
+                val = kwargs.pop(name)
+                tb_kwargs[name.removeprefix(KWARG_PREFIX)] = val
+        return tb_kwargs
 
     @property
     def taskbadger_task_id(self):
@@ -146,6 +156,7 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
     celery_system = Badger.current.settings.get_system_by_id("celery")
     auto_track = celery_system and celery_system.track_task(sender)
     manual_track = headers.get("taskbadger_track")
+    header_kwargs = headers.pop(TB_KWARGS_ARG, {})
     if not manual_track and not auto_track:
         return
 
@@ -158,7 +169,7 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
             kwargs[attr.removeprefix(KWARG_PREFIX)] = getattr(ctask, attr)
 
     # get kwargs from the task headers (set via apply_async)
-    kwargs.update(headers.get(TB_KWARGS_ARG, {}))
+    kwargs.update(header_kwargs)
     kwargs["status"] = StatusEnum.PENDING
     name = kwargs.pop("name", headers["task"])
 
