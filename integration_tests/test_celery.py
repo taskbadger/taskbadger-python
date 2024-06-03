@@ -24,7 +24,7 @@ def celery_includes():
     ]
 
 
-def test_celery(celery_worker):
+def test_celery(celery_session_app, celery_session_worker):
     a, b = random.randint(1, 1000), random.randint(1, 1000)
     result = add.delay(a, b)
     assert result.get(timeout=10, propagate=True) == a + b
@@ -36,7 +36,7 @@ def test_celery(celery_worker):
     assert tb_task.data == {"result": a + b}
 
 
-def test_celery_auto_track(celery_worker):
+def test_celery_auto_track(celery_session_app, celery_session_worker):
     a, b = random.randint(1, 1000), random.randint(1, 1000)
     result = add_auto_track.delay(a, b)
     assert result.get(timeout=10, propagate=True) == a + b
