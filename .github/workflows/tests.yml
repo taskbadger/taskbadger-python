@@ -8,12 +8,27 @@ on:
 jobs:
   python-tests:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
     strategy:
       max-parallel: 4
       matrix:
         python-version:
           - "3.9"
           - "3.10"
+          - "3.11"
+          - "3.12"
+        celery-version:
+          - ">=5.3,<5.4"
+          - ">=5.4"
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
@@ -31,6 +46,8 @@ jobs:
           poetry --version
           poetry check --no-interaction
       - name: Install project
-        run: poetry install --no-interaction
+        run: |
+          poetry install --no-interaction
+          pip install celery"${{ matrix.celery-version }}"
       - name: Run tests
         run: poetry run pytest -v

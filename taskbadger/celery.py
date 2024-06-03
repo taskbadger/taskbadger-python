@@ -156,6 +156,7 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
     celery_system = Badger.current.settings.get_system_by_id("celery")
     auto_track = celery_system and celery_system.track_task(sender)
     manual_track = headers.get("taskbadger_track")
+    header_kwargs = headers.pop(TB_KWARGS_ARG, {})
     if not manual_track and not auto_track:
         return
 
@@ -168,7 +169,7 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
             kwargs[attr.removeprefix(KWARG_PREFIX)] = getattr(ctask, attr)
 
     # get kwargs from the task headers (set via apply_async)
-    kwargs.update(headers.get(TB_KWARGS_ARG, {}))
+    kwargs.update(header_kwargs)
     kwargs["status"] = StatusEnum.PENDING
     name = kwargs.pop("name", headers["task"])
 
