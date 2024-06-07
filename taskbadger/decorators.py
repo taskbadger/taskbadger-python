@@ -63,5 +63,5 @@ def _update_task(task, **kwargs):
 def _update_safe(task, **kwargs):
     try:
         task.update(**kwargs)
-    except Exception:
-        log.exception("Error updating task '%s'", task.id)
+    except Exception as e:
+        log.warning("Error updating task '%s': %s", task.id, e)

@@ -260,8 +260,8 @@ def exit_session(signal_sender):
 def safe_get_task(task_id: str):
     try:
         return get_task(task_id)
-    except Exception:
-        log.exception("Error fetching task '%s'", task_id)
+    except Exception as e:
+        log.warning("Error fetching task '%s': %s", task_id, e)
 
 
 def _get_taskbadger_task_id(request):

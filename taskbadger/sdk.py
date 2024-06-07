@@ -345,7 +345,7 @@ class Task:
         try:
             self.update(**kwargs)
         except Exception as e:
-            log.exception("Error updating task '%s'", self._task.id)
+            log.warning("Error updating task '%s': %s", self._task.id, e)
 
 
 def _none_to_unset(value):

@@ -29,8 +29,8 @@ def create_task_safe(name: str, **kwargs: P.kwargs) -> Optional[Task]:
 
     try:
         return create_task(name, **kwargs)
-    except Exception:
-        log.exception("Error creating task '%s'", name)
+    except Exception as e:
+        log.warning("Error creating task '%s': %s", name, e)
 
 
 def update_task_safe(task_id: str, **kwargs: P.kwargs) -> Optional[Task]:
@@ -48,5 +48,5 @@ def update_task_safe(task_id: str, **kwargs: P.kwargs) -> Optional[Task]:
 
     try:
         return update_task(task_id, **kwargs)
-    except Exception:
-        log.exception("Error updating task '%s'", task_id)
+    except Exception as e:
+        log.warning("Error updating task '%s': %s", task_id, e)
