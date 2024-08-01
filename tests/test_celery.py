@@ -171,7 +171,14 @@ def test_celery_task_badger_not_configured(celery_session_app, celery_session_wo
     with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
         "taskbadger.celery.update_task_safe"
     ) as update:
-        result = add_no_tb.delay(2, 2)
+        result = add_no_tb.delay(
+            2,
+            2,
+            taskbadger_kwargs={
+                # add an action here to test serialization failure when Badger is not configured
+                "actions": [Action("stale", integration=EmailIntegration(to="test@test.com"))]
+            },
+        )
         assert result.get(timeout=10, propagate=True) == 4
 
     create.assert_not_called()

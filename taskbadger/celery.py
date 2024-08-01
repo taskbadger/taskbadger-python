@@ -102,7 +102,6 @@ class Task(celery.Task):
 
     def apply_async(self, *args, **kwargs):
         headers = kwargs.setdefault("headers", {})
-        headers["taskbadger_track"] = True
         tb_kwargs = self._get_tb_kwargs(kwargs)
         if kwargs.get("kwargs"):
             # extract taskbadger options from task kwargs when supplied as keyword argument
@@ -110,7 +109,11 @@ class Task(celery.Task):
         elif len(args) > 1 and isinstance(args[1], dict):
             # extract taskbadger options from task kwargs when supplied as positional argument
             tb_kwargs.update(self._get_tb_kwargs(args[1]))
-        headers[TB_KWARGS_ARG] = tb_kwargs
+
+        if Badger.is_configured():
+            headers["taskbadger_track"] = True
+            headers[TB_KWARGS_ARG] = tb_kwargs
+
         result = super().apply_async(*args, **kwargs)
 
         tb_task_id = result.info.get(TB_TASK_ID) if result.info else None
@@ -150,13 +153,13 @@ class Task(celery.Task):
 @before_task_publish.connect
 def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
     headers = headers if "task" in headers else body
+    header_kwargs = headers.pop(TB_KWARGS_ARG, {})  # always remove TB headers
     if sender.startswith("celery.") or not Badger.is_configured():
         return
 
     celery_system = Badger.current.settings.get_system_by_id("celery")
     auto_track = celery_system and celery_system.track_task(sender)
     manual_track = headers.get("taskbadger_track")
-    header_kwargs = headers.pop(TB_KWARGS_ARG, {})
     if not manual_track and not auto_track:
         return
 
