@@ -71,6 +71,8 @@ def test_session_multiple_threads():
 
 
 class TestThread(threading.Thread):
+    __test__ = False
+
     def __init__(self, name, barrier, clients):
         threading.Thread.__init__(self, name=name)
         self.barrier = barrier
