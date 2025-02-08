@@ -14,7 +14,9 @@ from taskbadger.sdk import list_tasks
 
 def list_tasks_command(
     ctx: typer.Context,
-    output_format: OutputFormat = typer.Option(OutputFormat.pretty, "--format", "-f", help="Output format"),
+    output_format: OutputFormat = typer.Option(
+        OutputFormat.pretty, "--format", "-f", help="Output format"
+    ),
     limit: int = typer.Option(100, help="Limit the number of results."),
     start_token: str = typer.Option(None, show_default=False, help="Start token."),
 ):
@@ -47,7 +49,13 @@ def _render_pretty(ctx, result):
     table.add_column("Percent", no_wrap=True)
 
     for task in result.results:
-        table.add_row(task.id, task.created.isoformat(), task.name, task.status, str(task.value_percent))
+        table.add_row(
+            task.id,
+            task.created.isoformat(),
+            task.name,
+            task.status,
+            str(task.value_percent),
+        )
     Console().print(table)
 
     cursor = _get_cursor(result.next_)
@@ -59,7 +67,15 @@ def _render_csv(ctx, result):
     writer = csv.writer(sys.stdout)
     writer.writerow("Task ID,Created,Name,Status,Percent".split(","))
     for task in result.results:
-        writer.writerow([task.id, task.created.isoformat(), task.name, task.status, str(task.value_percent)])
+        writer.writerow(
+            [
+                task.id,
+                task.created.isoformat(),
+                task.name,
+                task.status,
+                str(task.value_percent),
+            ]
+        )
 
     cursor = _get_cursor(result.next_)
     if cursor:

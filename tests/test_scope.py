@@ -1,7 +1,3 @@
-import random
-import threading
-import time
-
 import pytest
 
 from taskbadger import create_task, init

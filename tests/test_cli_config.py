@@ -23,7 +23,9 @@ def mock_config_location():
 
 @pytest.fixture
 def mock_config(mock_config_location):
-    config = Config(organization_slug="test_org", project_slug="test_project", token="test_token")
+    config = Config(
+        organization_slug="test_org", project_slug="test_project", token="test_token"
+    )
     write_config(config)
 
 

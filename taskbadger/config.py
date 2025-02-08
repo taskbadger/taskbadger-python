@@ -48,8 +48,10 @@ class Config:
         auth = config_dict.get("auth", {})
         return Config(
             token=overrides.get("token") or _from_env("API_KEY", auth.get("token")),
-            organization_slug=overrides.get("org") or _from_env("ORG", defaults.get("org")),
-            project_slug=overrides.get("project") or _from_env("PROJECT", defaults.get("project")),
+            organization_slug=overrides.get("org")
+            or _from_env("ORG", defaults.get("org")),
+            project_slug=overrides.get("project")
+            or _from_env("PROJECT", defaults.get("project")),
             host=overrides.get("host") or auth.get("host"),
         )
 
@@ -59,9 +61,9 @@ class Config:
             host = f"\n            Host: {self.host}"
         return inspect.cleandoc(
             f"""
-            Organization slug: {self.organization_slug or '-'}
-            Project slug: {self.project_slug or '-'}
-            Auth token: {self.token or '-'}{host}
+            Organization slug: {self.organization_slug or "-"}
+            Project slug: {self.project_slug or "-"}
+            Auth token: {self.token or "-"}{host}
             """
         )
 
@@ -73,7 +75,12 @@ def _from_env(name, default=None, prefix="TASKBADGER_"):
 def write_config(config):
     doc = document()
 
-    doc.add("defaults", table().add("org", config.organization_slug).add("project", config.project_slug))
+    doc.add(
+        "defaults",
+        table()
+        .add("org", config.organization_slug)
+        .add("project", config.project_slug),
+    )
 
     doc.add("auth", table().add("token", config.token))
 

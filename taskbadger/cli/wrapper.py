@@ -12,7 +12,9 @@ def run(
     ctx: typer.Context,
     name: str = typer.Argument(..., show_default=False, help="The task name"),
     monitor_id: str = typer.Option(None, help="Associate this task with a monitor."),
-    update_frequency: int = typer.Option(5, metavar="SECONDS", min=5, max=300, help="Seconds between updates."),
+    update_frequency: int = typer.Option(
+        5, metavar="SECONDS", min=5, max=300, help="Seconds between updates."
+    ),
     action_def: Tuple[str, str, str] = typer.Option(
         (None, None, None),
         "--action",
@@ -53,7 +55,12 @@ def run(
             print(f"Task created: {task.public_url}")
         env = {"TASKBADGER_TASK_ID": task.id} if task else None
         try:
-            process = ProcessRunner(ctx.args, env, capture_output=capture_output, update_frequency=update_frequency)
+            process = ProcessRunner(
+                ctx.args,
+                env,
+                capture_output=capture_output,
+                update_frequency=update_frequency,
+            )
             for output in process.run():
                 _update_task(task, **(output or {}))
         except Exception as e:
@@ -64,7 +71,9 @@ def run(
             if process.returncode == 0:
                 task.success(value=100)
             else:
-                _update_task(task, status=StatusEnum.ERROR, return_code=process.returncode)
+                _update_task(
+                    task, status=StatusEnum.ERROR, return_code=process.returncode
+                )
 
     if process.returncode != 0:
         raise typer.Exit(process.returncode)
@@ -77,6 +86,8 @@ def _update_task(task, status=None, **data_kwargs):
 
     merge_strategy = DefaultMergeStrategy(append_keys=("stdout", "stderr"))
     try:
-        task.update(status=status, data=data_kwargs or None, data_merge_strategy=merge_strategy)
+        task.update(
+            status=status, data=data_kwargs or None, data_merge_strategy=merge_strategy
+        )
     except Exception as e:
         err_console.print(f"Error updating task status: {e!r}")

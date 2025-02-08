@@ -12,7 +12,11 @@ from .tasks import add, add_auto_track
 def check_log_errors(caplog):
     yield
     for when in ("call", "setup", "teardown"):
-        errors = [r.getMessage() for r in caplog.get_records(when) if r.levelno == logging.ERROR]
+        errors = [
+            r.getMessage()
+            for r in caplog.get_records(when)
+            if r.levelno == logging.ERROR
+        ]
         if errors:
             pytest.fail(f"log errors during '{when}': {errors}")
 

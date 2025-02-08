@@ -3,7 +3,13 @@ import functools
 import logging
 
 import celery
-from celery.signals import before_task_publish, task_failure, task_prerun, task_retry, task_success
+from celery.signals import (
+    before_task_publish,
+    task_failure,
+    task_prerun,
+    task_retry,
+    task_success,
+)
 
 from .internal.models import StatusEnum
 from .mug import Badger
@@ -15,7 +21,12 @@ TB_KWARGS_ARG = f"{KWARG_PREFIX}kwargs"
 IGNORE_ARGS = {TB_KWARGS_ARG, f"{KWARG_PREFIX}task", f"{KWARG_PREFIX}task_id"}
 TB_TASK_ID = f"{KWARG_PREFIX}task_id"
 
-TERMINAL_STATES = {StatusEnum.SUCCESS, StatusEnum.ERROR, StatusEnum.CANCELLED, StatusEnum.STALE}
+TERMINAL_STATES = {
+    StatusEnum.SUCCESS,
+    StatusEnum.ERROR,
+    StatusEnum.CANCELLED,
+    StatusEnum.STALE,
+}
 
 log = logging.getLogger("taskbadger")
 
@@ -119,7 +130,9 @@ class Task(celery.Task):
         tb_task_id = result.info.get(TB_TASK_ID) if result.info else None
         setattr(result, TB_TASK_ID, tb_task_id)
 
-        _get_task = functools.partial(get_task, tb_task_id) if tb_task_id else lambda: None
+        _get_task = (
+            functools.partial(get_task, tb_task_id) if tb_task_id else lambda: None
+        )
         setattr(result, "get_taskbadger_task", _get_task)
 
         return result

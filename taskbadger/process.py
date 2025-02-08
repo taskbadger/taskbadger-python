@@ -5,7 +5,9 @@ from datetime import datetime
 
 
 class ProcessRunner:
-    def __init__(self, process_args, env, capture_output: bool, update_frequency: int = 5):
+    def __init__(
+        self, process_args, env, capture_output: bool, update_frequency: int = 5
+    ):
         self.process_args = process_args
         self.env = env
         self.capture_output = capture_output
@@ -20,7 +22,9 @@ class ProcessRunner:
             kwargs["stdout"] = subprocess.PIPE
             kwargs["stderr"] = subprocess.PIPE
 
-        process = subprocess.Popen(self.process_args, env=self.env, shell=True, **kwargs)
+        process = subprocess.Popen(
+            self.process_args, env=self.env, shell=True, **kwargs
+        )
         if self.capture_output:
             stdout = Reader(process.stdout).start()
             stderr = Reader(process.stderr).start()
@@ -47,7 +51,9 @@ class Reader:
         self._lock = threading.Lock()
 
     def start(self):
-        self._thread = threading.Thread(name="reader-thread", target=self._reader, daemon=True)
+        self._thread = threading.Thread(
+            name="reader-thread", target=self._reader, daemon=True
+        )
         self._thread.start()
         return self
 

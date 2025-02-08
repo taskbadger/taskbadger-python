@@ -5,7 +5,12 @@ import pytest
 
 from taskbadger import Action, EmailIntegration, StatusEnum, WebhookIntegration
 from taskbadger.exceptions import TaskbadgerException
-from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, TaskRequest, TaskRequestData
+from taskbadger.internal.models import (
+    PatchedTaskRequest,
+    PatchedTaskRequestData,
+    TaskRequest,
+    TaskRequestData,
+)
 from taskbadger.internal.types import UNSET, Response
 from taskbadger.mug import Badger
 from taskbadger.sdk import Task, init
@@ -76,10 +81,19 @@ def test_create(settings, patched_create):
         stale_timeout=2,
     )
     request.additional_properties = {
-        "actions": [{"trigger": "success", "integration": "email", "config": {"to": "me@example.com"}}]
+        "actions": [
+            {
+                "trigger": "success",
+                "integration": "email",
+                "config": {"to": "me@example.com"},
+            }
+        ]
     }
     patched_create.assert_called_with(
-        client=mock.ANY, organization_slug="org", project_slug="project", json_body=request
+        client=mock.ANY,
+        organization_slug="org",
+        project_slug="project",
+        json_body=request,
     )
 
 
@@ -109,7 +123,9 @@ def test_increment_progress(settings, patched_update):
     api_task = task_for_test()
     task = Task(api_task)
 
-    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test(value=10))
+    patched_update.return_value = Response(
+        HTTPStatus.OK, b"", {}, task_for_test(value=10)
+    )
 
     task.increment_progress(10)
     _verify_update(settings, patched_update, value=10)
@@ -122,7 +138,9 @@ def test_update_timeouts(settings, patched_update):
     api_task = task_for_test()
     task = Task(api_task)
 
-    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test(max_runtime=10, stale_timeout=2))
+    patched_update.return_value = Response(
+        HTTPStatus.OK, b"", {}, task_for_test(max_runtime=10, stale_timeout=2)
+    )
 
     task.update(max_runtime=10, stale_timeout=2)
     _verify_update(settings, patched_update, max_runtime=10, stale_timeout=2)
@@ -136,7 +154,9 @@ def test_add_actions(settings, patched_update):
 
     task.add_actions(
         [
-            Action("*/10%,success,error", integration=EmailIntegration(to="me@example.com")),
+            Action(
+                "*/10%,success,error", integration=EmailIntegration(to="me@example.com")
+            ),
             Action("cancelled", integration=WebhookIntegration(id="webhook:123")),
         ]
     )
@@ -146,7 +166,11 @@ def test_add_actions(settings, patched_update):
         settings,
         patched_update,
         actions=[
-            {"trigger": "*/10%,success,error", "integration": "email", "config": {"to": "me@example.com"}},
+            {
+                "trigger": "*/10%,success,error",
+                "integration": "email",
+                "config": {"to": "me@example.com"},
+            },
             {"trigger": "cancelled", "integration": "webhook:123", "config": {}},
         ],
     )
@@ -178,5 +202,9 @@ def _verify_update(settings, patched_update, **kwargs):
 
     # verify expected call
     patched_update.assert_called_with(
-        client=mock.ANY, organization_slug="org", project_slug="project", id=mock.ANY, json_body=request
+        client=mock.ANY,
+        organization_slug="org",
+        project_slug="project",
+        id=mock.ANY,
+        json_body=request,
     )

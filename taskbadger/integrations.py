@@ -16,7 +16,9 @@ class Integration:
 
     def __post_init__(self):
         if not self.id.startswith(self.type):
-            raise TaskbadgerException(f"Expected integration ID '{self.id}' to start with '{self.type}'")
+            raise TaskbadgerException(
+                f"Expected integration ID '{self.id}' to start with '{self.type}'"
+            )
 
     def request_config(self):
         raise NotImplementedError
@@ -38,7 +40,9 @@ class Action:
     integration: Integration
 
     def to_dict(self) -> Dict[str, Any]:
-        return ActionRequest(self.trigger, self.integration.id, self.integration.request_config()).to_dict()
+        return ActionRequest(
+            self.trigger, self.integration.id, self.integration.request_config()
+        ).to_dict()
 
 
 @dataclasses.dataclass

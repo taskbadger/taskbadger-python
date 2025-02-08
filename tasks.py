@@ -4,7 +4,9 @@ from invoke import Context, task
 @task
 def tag_release(c: Context):
     version = _get_version(c)
-    bump_key = input("Current version: {version}. Bump? [1: major, 2: minor, 3: patch / n]")
+    bump_key = input(
+        "Current version: {version}. Bump? [1: major, 2: minor, 3: patch / n]"
+    )
     if bump_key in ("1", "2", "3"):
         bump = {"1": "major", "2": "minor", "3": "patch"}.get(bump_key)
 
@@ -17,8 +19,12 @@ def tag_release(c: Context):
         c.run(f"git tag v{version}")
         c.run("git push origin main --tags")
 
-        print("Check https://github.com/taskbadger/taskbadger-python/actions/workflows/release.yml for release build.")
-        print("Check https://github.com/taskbadger/taskbadger-python/releases and publish the release.")
+        print(
+            "Check https://github.com/taskbadger/taskbadger-python/actions/workflows/release.yml for release build."
+        )
+        print(
+            "Check https://github.com/taskbadger/taskbadger-python/releases and publish the release."
+        )
 
 
 def _get_version(c):

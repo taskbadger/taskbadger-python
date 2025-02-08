@@ -2,9 +2,20 @@ import logging
 import os
 from typing import Any, List
 
-from taskbadger.exceptions import ConfigurationError, ServerError, TaskbadgerException, Unauthorized, UnexpectedStatus
+from taskbadger.exceptions import (
+    ConfigurationError,
+    ServerError,
+    TaskbadgerException,
+    Unauthorized,
+    UnexpectedStatus,
+)
 from taskbadger.integrations import Action
-from taskbadger.internal.api.task_endpoints import task_create, task_get, task_list, task_partial_update
+from taskbadger.internal.api.task_endpoints import (
+    task_create,
+    task_get,
+    task_list,
+    task_partial_update,
+)
 from taskbadger.internal.models import (
     PatchedTaskRequest,
     PatchedTaskRequestData,
@@ -21,7 +32,12 @@ log = logging.getLogger("taskbadger")
 _TB_HOST = "https://taskbadger.net"
 
 
-def init(organization_slug: str = None, project_slug: str = None, token: str = None, systems: List[System] = None):
+def init(
+    organization_slug: str = None,
+    project_slug: str = None,
+    token: str = None,
+    systems: List[System] = None,
+):
     """Initialize Task Badger client
 
     Call this function once per thread
@@ -44,7 +60,11 @@ def _init(
     if host and organization_slug and project_slug and token:
         systems = systems or []
         settings = Settings(
-            host, token, organization_slug, project_slug, systems={system.identifier: system for system in systems}
+            host,
+            token,
+            organization_slug,
+            project_slug,
+            systems={system.identifier: system for system in systems},
         )
         Badger.current.bind(settings)
     else:
@@ -101,7 +121,12 @@ def create_task(
     stale_timeout = _none_to_unset(stale_timeout)
 
     task = TaskRequest(
-        name=name, status=status, value=value, value_max=value_max, max_runtime=max_runtime, stale_timeout=stale_timeout
+        name=name,
+        status=status,
+        value=value,
+        value_max=value_max,
+        max_runtime=max_runtime,
+        stale_timeout=stale_timeout,
     )
     scope_data = Badger.current.scope().context
     if scope_data or data:
@@ -310,7 +335,9 @@ class Task:
             elif data_merge_strategy == "default":
                 data = DefaultMergeStrategy().merge(self.data, data)
             else:
-                raise TaskbadgerException(f"Unknown data_merge_strategy: {data_merge_strategy!r}")
+                raise TaskbadgerException(
+                    f"Unknown data_merge_strategy: {data_merge_strategy!r}"
+                )
 
         task = update_task(
             self._task.id,

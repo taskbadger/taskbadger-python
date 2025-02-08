@@ -17,9 +17,11 @@ def test_celery_task_error(celery_session_app, celery_session_worker, bind_setti
 
     celery_session_worker.reload()
 
-    with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
-        "taskbadger.celery.update_task_safe"
-    ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe") as update,
+        mock.patch("taskbadger.celery.get_task") as get_task,
+    ):
         task = task_for_test()
         create.return_value = task
         get_task.return_value = task
