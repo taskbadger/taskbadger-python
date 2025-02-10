@@ -69,23 +69,29 @@ dev = [
 [project.scripts]
 taskbadger = "taskbadger.cli_main:app"
 
-[tool.black]
-line-length = 120
-target_version = ['py37', 'py38', 'py39']
-exclude = '''
-(
-  /(
-    | \.git
-    | \.venv
-    | \.mypy_cache
-  )/
-)
-'''
-
-[tool.isort]
-line_length = 120
-profile = "black"
-
 [tool.pytest.ini_options]
 # don't run integration tests unless specifically requested
 norecursedirs = ".* integration_tests"
+
+
+[tool.ruff]
+exclude = [
+    ".venv",
+    ".git",
+    ".ruff_cache",
+]
+line-length = 120
+indent-width = 4
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "DJ", "PT"]
+fixable = ["ALL"]
+unfixable = []
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
