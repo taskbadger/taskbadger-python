@@ -1,5 +1,6 @@
 import collections
 import functools
+import json
 import logging
 
 import celery
@@ -191,9 +192,16 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
 
     global_record_task_args = celery_system and celery_system.record_task_args
     if headers.get("taskbadger_record_task_args", global_record_task_args):
-        data = kwargs.setdefault("data", {})
-        data["celery_task_args"] = body[0]
-        data["celery_task_kwargs"] = body[1]
+        data = {
+            "celery_task_args": body[0],
+            "celery_task_kwargs": body[1],
+        }
+        try:
+            json.dumps(data)
+        except Exception:
+            log.error("Error serializing task arguments for task '%s'", name)
+        else:
+            kwargs.setdefault("data", {}).update(data)
 
     task = create_task_safe(name, **kwargs)
     if task:
