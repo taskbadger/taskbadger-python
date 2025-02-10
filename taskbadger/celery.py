@@ -11,6 +11,7 @@ from celery.signals import (
     task_retry,
     task_success,
 )
+from kombu import serialization
 
 from .internal.models import StatusEnum
 from .mug import Badger
@@ -197,7 +198,8 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
             "celery_task_kwargs": body[1],
         }
         try:
-            json.dumps(data)
+            _, _, value = serialization.dumps(data, serializer="json")
+            data = json.loads(value)
         except Exception:
             log.error("Error serializing task arguments for task '%s'", name)
         else:

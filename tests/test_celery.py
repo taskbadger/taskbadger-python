@@ -13,6 +13,7 @@ from unittest import mock
 
 import celery
 import pytest
+from kombu.utils.json import register_type
 
 from taskbadger import Action, EmailIntegration, StatusEnum
 from taskbadger.celery import Task
@@ -175,6 +176,41 @@ def test_celery_record_task_kwargs(celery_session_app, celery_session_worker, bi
         value_max=10,
         data={"celery_task_args": (2, 2), "celery_task_kwargs": {"c": 3}},
         actions=actions,
+        status=StatusEnum.PENDING,
+    )
+
+
+def test_celery_record_task_args_custom_serialization(celery_session_app, celery_session_worker, bind_settings):
+    class A:
+        def __init__(self, a, b):
+            self.a = a
+            self.b = b
+
+    register_type(A, "A", lambda o: [o.a, o.b], lambda o: A(*o))
+
+    @celery_session_app.task(bind=True, base=Task)
+    def add_with_task_args(self, a):
+        assert self.taskbadger_task is not None
+        return a.a + a.b
+
+    celery_session_worker.reload()
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe"),
+        mock.patch("taskbadger.celery.get_task"),
+    ):
+        create.return_value = task_for_test()
+
+        result = add_with_task_args.delay(
+            A(2, 2),
+            taskbadger_record_task_args=True,
+        )
+        assert result.get(timeout=10, propagate=True) == 4
+
+    create.assert_called_once_with(
+        "tests.test_celery.add_with_task_args",
+        data={"celery_task_args": [{"__type__": "A", "__value__": [2, 2]}], "celery_task_kwargs": {}},
         status=StatusEnum.PENDING,
     )
 
