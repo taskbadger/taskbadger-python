@@ -7,6 +7,7 @@ before the `bind_settings` fixture is executed. This means that if any code
 calls `Badger.is_configured()` (or similar), the `_local` ContextVar in the
 Celery runner thread will not have the configuration set.
 """
+
 import logging
 import sys
 import weakref
@@ -20,12 +21,16 @@ from taskbadger.systems.celery import CelerySystemIntegration
 from tests.utils import task_for_test
 
 
-@pytest.fixture
-def bind_settings_with_system():
+@pytest.fixture()
+def _bind_settings_with_system():
     systems = [CelerySystemIntegration()]
     Badger.current.bind(
         Settings(
-            "https://taskbadger.net", "token", "org", "proj", systems={system.identifier: system for system in systems}
+            "https://taskbadger.net",
+            "token",
+            "org",
+            "proj",
+            systems={system.identifier: system for system in systems},
         )
     )
     yield
@@ -33,14 +38,15 @@ def bind_settings_with_system():
 
 
 @pytest.fixture(autouse=True)
-def check_log_errors(caplog):
+def _check_log_errors(caplog):
     yield
     errors = [r.getMessage() for r in caplog.get_records("call") if r.levelno == logging.ERROR]
     if errors:
         pytest.fail(f"log errors during tests: {errors}")
 
 
-def test_celery_auto_track_task(celery_session_app, celery_session_worker, bind_settings_with_system):
+@pytest.mark.usefixtures("_bind_settings_with_system")
+def test_celery_auto_track_task(celery_session_app, celery_session_worker):
     @celery_session_app.task(bind=True)
     def add_normal(self, a, b):
         assert self.request.get("taskbadger_task_id") is not None, "missing task in request"
@@ -50,9 +56,11 @@ def test_celery_auto_track_task(celery_session_app, celery_session_worker, bind_
 
     celery_session_worker.reload()
 
-    with mock.patch("taskbadger.celery.create_task_safe") as create, mock.patch(
-        "taskbadger.celery.update_task_safe"
-    ) as update, mock.patch("taskbadger.celery.get_task") as get_task:
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe") as update,
+        mock.patch("taskbadger.celery.get_task") as get_task,
+    ):
         tb_task = task_for_test()
         create.return_value = tb_task
         result = add_normal.delay(2, 2)
@@ -66,7 +74,7 @@ def test_celery_auto_track_task(celery_session_app, celery_session_worker, bind_
 
 
 @pytest.mark.parametrize(
-    "include,exclude,expected",
+    ("include", "exclude", "expected"),
     [
         (None, None, True),
         (["myapp.tasks.export_data"], None, True),

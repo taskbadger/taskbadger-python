@@ -31,5 +31,6 @@ def update_api(c, local=False):
     if not local:
         c.run("curl http://localhost:8000/api/schema.json > taskbadger.yaml")
     c.run(
-        "cd .. && openapi-python-client update --path taskbadger-python/taskbadger.yaml --config taskbadger-python/generator_config.yml"
+        "cd .. && openapi-python-client update --path taskbadger-python/taskbadger.yaml "
+        "--config taskbadger-python/generator_config.yml"
     )

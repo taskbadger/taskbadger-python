@@ -30,9 +30,9 @@ def version_callback(value: bool):
 def configure(ctx: typer.Context):
     """Update CLI configuration."""
     config = ctx.meta["tb_config"]
-    config.organization_slug = typer.prompt(f"Organization slug", default=config.organization_slug)
-    config.project_slug = typer.prompt(f"Project slug", default=config.project_slug)
-    config.token = typer.prompt(f"API Key", default=config.token)
+    config.organization_slug = typer.prompt("Organization slug", default=config.organization_slug)
+    config.project_slug = typer.prompt("Project slug", default=config.project_slug)
+    config.token = typer.prompt("API Key", default=config.token)
     path = write_config(config)
     print(f"Config written to [green]{path}[/green]")
 
@@ -71,7 +71,11 @@ def main(
         help="Project Slug. This will override values from the config file and environment variables.",
     ),
     version: Optional[bool] = typer.Option(  # noqa
-        None, "--version", callback=version_callback, is_eager=True, help="Show CLI Version"
+        None,
+        "--version",
+        callback=version_callback,
+        is_eager=True,
+        help="Show CLI Version",
     ),
 ):
     """

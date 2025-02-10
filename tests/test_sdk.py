@@ -5,7 +5,12 @@ import pytest
 
 from taskbadger import Action, EmailIntegration, StatusEnum, WebhookIntegration
 from taskbadger.exceptions import TaskbadgerException
-from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, TaskRequest, TaskRequestData
+from taskbadger.internal.models import (
+    PatchedTaskRequest,
+    PatchedTaskRequestData,
+    TaskRequest,
+    TaskRequestData,
+)
 from taskbadger.internal.types import UNSET, Response
 from taskbadger.mug import Badger
 from taskbadger.sdk import Task, init
@@ -13,28 +18,28 @@ from tests.utils import task_for_test
 
 
 @pytest.fixture(autouse=True)
-def init_skd():
+def _init_skd():
     init("org", "project", "token")
 
 
-@pytest.fixture
+@pytest.fixture()
 def settings():
     return Badger.current.settings
 
 
-@pytest.fixture
+@pytest.fixture()
 def patched_get():
     with mock.patch("taskbadger.sdk.task_get.sync") as get:
         yield get
 
 
-@pytest.fixture
+@pytest.fixture()
 def patched_create():
     with mock.patch("taskbadger.sdk.task_create.sync_detailed") as create:
         yield create
 
 
-@pytest.fixture
+@pytest.fixture()
 def patched_update():
     with mock.patch("taskbadger.sdk.task_partial_update.sync_detailed") as update:
         yield update
@@ -76,10 +81,19 @@ def test_create(settings, patched_create):
         stale_timeout=2,
     )
     request.additional_properties = {
-        "actions": [{"trigger": "success", "integration": "email", "config": {"to": "me@example.com"}}]
+        "actions": [
+            {
+                "trigger": "success",
+                "integration": "email",
+                "config": {"to": "me@example.com"},
+            }
+        ]
     }
     patched_create.assert_called_with(
-        client=mock.ANY, organization_slug="org", project_slug="project", json_body=request
+        client=mock.ANY,
+        organization_slug="org",
+        project_slug="project",
+        json_body=request,
     )
 
 
@@ -146,7 +160,11 @@ def test_add_actions(settings, patched_update):
         settings,
         patched_update,
         actions=[
-            {"trigger": "*/10%,success,error", "integration": "email", "config": {"to": "me@example.com"}},
+            {
+                "trigger": "*/10%,success,error",
+                "integration": "email",
+                "config": {"to": "me@example.com"},
+            },
             {"trigger": "cancelled", "integration": "webhook:123", "config": {}},
         ],
     )
@@ -178,5 +196,9 @@ def _verify_update(settings, patched_update, **kwargs):
 
     # verify expected call
     patched_update.assert_called_with(
-        client=mock.ANY, organization_slug="org", project_slug="project", id=mock.ANY, json_body=request
+        client=mock.ANY,
+        organization_slug="org",
+        project_slug="project",
+        id=mock.ANY,
+        json_body=request,
     )

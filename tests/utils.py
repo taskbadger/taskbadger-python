@@ -13,4 +13,12 @@ def task_for_test(**kwargs):
     kwargs["url"] = None
     kwargs["public_url"] = None
     kwargs["value_percent"] = None
-    return TaskInternal(task_id, "org", "project", "task_name", datetime.utcnow(), datetime.utcnow(), **kwargs)
+    return TaskInternal(
+        task_id,
+        "org",
+        "project",
+        "task_name",
+        datetime.utcnow(),
+        datetime.utcnow(),
+        **kwargs,
+    )

@@ -8,7 +8,14 @@ from .sdk import StatusEnum
 log = logging.getLogger("taskbadger")
 
 
-def track(func=None, *, name: str = None, monitor_id: str = None, max_runtime: int = None, **kwargs):
+def track(
+    func=None,
+    *,
+    name: str = None,
+    monitor_id: str = None,
+    max_runtime: int = None,
+    **kwargs,
+):
     """
     Decorator to track a function as a task.
 
@@ -39,12 +46,21 @@ def track(func=None, *, name: str = None, monitor_id: str = None, max_runtime: i
         @Session()
         def _inner(*args, **kwargs):
             task = create_task_safe(
-                task_name, status=StatusEnum.PROCESSING, max_runtime=max_runtime, monitor_id=monitor_id, **kwargs
+                task_name,
+                status=StatusEnum.PROCESSING,
+                max_runtime=max_runtime,
+                monitor_id=monitor_id,
+                **kwargs,
             )
             try:
                 result = func(*args, **kwargs)
             except Exception as e:
-                _update_task(task, status=StatusEnum.ERROR, data={"exception": str(e)}, data_merge_strategy="default")
+                _update_task(
+                    task,
+                    status=StatusEnum.ERROR,
+                    data={"exception": str(e)},
+                    data_merge_strategy="default",
+                )
                 raise
 
             _update_task(task, status=StatusEnum.SUCCESS)

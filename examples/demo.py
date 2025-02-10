@@ -2,7 +2,12 @@ import argparse
 import os
 
 import taskbadger as tb
-from examples.migration_utils import get_data_chunks, get_total, prepare_migration, process_chunk
+from examples.migration_utils import (
+    get_data_chunks,
+    get_total,
+    prepare_migration,
+    process_chunk,
+)
 from taskbadger import EmailIntegration
 
 

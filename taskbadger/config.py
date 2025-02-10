@@ -59,9 +59,9 @@ class Config:
             host = f"\n            Host: {self.host}"
         return inspect.cleandoc(
             f"""
-            Organization slug: {self.organization_slug or '-'}
-            Project slug: {self.project_slug or '-'}
-            Auth token: {self.token or '-'}{host}
+            Organization slug: {self.organization_slug or "-"}
+            Project slug: {self.project_slug or "-"}
+            Auth token: {self.token or "-"}{host}
             """
         )
 
@@ -73,7 +73,10 @@ def _from_env(name, default=None, prefix="TASKBADGER_"):
 def write_config(config):
     doc = document()
 
-    doc.add("defaults", table().add("org", config.organization_slug).add("project", config.project_slug))
+    doc.add(
+        "defaults",
+        table().add("org", config.organization_slug).add("project", config.project_slug),
+    )
 
     doc.add("auth", table().add("token", config.token))
 

@@ -89,7 +89,15 @@ def test_update_task(httpx_mock):
 
 
 def test_update_task_actions(httpx_mock):
-    expected_body = {"actions": [{"trigger": "success", "integration": "email", "config": {"to": "me@example.com"}}]}
+    expected_body = {
+        "actions": [
+            {
+                "trigger": "success",
+                "integration": "email",
+                "config": {"to": "me@example.com"},
+            }
+        ]
+    }
     httpx_mock.add_response(
         url="https://taskbadger.net/api/org/project/tasks/test_id/",
         method="PATCH",
@@ -98,7 +106,10 @@ def test_update_task_actions(httpx_mock):
         json=_json_task_response(),
         status_code=200,
     )
-    task = update_task(task_id="test_id", actions=[Action("success", EmailIntegration("me@example.com"))])
+    task = update_task(
+        task_id="test_id",
+        actions=[Action("success", EmailIntegration("me@example.com"))],
+    )
     _verify_task(task)
 
 

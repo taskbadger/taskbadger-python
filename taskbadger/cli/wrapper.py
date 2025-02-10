@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import typer
 from rich import print
 
@@ -13,7 +11,7 @@ def run(
     name: str = typer.Argument(..., show_default=False, help="The task name"),
     monitor_id: str = typer.Option(None, help="Associate this task with a monitor."),
     update_frequency: int = typer.Option(5, metavar="SECONDS", min=5, max=300, help="Seconds between updates."),
-    action_def: Tuple[str, str, str] = typer.Option(
+    action_def: tuple[str, str, str] = typer.Option(
         (None, None, None),
         "--action",
         "-a",
@@ -53,7 +51,12 @@ def run(
             print(f"Task created: {task.public_url}")
         env = {"TASKBADGER_TASK_ID": task.id} if task else None
         try:
-            process = ProcessRunner(ctx.args, env, capture_output=capture_output, update_frequency=update_frequency)
+            process = ProcessRunner(
+                ctx.args,
+                env,
+                capture_output=capture_output,
+                update_frequency=update_frequency,
+            )
             for output in process.run():
                 _update_task(task, **(output or {}))
         except Exception as e:

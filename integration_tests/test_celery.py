@@ -9,7 +9,7 @@ from .tasks import add, add_auto_track
 
 
 @pytest.fixture(autouse=True)
-def check_log_errors(caplog):
+def _check_log_errors(caplog):
     yield
     for when in ("call", "setup", "teardown"):
         errors = [r.getMessage() for r in caplog.get_records(when) if r.levelno == logging.ERROR]

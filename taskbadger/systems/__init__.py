@@ -1,4 +1,4 @@
-class System(object):
+class System:
     """
     Baseclass for all systems.
     """

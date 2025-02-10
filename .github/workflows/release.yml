@@ -24,25 +24,18 @@ jobs:
         ports:
           - 6379:6379
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.9"
-      - name: Install Poetry
-        uses: Gr1N/setup-poetry@v8
-      - uses: actions/cache@v3
+      - uses: astral-sh/setup-uv@v3
         with:
-          path: ~/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
-      - name: Checks
-        run: |
-          poetry --version
-          poetry check --no-interaction
+          enable-cache: true
       - name: Add version to environment vars
         run: |
-          PROJECT_VERSION=$(poetry version --short)
+          PROJECT_VERSION=$(uvx dunamai from any --format "{base}")
           echo "PROJECT_VERSION=$PROJECT_VERSION" >> $GITHUB_ENV
       - name: Check if tag version matches project version
         run: |
@@ -51,18 +44,14 @@ jobs:
           echo $PROJECT_VERSION
           if [[ "$TAG" != "v$PROJECT_VERSION" ]]; then exit 1; fi
 
-      - name: Checks
-        run: |
-          poetry --version
-          poetry check --no-interaction
       - name: Install deps
-        run: poetry install --no-interaction
+        run: uv sync --frozen
       - name: Run tests
-        run: poetry run pytest -v
+        run: uv run --no-sync pytest -v
       - name: Build
-        run: poetry build
+        run: uv build
       - name: Create Release Draft
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

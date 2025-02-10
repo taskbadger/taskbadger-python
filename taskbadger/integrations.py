@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Any, Dict
+from typing import Any
 
 from taskbadger.exceptions import TaskbadgerException
 from taskbadger.internal.models import ActionRequest, ActionRequestConfig
@@ -37,7 +37,7 @@ class Action:
     trigger: str
     integration: Integration
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return ActionRequest(self.trigger, self.integration.id, self.integration.request_config()).to_dict()
 
 

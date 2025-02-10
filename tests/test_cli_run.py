@@ -6,7 +6,12 @@ import pytest
 from typer.testing import CliRunner
 
 from taskbadger.cli_main import app
-from taskbadger.internal.models import PatchedTaskRequest, PatchedTaskRequestData, StatusEnum, TaskRequest
+from taskbadger.internal.models import (
+    PatchedTaskRequest,
+    PatchedTaskRequestData,
+    StatusEnum,
+    TaskRequest,
+)
 from taskbadger.internal.types import UNSET, Response
 from taskbadger.mug import Badger
 from taskbadger.sdk import Task
@@ -16,7 +21,7 @@ runner = CliRunner()
 
 
 @pytest.fixture(autouse=True)
-def mock_env():
+def _mock_env():
     with mock.patch.dict(
         os.environ,
         {
@@ -60,7 +65,10 @@ def test_cli_capture_output_append():
 
     with mock.patch("taskbadger.process._should_update", new=_should_update_task):
         update_patch = _test_cli_run(
-            ["echo test; sleep 0.11; echo 123"], 0, args=["task_name", "--capture-output"], update_call_count=3
+            ["echo test; sleep 0.11; echo 123"],
+            0,
+            args=["task_name", "--capture-output"],
+            update_call_count=3,
         )
 
     body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n123\n"}))
@@ -82,7 +90,11 @@ def test_cli_run():
         ["echo test"],
         0,
         ["task_name", "-a", "success,error", "email", "to:me@test.com"],
-        action={"trigger": "success,error", "integration": "email", "config": {"to": "me@test.com"}},
+        action={
+            "trigger": "success,error",
+            "integration": "email",
+            "config": {"to": "me@test.com"},
+        },
     )
 
 
@@ -122,18 +134,28 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
         request = TaskRequest(name="task_name", status=StatusEnum.PROCESSING, stale_timeout=10)
         if action:
             request.additional_properties = {"actions": [action]}
-        create.assert_called_with(client=mock.ANY, organization_slug="org", project_slug="project", json_body=request)
+        create.assert_called_with(
+            client=mock.ANY,
+            organization_slug="org",
+            project_slug="project",
+            json_body=request,
+        )
 
         if return_code == 0:
             body = PatchedTaskRequest(status=StatusEnum.SUCCESS, value=100)
         else:
             body = PatchedTaskRequest(
-                status=StatusEnum.ERROR, data=PatchedTaskRequestData.from_dict({"return_code": return_code})
+                status=StatusEnum.ERROR,
+                data=PatchedTaskRequestData.from_dict({"return_code": return_code}),
             )
 
         assert update_mock.call_count == update_call_count
         update_mock.assert_called_with(
-            client=mock.ANY, organization_slug="org", project_slug="project", id=task.id, json_body=body
+            client=mock.ANY,
+            organization_slug="org",
+            project_slug="project",
+            id=task.id,
+            json_body=body,
         )
         return update_mock
 

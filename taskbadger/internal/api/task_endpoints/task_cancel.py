@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
 import httpx
 
@@ -12,16 +12,12 @@ def _get_kwargs(
     organization_slug: str,
     project_slug: str,
     id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     pass
 
     return {
         "method": "delete",
-        "url": "/api/{organization_slug}/{project_slug}/tasks/{id}/".format(
-            organization_slug=organization_slug,
-            project_slug=project_slug,
-            id=id,
-        ),
+        "url": f"/api/{organization_slug}/{project_slug}/tasks/{id}/",
     }
 
 
@@ -60,7 +56,8 @@ def sync_detailed(
         id (str):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code
+            and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -97,7 +94,8 @@ async def asyncio_detailed(
         id (str):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code
+            and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:

@@ -1,13 +1,18 @@
 import csv
 import json
 import sys
-from typing import Tuple
 
 import typer
 from rich import print
 
 from taskbadger import StatusEnum, create_task, get_task, update_task
-from taskbadger.cli.utils import OutputFormat, configure_api, err_console, get_actions, get_metadata
+from taskbadger.cli.utils import (
+    OutputFormat,
+    configure_api,
+    err_console,
+    get_actions,
+    get_metadata,
+)
 
 
 def get(
@@ -29,14 +34,22 @@ def get(
     elif output_format == OutputFormat.csv:
         writer = csv.writer(sys.stdout)
         writer.writerow("Task ID,Created,Name,Status,Percent".split(","))
-        writer.writerow([task.id, task.created.isoformat(), task.name, task.status, str(task.value_percent)])
+        writer.writerow(
+            [
+                task.id,
+                task.created.isoformat(),
+                task.name,
+                task.status,
+                str(task.value_percent),
+            ]
+        )
 
 
 def create(
     ctx: typer.Context,
     name: str = typer.Argument(..., show_default=False, help="The task name."),
     monitor_id: str = typer.Option(None, help="Associate this task with a monitor."),
-    action_def: Tuple[str, str, str] = typer.Option(
+    action_def: tuple[str, str, str] = typer.Option(
         (None, None, None),
         "--action",
         "-a",
@@ -52,7 +65,9 @@ def create(
         help="Metadata 'key=value' pair to associate with the task. Can be specified multiple times.",
     ),
     metadata_json: str = typer.Option(
-        None, show_default=False, help="Metadata to associate with the task. Must be valid JSON."
+        None,
+        show_default=False,
+        help="Metadata to associate with the task. Must be valid JSON.",
     ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Minimal output. Only the Task ID."),
 ):
@@ -83,7 +98,7 @@ def update(
     ctx: typer.Context,
     task_id: str = typer.Argument(..., show_default=False, help="The ID of the task to update."),
     name: str = typer.Option(None, show_default=False, help="Update the name of the task."),
-    action_def: Tuple[str, str, str] = typer.Option(
+    action_def: tuple[str, str, str] = typer.Option(
         (None, None, None),
         "--action",
         "-a",
@@ -100,7 +115,9 @@ def update(
         help="Metadata 'key=value' pair to associate with the task. Can be specified multiple times.",
     ),
     metadata_json: str = typer.Option(
-        None, show_default=False, help="Metadata to associate with the task. Must be valid JSON."
+        None,
+        show_default=False,
+        help="Metadata to associate with the task. Must be valid JSON.",
     ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="No output."),
 ):

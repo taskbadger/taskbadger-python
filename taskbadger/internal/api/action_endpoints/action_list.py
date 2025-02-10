@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import httpx
 
@@ -13,22 +13,18 @@ def _get_kwargs(
     organization_slug: str,
     project_slug: str,
     task_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     pass
 
     return {
         "method": "get",
-        "url": "/api/{organization_slug}/{project_slug}/tasks/{task_id}/actions/".format(
-            organization_slug=organization_slug,
-            project_slug=project_slug,
-            task_id=task_id,
-        ),
+        "url": f"/api/{organization_slug}/{project_slug}/tasks/{task_id}/actions/",
     }
 
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[List["Action"]]:
+) -> Optional[list["Action"]]:
     if response.status_code == HTTPStatus.OK:
         response_200 = []
         _response_200 = response.json()
@@ -46,7 +42,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[List["Action"]]:
+) -> Response[list["Action"]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -61,7 +57,7 @@ def sync_detailed(
     task_id: str,
     *,
     client: AuthenticatedClient,
-) -> Response[List["Action"]]:
+) -> Response[list["Action"]]:
     """List Actions
 
      List actions for task
@@ -72,7 +68,8 @@ def sync_detailed(
         task_id (str):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code
+            and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -98,7 +95,7 @@ def sync(
     task_id: str,
     *,
     client: AuthenticatedClient,
-) -> Optional[List["Action"]]:
+) -> Optional[list["Action"]]:
     """List Actions
 
      List actions for task
@@ -109,7 +106,8 @@ def sync(
         task_id (str):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code
+            and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -130,7 +128,7 @@ async def asyncio_detailed(
     task_id: str,
     *,
     client: AuthenticatedClient,
-) -> Response[List["Action"]]:
+) -> Response[list["Action"]]:
     """List Actions
 
      List actions for task
@@ -141,7 +139,8 @@ async def asyncio_detailed(
         task_id (str):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code
+            and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -165,7 +164,7 @@ async def asyncio(
     task_id: str,
     *,
     client: AuthenticatedClient,
-) -> Optional[List["Action"]]:
+) -> Optional[list["Action"]]:
     """List Actions
 
      List actions for task
@@ -176,7 +175,8 @@ async def asyncio(
         task_id (str):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code
+            and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:

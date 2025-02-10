@@ -5,6 +5,24 @@ from .mug import Badger, Session
 from .safe_sdk import create_task_safe, update_task_safe
 from .sdk import DefaultMergeStrategy, Task, create_task, get_task, init, update_task
 
+__all__ = [
+    "track",
+    "Action",
+    "EmailIntegration",
+    "WebhookIntegration",
+    "StatusEnum",
+    "Badger",
+    "Session",
+    "create_task_safe",
+    "update_task_safe",
+    "DefaultMergeStrategy",
+    "Task",
+    "create_task",
+    "get_task",
+    "init",
+    "update_task",
+]
+
 try:
     import importlib.metadata as importlib_metadata
 except ModuleNotFoundError:

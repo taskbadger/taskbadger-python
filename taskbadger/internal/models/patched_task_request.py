@@ -1,5 +1,5 @@
 import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeVar, Union
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -43,9 +43,9 @@ class PatchedTaskRequest:
     end_time: Union[Unset, None, datetime.datetime] = UNSET
     max_runtime: Union[Unset, None, int] = UNSET
     stale_timeout: Union[Unset, None, int] = UNSET
-    additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
+    additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         name = self.name
         status: Union[Unset, str] = UNSET
         if not isinstance(self.status, Unset):
@@ -53,7 +53,7 @@ class PatchedTaskRequest:
 
         value = self.value
         value_max = self.value_max
-        data: Union[Unset, None, Dict[str, Any]] = UNSET
+        data: Union[Unset, None, dict[str, Any]] = UNSET
         if not isinstance(self.data, Unset):
             data = self.data.to_dict() if self.data else None
 
@@ -68,7 +68,7 @@ class PatchedTaskRequest:
         max_runtime = self.max_runtime
         stale_timeout = self.stale_timeout
 
-        field_dict: Dict[str, Any] = {}
+        field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
         if name is not UNSET:
@@ -93,7 +93,7 @@ class PatchedTaskRequest:
         return field_dict
 
     @classmethod
-    def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         from ..models.patched_task_request_data import PatchedTaskRequestData
 
         d = src_dict.copy()
@@ -157,7 +157,7 @@ class PatchedTaskRequest:
         return patched_task_request
 
     @property
-    def additional_keys(self) -> List[str]:
+    def additional_keys(self) -> list[str]:
         return list(self.additional_properties.keys())
 
     def __getitem__(self, key: str) -> Any:

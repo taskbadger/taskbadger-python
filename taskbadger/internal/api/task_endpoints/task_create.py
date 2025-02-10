@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
 import httpx
 
@@ -16,7 +16,7 @@ def _get_kwargs(
     *,
     json_body: TaskRequest,
     x_taskbadger_monitor: Union[Unset, str] = UNSET,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     headers = {}
     if not isinstance(x_taskbadger_monitor, Unset):
         headers["X-TASKBADGER-MONITOR"] = x_taskbadger_monitor
@@ -25,10 +25,7 @@ def _get_kwargs(
 
     return {
         "method": "post",
-        "url": "/api/{organization_slug}/{project_slug}/tasks/".format(
-            organization_slug=organization_slug,
-            project_slug=project_slug,
-        ),
+        "url": f"/api/{organization_slug}/{project_slug}/tasks/",
         "json": json_json_body,
         "headers": headers,
     }
@@ -73,7 +70,8 @@ def sync_detailed(
         json_body (TaskRequest):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code
+            and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -113,7 +111,8 @@ def sync(
         json_body (TaskRequest):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code
+            and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -148,7 +147,8 @@ async def asyncio_detailed(
         json_body (TaskRequest):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code
+            and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -186,7 +186,8 @@ async def asyncio(
         json_body (TaskRequest):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code
+            and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:

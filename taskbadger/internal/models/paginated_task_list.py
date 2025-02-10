@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeVar, Union
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -23,13 +23,13 @@ class PaginatedTaskList:
 
     next_: Union[Unset, None, str] = UNSET
     previous: Union[Unset, None, str] = UNSET
-    results: Union[Unset, List["Task"]] = UNSET
-    additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
+    results: Union[Unset, list["Task"]] = UNSET
+    additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         next_ = self.next_
         previous = self.previous
-        results: Union[Unset, List[Dict[str, Any]]] = UNSET
+        results: Union[Unset, list[dict[str, Any]]] = UNSET
         if not isinstance(self.results, Unset):
             results = []
             for results_item_data in self.results:
@@ -37,7 +37,7 @@ class PaginatedTaskList:
 
                 results.append(results_item)
 
-        field_dict: Dict[str, Any] = {}
+        field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
         if next_ is not UNSET:
@@ -50,7 +50,7 @@ class PaginatedTaskList:
         return field_dict
 
     @classmethod
-    def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         from ..models.task import Task
 
         d = src_dict.copy()
@@ -75,7 +75,7 @@ class PaginatedTaskList:
         return paginated_task_list
 
     @property
-    def additional_keys(self) -> List[str]:
+    def additional_keys(self) -> list[str]:
         return list(self.additional_properties.keys())
 
     def __getitem__(self, key: str) -> Any:

@@ -1,10 +1,21 @@
 import logging
 import os
-from typing import Any, List
+from typing import Any
 
-from taskbadger.exceptions import ConfigurationError, ServerError, TaskbadgerException, Unauthorized, UnexpectedStatus
+from taskbadger.exceptions import (
+    ConfigurationError,
+    ServerError,
+    TaskbadgerException,
+    Unauthorized,
+    UnexpectedStatus,
+)
 from taskbadger.integrations import Action
-from taskbadger.internal.api.task_endpoints import task_create, task_get, task_list, task_partial_update
+from taskbadger.internal.api.task_endpoints import (
+    task_create,
+    task_get,
+    task_list,
+    task_partial_update,
+)
 from taskbadger.internal.models import (
     PatchedTaskRequest,
     PatchedTaskRequestData,
@@ -21,7 +32,12 @@ log = logging.getLogger("taskbadger")
 _TB_HOST = "https://taskbadger.net"
 
 
-def init(organization_slug: str = None, project_slug: str = None, token: str = None, systems: List[System] = None):
+def init(
+    organization_slug: str = None,
+    project_slug: str = None,
+    token: str = None,
+    systems: list[System] = None,
+):
     """Initialize Task Badger client
 
     Call this function once per thread
@@ -34,7 +50,7 @@ def _init(
     organization_slug: str = None,
     project_slug: str = None,
     token: str = None,
-    systems: List[System] = None,
+    systems: list[System] = None,
 ):
     host = host or os.environ.get("TASKBADGER_HOST", "https://taskbadger.net")
     organization_slug = organization_slug or os.environ.get("TASKBADGER_ORG")
@@ -44,7 +60,11 @@ def _init(
     if host and organization_slug and project_slug and token:
         systems = systems or []
         settings = Settings(
-            host, token, organization_slug, project_slug, systems={system.identifier: system for system in systems}
+            host,
+            token,
+            organization_slug,
+            project_slug,
+            systems={system.identifier: system for system in systems},
         )
         Badger.current.bind(settings)
     else:
@@ -75,7 +95,7 @@ def create_task(
     data: dict = None,
     max_runtime: int = None,
     stale_timeout: int = None,
-    actions: List[Action] = None,
+    actions: list[Action] = None,
     monitor_id: str = None,
 ) -> "Task":
     """Create a Task.
@@ -101,7 +121,12 @@ def create_task(
     stale_timeout = _none_to_unset(stale_timeout)
 
     task = TaskRequest(
-        name=name, status=status, value=value, value_max=value_max, max_runtime=max_runtime, stale_timeout=stale_timeout
+        name=name,
+        status=status,
+        value=value,
+        value_max=value_max,
+        max_runtime=max_runtime,
+        stale_timeout=stale_timeout,
     )
     scope_data = Badger.current.scope().context
     if scope_data or data:
@@ -127,7 +152,7 @@ def update_task(
     data: dict = None,
     max_runtime: int = None,
     stale_timeout: int = None,
-    actions: List[Action] = None,
+    actions: list[Action] = None,
 ) -> "Task":
     """Update a task.
     Requires only the task ID and fields to update.
@@ -220,7 +245,7 @@ class Task:
         data: dict = None,
         max_runtime: int = None,
         stale_timeout: int = None,
-        actions: List[Action] = None,
+        actions: list[Action] = None,
         monitor_id: str = None,
     ) -> "Task":
         """Create a new task"""
@@ -297,7 +322,7 @@ class Task:
         data: dict = None,
         max_runtime: int = None,
         stale_timeout: int = None,
-        actions: List[Action] = None,
+        actions: list[Action] = None,
         data_merge_strategy: Any = None,
     ):
         """Generic update method used to update any of the task fields.
@@ -325,7 +350,7 @@ class Task:
         )
         self._task = task._task
 
-    def add_actions(self, actions: List[Action]):
+    def add_actions(self, actions: list[Action]):
         """Add actions to the task."""
         self.update(actions=actions)
 
