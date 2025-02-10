@@ -31,24 +31,17 @@ jobs:
           - celery-version: ">=5.3,<5.4"
             python-version: "3.12"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Poetry
-        uses: Gr1N/setup-poetry@v8
-      - uses: actions/cache@v3
+      - uses: astral-sh/setup-uv@v3
         with:
-          path: ~/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
-      - name: Checks
-        run: |
-          poetry --version
-          poetry check --no-interaction
+          enable-cache: true
       - name: Install project
         run: |
-          poetry install --no-interaction
-          pip install celery"${{ matrix.celery-version }}"
+          uv sync --frozen
+          uv pip install celery"${{ matrix.celery-version }}"
       - name: Run tests
-        run: poetry run pytest -v
+        run: uv run --no-sync pytest -v
