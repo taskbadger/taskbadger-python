@@ -139,14 +139,14 @@ def test_celery_record_args(celery_session_app, celery_session_worker, bind_sett
     create.assert_called_once_with(
         "new_name",
         value_max=10,
-        data={"foo": "bar", "celery_task_args": (2, 2), "celery_task_kwargs": {}},
+        data={"foo": "bar", "celery_task_args": [2, 2], "celery_task_kwargs": {}},
         status=StatusEnum.PENDING,
     )
 
 
 def test_celery_record_task_kwargs(celery_session_app, celery_session_worker, bind_settings):
     @celery_session_app.task(bind=True, base=Task)
-    def add_with_task_args(self, a, b, c=0):
+    def add_with_task_kwargs(self, a, b, c=0):
         assert self.taskbadger_task is not None
         return a + b + c
 
@@ -160,7 +160,7 @@ def test_celery_record_task_kwargs(celery_session_app, celery_session_worker, bi
         create.return_value = task_for_test()
 
         actions = [Action("stale", integration=EmailIntegration(to="test@test.com"))]
-        result = add_with_task_args.delay(
+        result = add_with_task_kwargs.delay(
             2,
             2,
             c=3,
@@ -174,7 +174,7 @@ def test_celery_record_task_kwargs(celery_session_app, celery_session_worker, bi
     create.assert_called_once_with(
         "new_name",
         value_max=10,
-        data={"celery_task_args": (2, 2), "celery_task_kwargs": {"c": 3}},
+        data={"celery_task_args": [2, 2], "celery_task_kwargs": {"c": 3}},
         actions=actions,
         status=StatusEnum.PENDING,
     )
@@ -189,7 +189,7 @@ def test_celery_record_task_args_custom_serialization(celery_session_app, celery
     register_type(A, "A", lambda o: [o.a, o.b], lambda o: A(*o))
 
     @celery_session_app.task(bind=True, base=Task)
-    def add_with_task_args(self, a):
+    def add_task_custom_serialization(self, a):
         assert self.taskbadger_task is not None
         return a.a + a.b
 
@@ -202,14 +202,14 @@ def test_celery_record_task_args_custom_serialization(celery_session_app, celery
     ):
         create.return_value = task_for_test()
 
-        result = add_with_task_args.delay(
+        result = add_task_custom_serialization.delay(
             A(2, 2),
             taskbadger_record_task_args=True,
         )
         assert result.get(timeout=10, propagate=True) == 4
 
     create.assert_called_once_with(
-        "tests.test_celery.add_with_task_args",
+        "tests.test_celery.add_task_custom_serialization",
         data={"celery_task_args": [{"__type__": "A", "__value__": [2, 2]}], "celery_task_kwargs": {}},
         status=StatusEnum.PENDING,
     )

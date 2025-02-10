@@ -115,7 +115,7 @@ def test_celery_record_task_args_local_override(celery_session_app, celery_sessi
     """Test that passing `taskbadger_record_task_args` overrides the integration value"""
 
     @celery_session_app.task(bind=True, base=Task)
-    def add_normal(self, a, b):
+    def add_normal_with_override(self, a, b):
         assert self.request.get("taskbadger_task_id") is not None, "missing task in request"
         assert hasattr(self, "taskbadger_task")
         assert Badger.current.session().client is not None, "missing client"
@@ -133,11 +133,13 @@ def test_celery_record_task_args_local_override(celery_session_app, celery_sessi
     ):
         tb_task = task_for_test()
         create.return_value = tb_task
-        result = add_normal.delay(2, 2, taskbadger_record_task_args=False)
+        result = add_normal_with_override.delay(2, 2, taskbadger_record_task_args=False)
         assert result.info.get("taskbadger_task_id") == tb_task.id
         assert result.get(timeout=10, propagate=True) == 4
 
-    create.assert_called_once_with("tests.test_celery_system_integration.add_normal", status=StatusEnum.PENDING)
+    create.assert_called_once_with(
+        "tests.test_celery_system_integration.add_normal_with_override", status=StatusEnum.PENDING
+    )
     assert get_task.call_count == 1
     assert update.call_count == 2
     assert Badger.current.session().client is None
