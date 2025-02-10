@@ -1,5 +1,6 @@
 import collections
 import functools
+import json
 import logging
 
 import celery
@@ -10,6 +11,7 @@ from celery.signals import (
     task_retry,
     task_success,
 )
+from kombu import serialization
 
 from .internal.models import StatusEnum
 from .mug import Badger
@@ -18,7 +20,7 @@ from .sdk import DefaultMergeStrategy, get_task
 
 KWARG_PREFIX = "taskbadger_"
 TB_KWARGS_ARG = f"{KWARG_PREFIX}kwargs"
-IGNORE_ARGS = {TB_KWARGS_ARG, f"{KWARG_PREFIX}task", f"{KWARG_PREFIX}task_id"}
+IGNORE_ARGS = {TB_KWARGS_ARG, f"{KWARG_PREFIX}task", f"{KWARG_PREFIX}task_id", f"{KWARG_PREFIX}record_task_args"}
 TB_TASK_ID = f"{KWARG_PREFIX}task_id"
 
 TERMINAL_STATES = {
@@ -124,6 +126,8 @@ class Task(celery.Task):
         if Badger.is_configured():
             headers["taskbadger_track"] = True
             headers[TB_KWARGS_ARG] = tb_kwargs
+            if "record_task_args" in tb_kwargs:
+                headers["taskbadger_record_task_args"] = tb_kwargs.pop("record_task_args")
 
         result = super().apply_async(*args, **kwargs)
 
@@ -186,6 +190,20 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
     kwargs.update(header_kwargs)
     kwargs["status"] = StatusEnum.PENDING
     name = kwargs.pop("name", headers["task"])
+
+    global_record_task_args = celery_system and celery_system.record_task_args
+    if headers.get("taskbadger_record_task_args", global_record_task_args):
+        data = {
+            "celery_task_args": body[0],
+            "celery_task_kwargs": body[1],
+        }
+        try:
+            _, _, value = serialization.dumps(data, serializer="json")
+            data = json.loads(value)
+        except Exception:
+            log.error("Error serializing task arguments for task '%s'", name)
+        else:
+            kwargs.setdefault("data", {}).update(data)
 
     task = create_task_safe(name, **kwargs)
     if task:

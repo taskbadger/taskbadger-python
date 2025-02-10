@@ -16,6 +16,8 @@ from unittest import mock
 import pytest
 from celery.signals import task_prerun
 
+from taskbadger import StatusEnum
+from taskbadger.celery import Task
 from taskbadger.mug import Badger, Settings
 from taskbadger.systems.celery import CelerySystemIntegration
 from tests.utils import task_for_test
@@ -68,6 +70,76 @@ def test_celery_auto_track_task(celery_session_app, celery_session_worker):
         assert result.get(timeout=10, propagate=True) == 4
 
     create.assert_called_once()
+    assert get_task.call_count == 1
+    assert update.call_count == 2
+    assert Badger.current.session().client is None
+
+
+@pytest.mark.usefixtures("_bind_settings_with_system")
+def test_celery_record_task_args(celery_session_app, celery_session_worker):
+    @celery_session_app.task(bind=True)
+    def add_normal(self, a, b):
+        assert self.request.get("taskbadger_task_id") is not None, "missing task in request"
+        assert not hasattr(self, "taskbadger_task")
+        assert Badger.current.session().client is not None, "missing client"
+        return a + b
+
+    celery_session_worker.reload()
+
+    celery_system = Badger.current.settings.get_system_by_id("celery")
+    celery_system.record_task_args = True
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe") as update,
+        mock.patch("taskbadger.celery.get_task") as get_task,
+    ):
+        tb_task = task_for_test()
+        create.return_value = tb_task
+        result = add_normal.delay(2, 2)
+        assert result.info.get("taskbadger_task_id") == tb_task.id
+        assert result.get(timeout=10, propagate=True) == 4
+
+    create.assert_called_once_with(
+        "tests.test_celery_system_integration.add_normal",
+        status=StatusEnum.PENDING,
+        data={"celery_task_args": [2, 2], "celery_task_kwargs": {}},
+    )
+    assert get_task.call_count == 1
+    assert update.call_count == 2
+    assert Badger.current.session().client is None
+
+
+@pytest.mark.usefixtures("_bind_settings_with_system")
+def test_celery_record_task_args_local_override(celery_session_app, celery_session_worker):
+    """Test that passing `taskbadger_record_task_args` overrides the integration value"""
+
+    @celery_session_app.task(bind=True, base=Task)
+    def add_normal_with_override(self, a, b):
+        assert self.request.get("taskbadger_task_id") is not None, "missing task in request"
+        assert hasattr(self, "taskbadger_task")
+        assert Badger.current.session().client is not None, "missing client"
+        return a + b
+
+    celery_session_worker.reload()
+
+    celery_system = Badger.current.settings.get_system_by_id("celery")
+    celery_system.record_task_args = True
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe") as update,
+        mock.patch("taskbadger.celery.get_task") as get_task,
+    ):
+        tb_task = task_for_test()
+        create.return_value = tb_task
+        result = add_normal_with_override.delay(2, 2, taskbadger_record_task_args=False)
+        assert result.info.get("taskbadger_task_id") == tb_task.id
+        assert result.get(timeout=10, propagate=True) == 4
+
+    create.assert_called_once_with(
+        "tests.test_celery_system_integration.add_normal_with_override", status=StatusEnum.PENDING
+    )
     assert get_task.call_count == 1
     assert update.call_count == 2
     assert Badger.current.session().client is None
