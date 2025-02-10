@@ -1,5 +1,5 @@
 import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -59,9 +59,9 @@ class Task:
     end_time: Union[Unset, None, datetime.datetime] = UNSET
     max_runtime: Union[Unset, None, int] = UNSET
     stale_timeout: Union[Unset, None, int] = UNSET
-    additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
+    additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         id = self.id
         organization = self.organization
         project = self.project
@@ -79,7 +79,7 @@ class Task:
         value = self.value
         value_max = self.value_max
         value_percent = self.value_percent
-        data: Union[Unset, None, Dict[str, Any]] = UNSET
+        data: Union[Unset, None, dict[str, Any]] = UNSET
         if not isinstance(self.data, Unset):
             data = self.data.to_dict() if self.data else None
 
@@ -94,7 +94,7 @@ class Task:
         max_runtime = self.max_runtime
         stale_timeout = self.stale_timeout
 
-        field_dict: Dict[str, Any] = {}
+        field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
@@ -129,7 +129,7 @@ class Task:
         return field_dict
 
     @classmethod
-    def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         from ..models.task_data import TaskData
 
         d = src_dict.copy()
@@ -217,7 +217,7 @@ class Task:
         return task
 
     @property
-    def additional_keys(self) -> List[str]:
+    def additional_keys(self) -> list[str]:
         return list(self.additional_properties.keys())
 
     def __getitem__(self, key: str) -> Any:

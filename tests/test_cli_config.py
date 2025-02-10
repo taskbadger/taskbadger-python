@@ -21,11 +21,9 @@ def mock_config_location():
         os.remove(config_path)
 
 
-@pytest.fixture
-def mock_config(mock_config_location):
-    config = Config(
-        organization_slug="test_org", project_slug="test_project", token="test_token"
-    )
+@pytest.fixture()
+def _mock_config(mock_config_location):
+    config = Config(organization_slug="test_org", project_slug="test_project", token="test_token")
     write_config(config)
 
 
@@ -66,7 +64,8 @@ def test_info_args_trump_env():
     _check_output(result, "org1", "project1", "-")
 
 
-def test_info_config(mock_config):
+@pytest.mark.usefixtures(_mock_config)
+def test_info_config():
     result = runner.invoke(app, ["info"])
     _check_output(result, "test_org", "test_project", "test_token")
 
@@ -80,12 +79,14 @@ def test_info_config(mock_config):
     },
     clear=True,
 )
-def test_info_config_env(mock_config):
+@pytest.mark.usefixtures(_mock_config)
+def test_info_config_env():
     result = runner.invoke(app, ["info"])
     _check_output(result, "org2", "project2", "token2")
 
 
-def test_info_config_args(mock_config):
+@pytest.mark.usefixtures(_mock_config)
+def test_info_config_args():
     result = runner.invoke(app, ["-o", "org1", "-p", "project1", "info"])
     _check_output(result, "org1", "project1", "test_token")
 
@@ -99,7 +100,8 @@ def test_info_config_args(mock_config):
     },
     clear=True,
 )
-def test_info_config_env_args(mock_config):
+@pytest.mark.usefixtures(_mock_config)
+def test_info_config_env_args():
     result = runner.invoke(app, ["-o", "org1", "-p", "project1", "info"])
     _check_output(result, "org1", "project1", "token2")
 

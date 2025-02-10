@@ -21,11 +21,9 @@ from tests.utils import task_for_test
 
 
 @pytest.fixture(autouse=True)
-def check_log_errors(caplog):
+def _check_log_errors(caplog):
     yield
-    errors = [
-        r.getMessage() for r in caplog.get_records("call") if r.levelno == logging.ERROR
-    ]
+    errors = [r.getMessage() for r in caplog.get_records("call") if r.levelno == logging.ERROR]
     if errors:
         pytest.fail(f"log errors during tests: {errors}")
 
@@ -33,9 +31,7 @@ def check_log_errors(caplog):
 def test_celery_task(celery_session_app, celery_session_worker, bind_settings):
     @celery_session_app.task(bind=True, base=Task)
     def add_normal(self, a, b):
-        assert (
-            self.request.get("taskbadger_task") is not None
-        ), "missing task in request"
+        assert self.request.get("taskbadger_task") is not None, "missing task in request"
         assert self.taskbadger_task is not None, "missing task on self"
         assert Badger.current.session().client is not None, "missing client"
         return a + b
@@ -61,9 +57,7 @@ def test_celery_task(celery_session_app, celery_session_worker, bind_settings):
     assert Badger.current.session().client is None
 
 
-def test_celery_task_with_args(
-    celery_session_app, celery_session_worker, bind_settings
-):
+def test_celery_task_with_args(celery_session_app, celery_session_worker, bind_settings):
     @celery_session_app.task(bind=True, base=Task)
     def add_with_task_args(self, a, b):
         assert self.taskbadger_task is not None
@@ -86,14 +80,10 @@ def test_celery_task_with_args(
         )
         assert result.get(timeout=10, propagate=True) == 4
 
-    create.assert_called_once_with(
-        "new_name", value_max=10, data={"foo": "bar"}, status=StatusEnum.PENDING
-    )
+    create.assert_called_once_with("new_name", value_max=10, data={"foo": "bar"}, status=StatusEnum.PENDING)
 
 
-def test_celery_task_with_kwargs(
-    celery_session_app, celery_session_worker, bind_settings
-):
+def test_celery_task_with_kwargs(celery_session_app, celery_session_worker, bind_settings):
     @celery_session_app.task(bind=True, base=Task)
     def add_with_task_args(self, a, b):
         assert self.taskbadger_task is not None
@@ -118,14 +108,10 @@ def test_celery_task_with_kwargs(
         )
         assert result.get(timeout=10, propagate=True) == 4
 
-    create.assert_called_once_with(
-        "new_name", value_max=10, actions=actions, status=StatusEnum.PENDING
-    )
+    create.assert_called_once_with("new_name", value_max=10, actions=actions, status=StatusEnum.PENDING)
 
 
-def test_celery_task_with_args_in_decorator(
-    celery_session_app, celery_session_worker, bind_settings
-):
+def test_celery_task_with_args_in_decorator(celery_session_app, celery_session_worker, bind_settings):
     @celery_session_app.task(
         bind=True,
         base=Task,
@@ -148,9 +134,7 @@ def test_celery_task_with_args_in_decorator(
         result = add_with_task_args_in_decorator.delay(2, 2)
         assert result.get(timeout=10, propagate=True) == 4
 
-    create.assert_called_once_with(
-        mock.ANY, status=StatusEnum.PENDING, monitor_id="123", value_max=10
-    )
+    create.assert_called_once_with(mock.ANY, status=StatusEnum.PENDING, monitor_id="123", value_max=10)
 
 
 def test_celery_task_retry(celery_session_app, celery_session_worker, bind_settings):
@@ -212,9 +196,7 @@ def test_celery_task_badger_not_configured(celery_session_app, celery_session_wo
             2,
             taskbadger_kwargs={
                 # add an action here to test serialization failure when Badger is not configured
-                "actions": [
-                    Action("stale", integration=EmailIntegration(to="test@test.com"))
-                ]
+                "actions": [Action("stale", integration=EmailIntegration(to="test@test.com"))]
             },
         )
         assert result.get(timeout=10, propagate=True) == 4
@@ -324,9 +306,7 @@ def test_celery_task_already_in_terminal_state(celery_session_worker, bind_setti
     @celery.shared_task(bind=True, base=Task)
     def add_manual_update(self, a, b, is_retry=False):
         # simulate updating the task to a terminal state
-        self.request.update(
-            {"taskbadger_task": task_for_test(status=StatusEnum.SUCCESS)}
-        )
+        self.request.update({"taskbadger_task": task_for_test(status=StatusEnum.SUCCESS)})
         return a + b
 
     celery_session_worker.reload()

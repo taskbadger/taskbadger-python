@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
 import httpx
 
@@ -15,10 +15,10 @@ def _get_kwargs(
     *,
     cursor: Union[Unset, None, str] = UNSET,
     page_size: Union[Unset, None, int] = UNSET,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     pass
 
-    params: Dict[str, Any] = {}
+    params: dict[str, Any] = {}
     params["cursor"] = cursor
 
     params["page_size"] = page_size
@@ -27,10 +27,7 @@ def _get_kwargs(
 
     return {
         "method": "get",
-        "url": "/api/{organization_slug}/{project_slug}/tasks/".format(
-            organization_slug=organization_slug,
-            project_slug=project_slug,
-        ),
+        "url": f"/api/{organization_slug}/{project_slug}/tasks/",
         "params": params,
     }
 
@@ -78,7 +75,8 @@ def sync_detailed(
         page_size (Union[Unset, None, int]):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code
+            and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -118,7 +116,8 @@ def sync(
         page_size (Union[Unset, None, int]):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code
+            and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -153,7 +152,8 @@ async def asyncio_detailed(
         page_size (Union[Unset, None, int]):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code
+            and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -191,7 +191,8 @@ async def asyncio(
         page_size (Union[Unset, None, int]):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code
+            and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:

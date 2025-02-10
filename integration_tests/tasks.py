@@ -12,7 +12,5 @@ def add(self, x, y):
 
 @shared_task(bind=True)
 def add_auto_track(self, x, y):
-    assert (
-        self.request.taskbadger_task_id is not None
-    ), "missing task ID on self.request"
+    assert self.request.taskbadger_task_id is not None, "missing task ID on self.request"
     return x + y

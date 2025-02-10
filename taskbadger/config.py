@@ -48,10 +48,8 @@ class Config:
         auth = config_dict.get("auth", {})
         return Config(
             token=overrides.get("token") or _from_env("API_KEY", auth.get("token")),
-            organization_slug=overrides.get("org")
-            or _from_env("ORG", defaults.get("org")),
-            project_slug=overrides.get("project")
-            or _from_env("PROJECT", defaults.get("project")),
+            organization_slug=overrides.get("org") or _from_env("ORG", defaults.get("org")),
+            project_slug=overrides.get("project") or _from_env("PROJECT", defaults.get("project")),
             host=overrides.get("host") or auth.get("host"),
         )
 
@@ -77,9 +75,7 @@ def write_config(config):
 
     doc.add(
         "defaults",
-        table()
-        .add("org", config.organization_slug)
-        .add("project", config.project_slug),
+        table().add("org", config.organization_slug).add("project", config.project_slug),
     )
 
     doc.add("auth", table().add("token", config.token))

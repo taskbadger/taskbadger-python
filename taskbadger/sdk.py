@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, List
+from typing import Any
 
 from taskbadger.exceptions import (
     ConfigurationError,
@@ -36,7 +36,7 @@ def init(
     organization_slug: str = None,
     project_slug: str = None,
     token: str = None,
-    systems: List[System] = None,
+    systems: list[System] = None,
 ):
     """Initialize Task Badger client
 
@@ -50,7 +50,7 @@ def _init(
     organization_slug: str = None,
     project_slug: str = None,
     token: str = None,
-    systems: List[System] = None,
+    systems: list[System] = None,
 ):
     host = host or os.environ.get("TASKBADGER_HOST", "https://taskbadger.net")
     organization_slug = organization_slug or os.environ.get("TASKBADGER_ORG")
@@ -95,7 +95,7 @@ def create_task(
     data: dict = None,
     max_runtime: int = None,
     stale_timeout: int = None,
-    actions: List[Action] = None,
+    actions: list[Action] = None,
     monitor_id: str = None,
 ) -> "Task":
     """Create a Task.
@@ -152,7 +152,7 @@ def update_task(
     data: dict = None,
     max_runtime: int = None,
     stale_timeout: int = None,
-    actions: List[Action] = None,
+    actions: list[Action] = None,
 ) -> "Task":
     """Update a task.
     Requires only the task ID and fields to update.
@@ -245,7 +245,7 @@ class Task:
         data: dict = None,
         max_runtime: int = None,
         stale_timeout: int = None,
-        actions: List[Action] = None,
+        actions: list[Action] = None,
         monitor_id: str = None,
     ) -> "Task":
         """Create a new task"""
@@ -322,7 +322,7 @@ class Task:
         data: dict = None,
         max_runtime: int = None,
         stale_timeout: int = None,
-        actions: List[Action] = None,
+        actions: list[Action] = None,
         data_merge_strategy: Any = None,
     ):
         """Generic update method used to update any of the task fields.
@@ -335,9 +335,7 @@ class Task:
             elif data_merge_strategy == "default":
                 data = DefaultMergeStrategy().merge(self.data, data)
             else:
-                raise TaskbadgerException(
-                    f"Unknown data_merge_strategy: {data_merge_strategy!r}"
-                )
+                raise TaskbadgerException(f"Unknown data_merge_strategy: {data_merge_strategy!r}")
 
         task = update_task(
             self._task.id,
@@ -352,7 +350,7 @@ class Task:
         )
         self._task = task._task
 
-    def add_actions(self, actions: List[Action]):
+    def add_actions(self, actions: list[Action]):
         """Add actions to the task."""
         self.update(actions=actions)
 

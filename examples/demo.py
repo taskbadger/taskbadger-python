@@ -15,15 +15,9 @@ def main(args):
     tb.init(args.org, args.project, args.key)
     actions = []
     if args.email:
-        actions = [
-            tb.Action(
-                "*/10%,success,error", integration=EmailIntegration(to=args.email)
-            )
-        ]
+        actions = [tb.Action("*/10%,success,error", integration=EmailIntegration(to=args.email))]
 
-    task = tb.Task.create(
-        args.task_name, data={"host": os.uname().nodename}, actions=actions
-    )
+    task = tb.Task.create(args.task_name, data={"host": os.uname().nodename}, actions=actions)
 
     context = prepare_migration()
 
@@ -47,12 +41,8 @@ def perform_migration(context, task: tb.Task):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Demo database migration")
     parser.add_argument("task_name")
-    parser.add_argument(
-        "-o", "--org", required=True, help="Taskbadger Organization slug"
-    )
-    parser.add_argument(
-        "-p", "--project", required=True, help="Taskbadger Project slug"
-    )
+    parser.add_argument("-o", "--org", required=True, help="Taskbadger Organization slug")
+    parser.add_argument("-p", "--project", required=True, help="Taskbadger Project slug")
     parser.add_argument("-k", "--key", required=True, help="Taskbadger API Key")
     parser.add_argument("-e", "--email")
     args = parser.parse_args()

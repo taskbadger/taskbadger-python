@@ -13,15 +13,11 @@ app = typer.Typer(
 )
 
 
-app.command(
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": False}
-)(run)
+app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": False})(run)
 app.command(context_settings={"ignore_unknown_options": False})(get)
 app.command(context_settings={"ignore_unknown_options": False})(create)
 app.command(context_settings={"ignore_unknown_options": False})(update)
-app.command("list", context_settings={"ignore_unknown_options": False})(
-    list_tasks_command
-)
+app.command("list", context_settings={"ignore_unknown_options": False})(list_tasks_command)
 
 
 def version_callback(value: bool):
@@ -34,9 +30,7 @@ def version_callback(value: bool):
 def configure(ctx: typer.Context):
     """Update CLI configuration."""
     config = ctx.meta["tb_config"]
-    config.organization_slug = typer.prompt(
-        "Organization slug", default=config.organization_slug
-    )
+    config.organization_slug = typer.prompt("Organization slug", default=config.organization_slug)
     config.project_slug = typer.prompt("Project slug", default=config.project_slug)
     config.token = typer.prompt("API Key", default=config.token)
     path = write_config(config)

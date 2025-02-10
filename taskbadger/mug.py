@@ -1,7 +1,7 @@
 import dataclasses
 from contextlib import ContextDecorator
 from contextvars import ContextVar
-from typing import Dict, Union
+from typing import Union
 
 from taskbadger.internal import AuthenticatedClient
 from taskbadger.systems import System
@@ -15,7 +15,7 @@ class Settings:
     token: str
     organization_slug: str
     project_slug: str
-    systems: Dict[str, System] = dataclasses.field(default_factory=dict)
+    systems: dict[str, System] = dataclasses.field(default_factory=dict)
 
     def get_client(self):
         return AuthenticatedClient(self.base_url, self.token)

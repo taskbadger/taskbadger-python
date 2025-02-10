@@ -1,7 +1,6 @@
 import csv
 import json
 import sys
-from typing import Tuple
 
 import typer
 from rich import print
@@ -19,9 +18,7 @@ from taskbadger.cli.utils import (
 def get(
     ctx: typer.Context,
     task_id: str = typer.Argument(..., show_default=False, help="The ID of the task."),
-    output_format: OutputFormat = typer.Option(
-        OutputFormat.pretty, "--format", "-f", help="Output format"
-    ),
+    output_format: OutputFormat = typer.Option(OutputFormat.pretty, "--format", "-f", help="Output format"),
 ):
     """Get a task."""
     configure_api(ctx)
@@ -52,7 +49,7 @@ def create(
     ctx: typer.Context,
     name: str = typer.Argument(..., show_default=False, help="The task name."),
     monitor_id: str = typer.Option(None, help="Associate this task with a monitor."),
-    action_def: Tuple[str, str, str] = typer.Option(
+    action_def: tuple[str, str, str] = typer.Option(
         (None, None, None),
         "--action",
         "-a",
@@ -60,9 +57,7 @@ def create(
         show_default=False,
         help="Action definition e.g. 'success,error email to:me@email.com'",
     ),
-    status: StatusEnum = typer.Option(
-        StatusEnum.PROCESSING, help="The initial status of the task."
-    ),
+    status: StatusEnum = typer.Option(StatusEnum.PROCESSING, help="The initial status of the task."),
     value_max: int = typer.Option(100, help="The maximum value for the task."),
     metadata: list[str] = typer.Option(
         None,
@@ -74,9 +69,7 @@ def create(
         show_default=False,
         help="Metadata to associate with the task. Must be valid JSON.",
     ),
-    quiet: bool = typer.Option(
-        False, "--quiet", "-q", help="Minimal output. Only the Task ID."
-    ),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Minimal output. Only the Task ID."),
 ):
     """Create a task."""
     configure_api(ctx)
@@ -103,13 +96,9 @@ def create(
 
 def update(
     ctx: typer.Context,
-    task_id: str = typer.Argument(
-        ..., show_default=False, help="The ID of the task to update."
-    ),
-    name: str = typer.Option(
-        None, show_default=False, help="Update the name of the task."
-    ),
-    action_def: Tuple[str, str, str] = typer.Option(
+    task_id: str = typer.Argument(..., show_default=False, help="The ID of the task to update."),
+    name: str = typer.Option(None, show_default=False, help="Update the name of the task."),
+    action_def: tuple[str, str, str] = typer.Option(
         (None, None, None),
         "--action",
         "-a",
@@ -117,15 +106,9 @@ def update(
         show_default=False,
         help="Action definition e.g. 'success,error email to:me@email.com'",
     ),
-    status: StatusEnum = typer.Option(
-        StatusEnum.PROCESSING, help="The status of the task."
-    ),
-    value: int = typer.Option(
-        None, show_default=False, help="The current task value (progress)."
-    ),
-    value_max: int = typer.Option(
-        None, show_default=False, help="The maximum value for the task."
-    ),
+    status: StatusEnum = typer.Option(StatusEnum.PROCESSING, help="The status of the task."),
+    value: int = typer.Option(None, show_default=False, help="The current task value (progress)."),
+    value_max: int = typer.Option(None, show_default=False, help="The maximum value for the task."),
     metadata: list[str] = typer.Option(
         None,
         show_default=False,

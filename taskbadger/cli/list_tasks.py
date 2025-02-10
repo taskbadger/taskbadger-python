@@ -14,9 +14,7 @@ from taskbadger.sdk import list_tasks
 
 def list_tasks_command(
     ctx: typer.Context,
-    output_format: OutputFormat = typer.Option(
-        OutputFormat.pretty, "--format", "-f", help="Output format"
-    ),
+    output_format: OutputFormat = typer.Option(OutputFormat.pretty, "--format", "-f", help="Output format"),
     limit: int = typer.Option(100, help="Limit the number of results."),
     start_token: str = typer.Option(None, show_default=False, help="Start token."),
 ):

@@ -21,8 +21,8 @@ from taskbadger.systems.celery import CelerySystemIntegration
 from tests.utils import task_for_test
 
 
-@pytest.fixture
-def bind_settings_with_system():
+@pytest.fixture()
+def _bind_settings_with_system():
     systems = [CelerySystemIntegration()]
     Badger.current.bind(
         Settings(
@@ -38,23 +38,18 @@ def bind_settings_with_system():
 
 
 @pytest.fixture(autouse=True)
-def check_log_errors(caplog):
+def _check_log_errors(caplog):
     yield
-    errors = [
-        r.getMessage() for r in caplog.get_records("call") if r.levelno == logging.ERROR
-    ]
+    errors = [r.getMessage() for r in caplog.get_records("call") if r.levelno == logging.ERROR]
     if errors:
         pytest.fail(f"log errors during tests: {errors}")
 
 
-def test_celery_auto_track_task(
-    celery_session_app, celery_session_worker, bind_settings_with_system
-):
+@pytest.mark.usefixtures(_bind_settings_with_system)
+def test_celery_auto_track_task(celery_session_app, celery_session_worker):
     @celery_session_app.task(bind=True)
     def add_normal(self, a, b):
-        assert (
-            self.request.get("taskbadger_task_id") is not None
-        ), "missing task in request"
+        assert self.request.get("taskbadger_task_id") is not None, "missing task in request"
         assert not hasattr(self, "taskbadger_task")
         assert Badger.current.session().client is not None, "missing client"
         return a + b
@@ -79,7 +74,7 @@ def test_celery_auto_track_task(
 
 
 @pytest.mark.parametrize(
-    "include,exclude,expected",
+    ("include", "exclude", "expected"),
     [
         (None, None, True),
         (["myapp.tasks.export_data"], None, True),

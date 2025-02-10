@@ -21,7 +21,7 @@ runner = CliRunner()
 
 
 @pytest.fixture(autouse=True)
-def mock_env():
+def _mock_env():
     with mock.patch.dict(
         os.environ,
         {
@@ -43,19 +43,13 @@ def test_cli_long_run():
         return True
 
     with mock.patch("taskbadger.process._should_update", new=_should_update_task):
-        _test_cli_run(
-            ["echo test; sleep 0.11"], 0, args=["task_name"], update_call_count=3
-        )
+        _test_cli_run(["echo test; sleep 0.11"], 0, args=["task_name"], update_call_count=3)
 
 
 def test_cli_capture_output():
-    update_patch = _test_cli_run(
-        ["echo test"], 0, args=["task_name", "--capture-output"], update_call_count=2
-    )
+    update_patch = _test_cli_run(["echo test"], 0, args=["task_name", "--capture-output"], update_call_count=2)
 
-    body = PatchedTaskRequest(
-        status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n"})
-    )
+    body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n"}))
     update_patch.assert_any_call(
         client=mock.ANY,
         organization_slug="org",
@@ -77,9 +71,7 @@ def test_cli_capture_output_append():
             update_call_count=3,
         )
 
-    body = PatchedTaskRequest(
-        status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n123\n"})
-    )
+    body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n123\n"}))
     update_patch.assert_any_call(
         client=mock.ANY,
         organization_slug="org",
@@ -124,9 +116,7 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
 
         # handle updating task data
         data = kwargs["json_body"].data
-        task_return = task_for_test(
-            id=task_id, data=data.additional_properties if data else None
-        )
+        task_return = task_for_test(id=task_id, data=data.additional_properties if data else None)
         return Response(HTTPStatus.OK, b"", {}, task_return)
 
     with (
@@ -137,15 +127,11 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
         create.return_value = Response(HTTPStatus.OK, b"", {}, task)
 
         args = args or []
-        result = runner.invoke(
-            app, ["run"] + args + ["--"] + command, catch_exceptions=False
-        )
+        result = runner.invoke(app, ["run"] + args + ["--"] + command, catch_exceptions=False)
         print(result.output)
         assert result.exit_code == return_code, result.output
 
-        request = TaskRequest(
-            name="task_name", status=StatusEnum.PROCESSING, stale_timeout=10
-        )
+        request = TaskRequest(name="task_name", status=StatusEnum.PROCESSING, stale_timeout=10)
         if action:
             request.additional_properties = {"actions": [action]}
         create.assert_called_with(
@@ -191,8 +177,6 @@ def test_cli_run_session():
         mock.patch("taskbadger.cli.wrapper.err_console") as err,
     ):
         args = ["task_name"]
-        result = runner.invoke(
-            app, ["run"] + args + ["--"] + ["echo", "test"], catch_exceptions=False
-        )
+        result = runner.invoke(app, ["run"] + args + ["--"] + ["echo", "test"], catch_exceptions=False)
         assert result.exit_code == 0, result.output
         assert err.print.call_count == 0, err.print.call_args_list

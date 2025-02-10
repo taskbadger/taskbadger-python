@@ -18,28 +18,28 @@ from tests.utils import task_for_test
 
 
 @pytest.fixture(autouse=True)
-def init_skd():
+def _init_skd():
     init("org", "project", "token")
 
 
-@pytest.fixture
+@pytest.fixture()
 def settings():
     return Badger.current.settings
 
 
-@pytest.fixture
+@pytest.fixture()
 def patched_get():
     with mock.patch("taskbadger.sdk.task_get.sync") as get:
         yield get
 
 
-@pytest.fixture
+@pytest.fixture()
 def patched_create():
     with mock.patch("taskbadger.sdk.task_create.sync_detailed") as create:
         yield create
 
 
-@pytest.fixture
+@pytest.fixture()
 def patched_update():
     with mock.patch("taskbadger.sdk.task_partial_update.sync_detailed") as update:
         yield update
@@ -123,9 +123,7 @@ def test_increment_progress(settings, patched_update):
     api_task = task_for_test()
     task = Task(api_task)
 
-    patched_update.return_value = Response(
-        HTTPStatus.OK, b"", {}, task_for_test(value=10)
-    )
+    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test(value=10))
 
     task.increment_progress(10)
     _verify_update(settings, patched_update, value=10)
@@ -138,9 +136,7 @@ def test_update_timeouts(settings, patched_update):
     api_task = task_for_test()
     task = Task(api_task)
 
-    patched_update.return_value = Response(
-        HTTPStatus.OK, b"", {}, task_for_test(max_runtime=10, stale_timeout=2)
-    )
+    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test(max_runtime=10, stale_timeout=2))
 
     task.update(max_runtime=10, stale_timeout=2)
     _verify_update(settings, patched_update, max_runtime=10, stale_timeout=2)
@@ -154,9 +150,7 @@ def test_add_actions(settings, patched_update):
 
     task.add_actions(
         [
-            Action(
-                "*/10%,success,error", integration=EmailIntegration(to="me@example.com")
-            ),
+            Action("*/10%,success,error", integration=EmailIntegration(to="me@example.com")),
             Action("cancelled", integration=WebhookIntegration(id="webhook:123")),
         ]
     )

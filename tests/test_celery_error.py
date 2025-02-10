@@ -27,7 +27,7 @@ def test_celery_task_error(celery_session_app, celery_session_worker, bind_setti
         get_task.return_value = task
         update.return_value = task
         result = add_error.delay(2, 2)
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match="error"):
             result.get(timeout=10, propagate=True)
 
     create.assert_called()
