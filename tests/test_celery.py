@@ -111,6 +111,74 @@ def test_celery_task_with_kwargs(celery_session_app, celery_session_worker, bind
     create.assert_called_once_with("new_name", value_max=10, actions=actions, status=StatusEnum.PENDING)
 
 
+def test_celery_record_args(celery_session_app, celery_session_worker, bind_settings):
+    @celery_session_app.task(bind=True, base=Task)
+    def add_with_task_args(self, a, b):
+        assert self.taskbadger_task is not None
+        return a + b
+
+    celery_session_worker.reload()
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe"),
+        mock.patch("taskbadger.celery.get_task"),
+    ):
+        create.return_value = task_for_test()
+
+        result = add_with_task_args.apply_async(
+            (2, 2),
+            taskbadger_name="new_name",
+            taskbadger_value_max=10,
+            taskbadger_kwargs={"data": {"foo": "bar"}},
+            taskbadger_record_task_args=True,
+        )
+        assert result.get(timeout=10, propagate=True) == 4
+
+    create.assert_called_once_with(
+        "new_name",
+        value_max=10,
+        data={"foo": "bar", "celery_task_args": (2, 2), "celery_task_kwargs": {}},
+        status=StatusEnum.PENDING,
+    )
+
+
+def test_celery_record_task_kwargs(celery_session_app, celery_session_worker, bind_settings):
+    @celery_session_app.task(bind=True, base=Task)
+    def add_with_task_args(self, a, b, c=0):
+        assert self.taskbadger_task is not None
+        return a + b + c
+
+    celery_session_worker.reload()
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe"),
+        mock.patch("taskbadger.celery.get_task"),
+    ):
+        create.return_value = task_for_test()
+
+        actions = [Action("stale", integration=EmailIntegration(to="test@test.com"))]
+        result = add_with_task_args.delay(
+            2,
+            2,
+            c=3,
+            taskbadger_name="new_name",
+            taskbadger_value_max=10,
+            taskbadger_kwargs={"actions": actions},
+            taskbadger_record_task_args=True,
+        )
+        assert result.get(timeout=10, propagate=True) == 7
+
+    create.assert_called_once_with(
+        "new_name",
+        value_max=10,
+        data={"celery_task_args": (2, 2), "celery_task_kwargs": {"c": 3}},
+        actions=actions,
+        status=StatusEnum.PENDING,
+    )
+
+
 def test_celery_task_with_args_in_decorator(celery_session_app, celery_session_worker, bind_settings):
     @celery_session_app.task(
         bind=True,
