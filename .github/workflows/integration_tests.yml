@@ -18,25 +18,20 @@ jobs:
         ports:
           - 6379:6379
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install Poetry
-        uses: Gr1N/setup-poetry@v8
-      - uses: actions/cache@v3
+      - uses: astral-sh/setup-uv@v3
         with:
-          path: ~/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
-      - name: Checks
-        run: |
-          poetry --version
-          poetry check --no-interaction
+          enable-cache: true
       - name: Install project
-        run: poetry install --no-interaction
-      - name: Run integration tests
-        run: poetry run pytest integration_tests -vs
+        run: |
+          uv sync --frozen
+          uv pip install celery"${{ matrix.celery-version }}"
+      - name: Run tests
+        run: uv run --no-sync pytest integration_tests -vs
         env:
           TASKBADGER_ORG: ${{ vars.TASKBADGER_ORG }}
           TASKBADGER_PROJECT: ${{ vars.TASKBADGER_PROJECT }}
