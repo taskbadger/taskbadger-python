@@ -27,6 +27,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.9"
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
       - name: Install deps
         run: uv sync --frozen
       - name: Run tests
