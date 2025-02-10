@@ -22,28 +22,18 @@ jobs:
           - 6379:6379
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.9"
-      - name: Install Poetry
-        uses: Gr1N/setup-poetry@v8
-      - uses: actions/cache@v3
-        with:
-          path: ~/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
-      - name: Checks
-        run: |
-          poetry --version
-          poetry check --no-interaction
       - name: Install deps
-        run: poetry install --no-interaction
+        run: uv sync --frozen
       - name: Run tests
-        run: poetry run pytest -v
+        run: uv run --no-sync pytest -v
+      - name: Build
+        run: uv build
       - name: Publish to PyPI
         env:
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
-        run: |
-          poetry config pypi-token.pypi $PYPI_TOKEN
-          poetry publish --build
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: uv publish
