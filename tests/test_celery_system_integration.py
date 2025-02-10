@@ -45,7 +45,7 @@ def _check_log_errors(caplog):
         pytest.fail(f"log errors during tests: {errors}")
 
 
-@pytest.mark.usefixtures(_bind_settings_with_system)
+@pytest.mark.usefixtures("_bind_settings_with_system")
 def test_celery_auto_track_task(celery_session_app, celery_session_worker):
     @celery_session_app.task(bind=True)
     def add_normal(self, a, b):

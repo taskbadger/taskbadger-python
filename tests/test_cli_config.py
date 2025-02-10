@@ -64,7 +64,7 @@ def test_info_args_trump_env():
     _check_output(result, "org1", "project1", "-")
 
 
-@pytest.mark.usefixtures(_mock_config)
+@pytest.mark.usefixtures("_mock_config")
 def test_info_config():
     result = runner.invoke(app, ["info"])
     _check_output(result, "test_org", "test_project", "test_token")
@@ -79,13 +79,13 @@ def test_info_config():
     },
     clear=True,
 )
-@pytest.mark.usefixtures(_mock_config)
+@pytest.mark.usefixtures("_mock_config")
 def test_info_config_env():
     result = runner.invoke(app, ["info"])
     _check_output(result, "org2", "project2", "token2")
 
 
-@pytest.mark.usefixtures(_mock_config)
+@pytest.mark.usefixtures("_mock_config")
 def test_info_config_args():
     result = runner.invoke(app, ["-o", "org1", "-p", "project1", "info"])
     _check_output(result, "org1", "project1", "test_token")
@@ -100,7 +100,7 @@ def test_info_config_args():
     },
     clear=True,
 )
-@pytest.mark.usefixtures(_mock_config)
+@pytest.mark.usefixtures("_mock_config")
 def test_info_config_env_args():
     result = runner.invoke(app, ["-o", "org1", "-p", "project1", "info"])
     _check_output(result, "org1", "project1", "token2")
