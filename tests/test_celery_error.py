@@ -8,7 +8,8 @@ from taskbadger.mug import Badger
 from tests.utils import task_for_test
 
 
-def test_celery_task_error(celery_session_app, celery_session_worker, bind_settings):
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_task_error(celery_session_app, celery_session_worker):
     @celery_session_app.task(bind=True, base=Task)
     def add_error(self, a, b):
         assert self.taskbadger_task is not None

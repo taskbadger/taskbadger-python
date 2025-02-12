@@ -3,7 +3,7 @@ Note
 ====
 
 As part of the Celery fixture setup a 'ping' task is run which executes
-before the `bind_settings` fixture is executed. This means that if any code
+before the `_bind_settings` fixture is executed. This means that if any code
 calls `Badger.is_configured()` (or similar), the `_local` ContextVar in the
 Celery runner thread will not have the configuration set.
 """
@@ -29,7 +29,8 @@ def _check_log_errors(caplog):
         pytest.fail(f"log errors during tests: {errors}")
 
 
-def test_celery_task(celery_session_app, celery_session_worker, bind_settings):
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_task(celery_session_app, celery_session_worker):
     @celery_session_app.task(bind=True, base=Task)
     def add_normal(self, a, b):
         assert self.request.get("taskbadger_task") is not None, "missing task in request"
@@ -58,7 +59,8 @@ def test_celery_task(celery_session_app, celery_session_worker, bind_settings):
     assert Badger.current.session().client is None
 
 
-def test_celery_task_with_args(celery_session_app, celery_session_worker, bind_settings):
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_task_with_args(celery_session_app, celery_session_worker):
     @celery_session_app.task(bind=True, base=Task)
     def add_with_task_args(self, a, b):
         assert self.taskbadger_task is not None
@@ -86,7 +88,8 @@ def test_celery_task_with_args(celery_session_app, celery_session_worker, bind_s
     )
 
 
-def test_celery_task_with_kwargs(celery_session_app, celery_session_worker, bind_settings):
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_task_with_kwargs(celery_session_app, celery_session_worker):
     @celery_session_app.task(bind=True, base=Task)
     def add_with_task_args(self, a, b):
         assert self.taskbadger_task is not None
@@ -114,7 +117,8 @@ def test_celery_task_with_kwargs(celery_session_app, celery_session_worker, bind
     create.assert_called_once_with("new_name", value_max=10, actions=actions, status=StatusEnum.PENDING)
 
 
-def test_celery_record_args(celery_session_app, celery_session_worker, bind_settings):
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_record_args(celery_session_app, celery_session_worker):
     @celery_session_app.task(bind=True, base=Task)
     def add_with_task_args(self, a, b):
         assert self.taskbadger_task is not None
@@ -146,7 +150,8 @@ def test_celery_record_args(celery_session_app, celery_session_worker, bind_sett
     )
 
 
-def test_celery_record_task_kwargs(celery_session_app, celery_session_worker, bind_settings):
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_record_task_kwargs(celery_session_app, celery_session_worker):
     @celery_session_app.task(bind=True, base=Task)
     def add_with_task_kwargs(self, a, b, c=0):
         assert self.taskbadger_task is not None
@@ -182,7 +187,8 @@ def test_celery_record_task_kwargs(celery_session_app, celery_session_worker, bi
     )
 
 
-def test_celery_record_task_args_custom_serialization(celery_session_app, celery_session_worker, bind_settings):
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_record_task_args_custom_serialization(celery_session_app, celery_session_worker):
     class A:
         def __init__(self, a, b):
             self.a = a
@@ -217,7 +223,8 @@ def test_celery_record_task_args_custom_serialization(celery_session_app, celery
     )
 
 
-def test_celery_task_with_args_in_decorator(celery_session_app, celery_session_worker, bind_settings):
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_task_with_args_in_decorator(celery_session_app, celery_session_worker):
     @celery_session_app.task(
         bind=True,
         base=Task,
@@ -243,7 +250,8 @@ def test_celery_task_with_args_in_decorator(celery_session_app, celery_session_w
     create.assert_called_once_with(mock.ANY, status=StatusEnum.PENDING, monitor_id="123", value_max=10)
 
 
-def test_celery_task_retry(celery_session_app, celery_session_worker, bind_settings):
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_task_retry(celery_session_app, celery_session_worker):
     """Note: When a task is retried, the celery task ID remains the same but a new TB task
     will be created.
 
@@ -330,7 +338,8 @@ def test_task_direct_call(celery_session_app, celery_session_worker):
     assert Badger.current.session().client is None
 
 
-def test_task_shared_task(celery_session_worker, bind_settings):
+@pytest.mark.usefixtures("_bind_settings")
+def test_task_shared_task(celery_session_worker):
     @celery.shared_task(bind=True, base=Task)
     def add_shared_task(self, a, b):
         assert self.taskbadger_task is not None
@@ -354,7 +363,8 @@ def test_task_shared_task(celery_session_worker, bind_settings):
     assert Badger.current.session().client is None
 
 
-def test_task_signature(celery_session_worker, bind_settings):
+@pytest.mark.usefixtures("_bind_settings")
+def test_task_signature(celery_session_worker):
     @celery.shared_task(bind=True, base=Task)
     def task_signature(self, a):
         assert self.taskbadger_task is not None
@@ -381,7 +391,8 @@ def test_task_signature(celery_session_worker, bind_settings):
     assert Badger.current.session().client is None
 
 
-def test_task_map(celery_session_worker, bind_settings):
+@pytest.mark.usefixtures("_bind_settings")
+def test_task_map(celery_session_worker):
     """Tasks executed in a map or starmap are not executed as tasks"""
 
     @celery.shared_task(bind=True, base=Task)
@@ -408,7 +419,8 @@ def test_task_map(celery_session_worker, bind_settings):
     assert Badger.current.session().client is None
 
 
-def test_celery_task_already_in_terminal_state(celery_session_worker, bind_settings):
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_task_already_in_terminal_state(celery_session_worker):
     @celery.shared_task(bind=True, base=Task)
     def add_manual_update(self, a, b, is_retry=False):
         # simulate updating the task to a terminal state
