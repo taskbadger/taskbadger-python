@@ -28,7 +28,9 @@ class PatchedActionRequest:
 
     def to_dict(self) -> dict[str, Any]:
         trigger = self.trigger
+
         integration = self.integration
+
         config: Union[Unset, dict[str, Any]] = UNSET
         if not isinstance(self.config, Unset):
             config = self.config.to_dict()

@@ -8,12 +8,12 @@ from .paginated_task_list import PaginatedTaskList
 from .patched_action_request import PatchedActionRequest
 from .patched_action_request_config import PatchedActionRequestConfig
 from .patched_task_request import PatchedTaskRequest
-from .patched_task_request_data import PatchedTaskRequestData
+from .patched_task_request_data_type_0 import PatchedTaskRequestDataType0
 from .status_enum import StatusEnum
 from .task import Task
-from .task_data import TaskData
+from .task_data_type_0 import TaskDataType0
 from .task_request import TaskRequest
-from .task_request_data import TaskRequestData
+from .task_request_data_type_0 import TaskRequestDataType0
 
 __all__ = (
     "Action",
@@ -24,10 +24,10 @@ __all__ = (
     "PatchedActionRequest",
     "PatchedActionRequestConfig",
     "PatchedTaskRequest",
-    "PatchedTaskRequestData",
+    "PatchedTaskRequestDataType0",
     "StatusEnum",
     "Task",
-    "TaskData",
+    "TaskDataType0",
     "TaskRequest",
-    "TaskRequestData",
+    "TaskRequestDataType0",
 )

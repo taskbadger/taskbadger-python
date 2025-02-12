@@ -1,5 +1,6 @@
 from http import HTTPStatus
 from typing import Any, Optional, Union
+from uuid import UUID
 
 import httpx
 
@@ -12,18 +13,18 @@ def _get_kwargs(
     organization_slug: str,
     project_slug: str,
     task_id: str,
-    id: str,
+    id: UUID,
 ) -> dict[str, Any]:
-    pass
-
-    return {
+    _kwargs: dict[str, Any] = {
         "method": "delete",
         "url": f"/api/{organization_slug}/{project_slug}/tasks/{task_id}/actions/{id}/",
     }
 
+    return _kwargs
+
 
 def _parse_response(*, client: Union[AuthenticatedClient, Client], response: httpx.Response) -> Optional[Any]:
-    if response.status_code == HTTPStatus.NO_CONTENT:
+    if response.status_code == 204:
         return None
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
@@ -44,7 +45,7 @@ def sync_detailed(
     organization_slug: str,
     project_slug: str,
     task_id: str,
-    id: str,
+    id: UUID,
     *,
     client: AuthenticatedClient,
 ) -> Response[Any]:
@@ -56,11 +57,10 @@ def sync_detailed(
         organization_slug (str):
         project_slug (str):
         task_id (str):
-        id (str):
+        id (UUID):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -85,7 +85,7 @@ async def asyncio_detailed(
     organization_slug: str,
     project_slug: str,
     task_id: str,
-    id: str,
+    id: UUID,
     *,
     client: AuthenticatedClient,
 ) -> Response[Any]:
@@ -97,11 +97,10 @@ async def asyncio_detailed(
         organization_slug (str):
         project_slug (str):
         task_id (str):
-        id (str):
+        id (UUID):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:

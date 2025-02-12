@@ -1,5 +1,6 @@
 from http import HTTPStatus
 from typing import Any, Optional, Union
+from uuid import UUID
 
 import httpx
 
@@ -14,25 +15,29 @@ def _get_kwargs(
     organization_slug: str,
     project_slug: str,
     *,
-    json_body: TaskRequest,
-    x_taskbadger_monitor: Union[Unset, str] = UNSET,
+    body: TaskRequest,
+    x_taskbadger_monitor: Union[Unset, UUID] = UNSET,
 ) -> dict[str, Any]:
-    headers = {}
+    headers: dict[str, Any] = {}
     if not isinstance(x_taskbadger_monitor, Unset):
         headers["X-TASKBADGER-MONITOR"] = x_taskbadger_monitor
 
-    json_json_body = json_body.to_dict()
-
-    return {
+    _kwargs: dict[str, Any] = {
         "method": "post",
         "url": f"/api/{organization_slug}/{project_slug}/tasks/",
-        "json": json_json_body,
-        "headers": headers,
     }
+
+    _body = body.to_dict()
+
+    _kwargs["json"] = _body
+    headers["Content-Type"] = "application/json"
+
+    _kwargs["headers"] = headers
+    return _kwargs
 
 
 def _parse_response(*, client: Union[AuthenticatedClient, Client], response: httpx.Response) -> Optional[Task]:
-    if response.status_code == HTTPStatus.CREATED:
+    if response.status_code == 201:
         response_201 = Task.from_dict(response.json())
 
         return response_201
@@ -56,8 +61,8 @@ def sync_detailed(
     project_slug: str,
     *,
     client: AuthenticatedClient,
-    json_body: TaskRequest,
-    x_taskbadger_monitor: Union[Unset, str] = UNSET,
+    body: TaskRequest,
+    x_taskbadger_monitor: Union[Unset, UUID] = UNSET,
 ) -> Response[Task]:
     """Create Task
 
@@ -66,12 +71,11 @@ def sync_detailed(
     Args:
         organization_slug (str):
         project_slug (str):
-        x_taskbadger_monitor (Union[Unset, str]):
-        json_body (TaskRequest):
+        x_taskbadger_monitor (Union[Unset, UUID]):
+        body (TaskRequest):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -81,7 +85,7 @@ def sync_detailed(
     kwargs = _get_kwargs(
         organization_slug=organization_slug,
         project_slug=project_slug,
-        json_body=json_body,
+        body=body,
         x_taskbadger_monitor=x_taskbadger_monitor,
     )
 
@@ -97,8 +101,8 @@ def sync(
     project_slug: str,
     *,
     client: AuthenticatedClient,
-    json_body: TaskRequest,
-    x_taskbadger_monitor: Union[Unset, str] = UNSET,
+    body: TaskRequest,
+    x_taskbadger_monitor: Union[Unset, UUID] = UNSET,
 ) -> Optional[Task]:
     """Create Task
 
@@ -107,12 +111,11 @@ def sync(
     Args:
         organization_slug (str):
         project_slug (str):
-        x_taskbadger_monitor (Union[Unset, str]):
-        json_body (TaskRequest):
+        x_taskbadger_monitor (Union[Unset, UUID]):
+        body (TaskRequest):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -123,7 +126,7 @@ def sync(
         organization_slug=organization_slug,
         project_slug=project_slug,
         client=client,
-        json_body=json_body,
+        body=body,
         x_taskbadger_monitor=x_taskbadger_monitor,
     ).parsed
 
@@ -133,8 +136,8 @@ async def asyncio_detailed(
     project_slug: str,
     *,
     client: AuthenticatedClient,
-    json_body: TaskRequest,
-    x_taskbadger_monitor: Union[Unset, str] = UNSET,
+    body: TaskRequest,
+    x_taskbadger_monitor: Union[Unset, UUID] = UNSET,
 ) -> Response[Task]:
     """Create Task
 
@@ -143,12 +146,11 @@ async def asyncio_detailed(
     Args:
         organization_slug (str):
         project_slug (str):
-        x_taskbadger_monitor (Union[Unset, str]):
-        json_body (TaskRequest):
+        x_taskbadger_monitor (Union[Unset, UUID]):
+        body (TaskRequest):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -158,7 +160,7 @@ async def asyncio_detailed(
     kwargs = _get_kwargs(
         organization_slug=organization_slug,
         project_slug=project_slug,
-        json_body=json_body,
+        body=body,
         x_taskbadger_monitor=x_taskbadger_monitor,
     )
 
@@ -172,8 +174,8 @@ async def asyncio(
     project_slug: str,
     *,
     client: AuthenticatedClient,
-    json_body: TaskRequest,
-    x_taskbadger_monitor: Union[Unset, str] = UNSET,
+    body: TaskRequest,
+    x_taskbadger_monitor: Union[Unset, UUID] = UNSET,
 ) -> Optional[Task]:
     """Create Task
 
@@ -182,12 +184,11 @@ async def asyncio(
     Args:
         organization_slug (str):
         project_slug (str):
-        x_taskbadger_monitor (Union[Unset, str]):
-        json_body (TaskRequest):
+        x_taskbadger_monitor (Union[Unset, UUID]):
+        body (TaskRequest):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -199,7 +200,7 @@ async def asyncio(
             organization_slug=organization_slug,
             project_slug=project_slug,
             client=client,
-            json_body=json_body,
+            body=body,
             x_taskbadger_monitor=x_taskbadger_monitor,
         )
     ).parsed

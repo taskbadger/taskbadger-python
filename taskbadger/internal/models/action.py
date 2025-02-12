@@ -40,10 +40,15 @@ class Action:
 
     def to_dict(self) -> dict[str, Any]:
         id = self.id
+
         task = self.task
+
         trigger = self.trigger
+
         integration = self.integration
+
         status = self.status
+
         created = self.created.isoformat()
 
         updated = self.updated.isoformat()

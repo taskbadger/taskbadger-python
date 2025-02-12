@@ -1,5 +1,6 @@
 from http import HTTPStatus
 from typing import Any, Optional, Union
+from uuid import UUID
 
 import httpx
 
@@ -13,23 +14,28 @@ from ...types import Response
 def _get_kwargs(
     organization_slug: str,
     project_slug: str,
-    id: str,
+    id: UUID,
     *,
-    json_body: TaskRequest,
+    body: TaskRequest,
 ) -> dict[str, Any]:
-    pass
+    headers: dict[str, Any] = {}
 
-    json_json_body = json_body.to_dict()
-
-    return {
+    _kwargs: dict[str, Any] = {
         "method": "put",
         "url": f"/api/{organization_slug}/{project_slug}/tasks/{id}/",
-        "json": json_json_body,
     }
+
+    _body = body.to_dict()
+
+    _kwargs["json"] = _body
+    headers["Content-Type"] = "application/json"
+
+    _kwargs["headers"] = headers
+    return _kwargs
 
 
 def _parse_response(*, client: Union[AuthenticatedClient, Client], response: httpx.Response) -> Optional[Task]:
-    if response.status_code == HTTPStatus.OK:
+    if response.status_code == 200:
         response_200 = Task.from_dict(response.json())
 
         return response_200
@@ -51,10 +57,10 @@ def _build_response(*, client: Union[AuthenticatedClient, Client], response: htt
 def sync_detailed(
     organization_slug: str,
     project_slug: str,
-    id: str,
+    id: UUID,
     *,
     client: AuthenticatedClient,
-    json_body: TaskRequest,
+    body: TaskRequest,
 ) -> Response[Task]:
     """Update Task
 
@@ -63,12 +69,11 @@ def sync_detailed(
     Args:
         organization_slug (str):
         project_slug (str):
-        id (str):
-        json_body (TaskRequest):
+        id (UUID):
+        body (TaskRequest):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -79,7 +84,7 @@ def sync_detailed(
         organization_slug=organization_slug,
         project_slug=project_slug,
         id=id,
-        json_body=json_body,
+        body=body,
     )
 
     response = client.get_httpx_client().request(
@@ -92,10 +97,10 @@ def sync_detailed(
 def sync(
     organization_slug: str,
     project_slug: str,
-    id: str,
+    id: UUID,
     *,
     client: AuthenticatedClient,
-    json_body: TaskRequest,
+    body: TaskRequest,
 ) -> Optional[Task]:
     """Update Task
 
@@ -104,12 +109,11 @@ def sync(
     Args:
         organization_slug (str):
         project_slug (str):
-        id (str):
-        json_body (TaskRequest):
+        id (UUID):
+        body (TaskRequest):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -121,17 +125,17 @@ def sync(
         project_slug=project_slug,
         id=id,
         client=client,
-        json_body=json_body,
+        body=body,
     ).parsed
 
 
 async def asyncio_detailed(
     organization_slug: str,
     project_slug: str,
-    id: str,
+    id: UUID,
     *,
     client: AuthenticatedClient,
-    json_body: TaskRequest,
+    body: TaskRequest,
 ) -> Response[Task]:
     """Update Task
 
@@ -140,12 +144,11 @@ async def asyncio_detailed(
     Args:
         organization_slug (str):
         project_slug (str):
-        id (str):
-        json_body (TaskRequest):
+        id (UUID):
+        body (TaskRequest):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -156,7 +159,7 @@ async def asyncio_detailed(
         organization_slug=organization_slug,
         project_slug=project_slug,
         id=id,
-        json_body=json_body,
+        body=body,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -167,10 +170,10 @@ async def asyncio_detailed(
 async def asyncio(
     organization_slug: str,
     project_slug: str,
-    id: str,
+    id: UUID,
     *,
     client: AuthenticatedClient,
-    json_body: TaskRequest,
+    body: TaskRequest,
 ) -> Optional[Task]:
     """Update Task
 
@@ -179,12 +182,11 @@ async def asyncio(
     Args:
         organization_slug (str):
         project_slug (str):
-        id (str):
-        json_body (TaskRequest):
+        id (UUID):
+        body (TaskRequest):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -197,6 +199,6 @@ async def asyncio(
             project_slug=project_slug,
             id=id,
             client=client,
-            json_body=json_body,
+            body=body,
         )
     ).parsed

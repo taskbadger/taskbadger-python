@@ -1,5 +1,5 @@
 import datetime
-from typing import TYPE_CHECKING, Any, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -9,7 +9,7 @@ from ..models.status_enum import StatusEnum
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
-    from ..models.task_request_data import TaskRequestData
+    from ..models.task_request_data_type_0 import TaskRequestDataType0
 
 
 T = TypeVar("T", bound="TaskRequest")
@@ -21,52 +21,82 @@ class TaskRequest:
     Attributes:
         name (str): Name of the task
         status (Union[Unset, StatusEnum]):  Default: StatusEnum.PENDING.
-        value (Union[Unset, None, int]): Current progress value.
+        value (Union[None, Unset, int]): Current progress value.
         value_max (Union[Unset, int]): Maximum value of the task. Defaults to 100.
-        data (Union[Unset, None, TaskRequestData]): Custom metadata
-        start_time (Union[Unset, None, datetime.datetime]): Datetime when the status is set to a running state. Can be
+        data (Union['TaskRequestDataType0', None, Unset]): Custom metadata
+        start_time (Union[None, Unset, datetime.datetime]): Datetime when the status is set to a running state. Can be
             set via the API.
-        end_time (Union[Unset, None, datetime.datetime]): Datetime when status is set to a terminal value.Can be set via
+        end_time (Union[None, Unset, datetime.datetime]): Datetime when status is set to a terminal value.Can be set via
             the API.
-        max_runtime (Union[Unset, None, int]): Maximum duration the task can be running for before being considered
+        max_runtime (Union[None, Unset, int]): Maximum duration the task can be running for before being considered
             failed. (seconds)
-        stale_timeout (Union[Unset, None, int]): Maximum time to allow between task updates before considering the task
+        stale_timeout (Union[None, Unset, int]): Maximum time to allow between task updates before considering the task
             stale. Only applies when task is in a running state. (seconds)
     """
 
     name: str
     status: Union[Unset, StatusEnum] = StatusEnum.PENDING
-    value: Union[Unset, None, int] = UNSET
+    value: Union[None, Unset, int] = UNSET
     value_max: Union[Unset, int] = UNSET
-    data: Union[Unset, None, "TaskRequestData"] = UNSET
-    start_time: Union[Unset, None, datetime.datetime] = UNSET
-    end_time: Union[Unset, None, datetime.datetime] = UNSET
-    max_runtime: Union[Unset, None, int] = UNSET
-    stale_timeout: Union[Unset, None, int] = UNSET
+    data: Union["TaskRequestDataType0", None, Unset] = UNSET
+    start_time: Union[None, Unset, datetime.datetime] = UNSET
+    end_time: Union[None, Unset, datetime.datetime] = UNSET
+    max_runtime: Union[None, Unset, int] = UNSET
+    stale_timeout: Union[None, Unset, int] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        from ..models.task_request_data_type_0 import TaskRequestDataType0
+
         name = self.name
+
         status: Union[Unset, str] = UNSET
         if not isinstance(self.status, Unset):
             status = self.status.value
 
-        value = self.value
+        value: Union[None, Unset, int]
+        if isinstance(self.value, Unset):
+            value = UNSET
+        else:
+            value = self.value
+
         value_max = self.value_max
-        data: Union[Unset, None, dict[str, Any]] = UNSET
-        if not isinstance(self.data, Unset):
-            data = self.data.to_dict() if self.data else None
 
-        start_time: Union[Unset, None, str] = UNSET
-        if not isinstance(self.start_time, Unset):
-            start_time = self.start_time.isoformat() if self.start_time else None
+        data: Union[None, Unset, dict[str, Any]]
+        if isinstance(self.data, Unset):
+            data = UNSET
+        elif isinstance(self.data, TaskRequestDataType0):
+            data = self.data.to_dict()
+        else:
+            data = self.data
 
-        end_time: Union[Unset, None, str] = UNSET
-        if not isinstance(self.end_time, Unset):
-            end_time = self.end_time.isoformat() if self.end_time else None
+        start_time: Union[None, Unset, str]
+        if isinstance(self.start_time, Unset):
+            start_time = UNSET
+        elif isinstance(self.start_time, datetime.datetime):
+            start_time = self.start_time.isoformat()
+        else:
+            start_time = self.start_time
 
-        max_runtime = self.max_runtime
-        stale_timeout = self.stale_timeout
+        end_time: Union[None, Unset, str]
+        if isinstance(self.end_time, Unset):
+            end_time = UNSET
+        elif isinstance(self.end_time, datetime.datetime):
+            end_time = self.end_time.isoformat()
+        else:
+            end_time = self.end_time
+
+        max_runtime: Union[None, Unset, int]
+        if isinstance(self.max_runtime, Unset):
+            max_runtime = UNSET
+        else:
+            max_runtime = self.max_runtime
+
+        stale_timeout: Union[None, Unset, int]
+        if isinstance(self.stale_timeout, Unset):
+            stale_timeout = UNSET
+        else:
+            stale_timeout = self.stale_timeout
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -96,7 +126,7 @@ class TaskRequest:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
-        from ..models.task_request_data import TaskRequestData
+        from ..models.task_request_data_type_0 import TaskRequestDataType0
 
         d = src_dict.copy()
         name = d.pop("name")
@@ -108,40 +138,85 @@ class TaskRequest:
         else:
             status = StatusEnum(_status)
 
-        value = d.pop("value", UNSET)
+        def _parse_value(data: object) -> Union[None, Unset, int]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, int], data)
+
+        value = _parse_value(d.pop("value", UNSET))
 
         value_max = d.pop("value_max", UNSET)
 
-        _data = d.pop("data", UNSET)
-        data: Union[Unset, None, TaskRequestData]
-        if _data is None:
-            data = None
-        elif isinstance(_data, Unset):
-            data = UNSET
-        else:
-            data = TaskRequestData.from_dict(_data)
+        def _parse_data(data: object) -> Union["TaskRequestDataType0", None, Unset]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                data_type_0 = TaskRequestDataType0.from_dict(data)
 
-        _start_time = d.pop("start_time", UNSET)
-        start_time: Union[Unset, None, datetime.datetime]
-        if _start_time is None:
-            start_time = None
-        elif isinstance(_start_time, Unset):
-            start_time = UNSET
-        else:
-            start_time = isoparse(_start_time)
+                return data_type_0
+            except:  # noqa: E722
+                pass
+            return cast(Union["TaskRequestDataType0", None, Unset], data)
 
-        _end_time = d.pop("end_time", UNSET)
-        end_time: Union[Unset, None, datetime.datetime]
-        if _end_time is None:
-            end_time = None
-        elif isinstance(_end_time, Unset):
-            end_time = UNSET
-        else:
-            end_time = isoparse(_end_time)
+        data = _parse_data(d.pop("data", UNSET))
 
-        max_runtime = d.pop("max_runtime", UNSET)
+        def _parse_start_time(data: object) -> Union[None, Unset, datetime.datetime]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                start_time_type_0 = isoparse(data)
 
-        stale_timeout = d.pop("stale_timeout", UNSET)
+                return start_time_type_0
+            except:  # noqa: E722
+                pass
+            return cast(Union[None, Unset, datetime.datetime], data)
+
+        start_time = _parse_start_time(d.pop("start_time", UNSET))
+
+        def _parse_end_time(data: object) -> Union[None, Unset, datetime.datetime]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                end_time_type_0 = isoparse(data)
+
+                return end_time_type_0
+            except:  # noqa: E722
+                pass
+            return cast(Union[None, Unset, datetime.datetime], data)
+
+        end_time = _parse_end_time(d.pop("end_time", UNSET))
+
+        def _parse_max_runtime(data: object) -> Union[None, Unset, int]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, int], data)
+
+        max_runtime = _parse_max_runtime(d.pop("max_runtime", UNSET))
+
+        def _parse_stale_timeout(data: object) -> Union[None, Unset, int]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, int], data)
+
+        stale_timeout = _parse_stale_timeout(d.pop("stale_timeout", UNSET))
 
         task_request = cls(
             name=name,

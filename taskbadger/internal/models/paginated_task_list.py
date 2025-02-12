@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -16,25 +16,34 @@ T = TypeVar("T", bound="PaginatedTaskList")
 class PaginatedTaskList:
     """
     Attributes:
-        next_ (Union[Unset, None, str]):
-        previous (Union[Unset, None, str]):
-        results (Union[Unset, List['Task']]):
+        next_ (Union[None, Unset, str]):
+        previous (Union[None, Unset, str]):
+        results (Union[Unset, list['Task']]):
     """
 
-    next_: Union[Unset, None, str] = UNSET
-    previous: Union[Unset, None, str] = UNSET
+    next_: Union[None, Unset, str] = UNSET
+    previous: Union[None, Unset, str] = UNSET
     results: Union[Unset, list["Task"]] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        next_ = self.next_
-        previous = self.previous
+        next_: Union[None, Unset, str]
+        if isinstance(self.next_, Unset):
+            next_ = UNSET
+        else:
+            next_ = self.next_
+
+        previous: Union[None, Unset, str]
+        if isinstance(self.previous, Unset):
+            previous = UNSET
+        else:
+            previous = self.previous
+
         results: Union[Unset, list[dict[str, Any]]] = UNSET
         if not isinstance(self.results, Unset):
             results = []
             for results_item_data in self.results:
                 results_item = results_item_data.to_dict()
-
                 results.append(results_item)
 
         field_dict: dict[str, Any] = {}
@@ -54,9 +63,24 @@ class PaginatedTaskList:
         from ..models.task import Task
 
         d = src_dict.copy()
-        next_ = d.pop("next", UNSET)
 
-        previous = d.pop("previous", UNSET)
+        def _parse_next_(data: object) -> Union[None, Unset, str]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, str], data)
+
+        next_ = _parse_next_(d.pop("next", UNSET))
+
+        def _parse_previous(data: object) -> Union[None, Unset, str]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, str], data)
+
+        previous = _parse_previous(d.pop("previous", UNSET))
 
         results = []
         _results = d.pop("results", UNSET)

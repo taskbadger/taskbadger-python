@@ -14,18 +14,18 @@ def _get_kwargs(
     project_slug: str,
     task_id: str,
 ) -> dict[str, Any]:
-    pass
-
-    return {
+    _kwargs: dict[str, Any] = {
         "method": "get",
         "url": f"/api/{organization_slug}/{project_slug}/tasks/{task_id}/actions/",
     }
+
+    return _kwargs
 
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
 ) -> Optional[list["Action"]]:
-    if response.status_code == HTTPStatus.OK:
+    if response.status_code == 200:
         response_200 = []
         _response_200 = response.json()
         for response_200_item_data in _response_200:
@@ -68,12 +68,11 @@ def sync_detailed(
         task_id (str):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[List['Action']]
+        Response[list['Action']]
     """
 
     kwargs = _get_kwargs(
@@ -106,12 +105,11 @@ def sync(
         task_id (str):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        List['Action']
+        list['Action']
     """
 
     return sync_detailed(
@@ -139,12 +137,11 @@ async def asyncio_detailed(
         task_id (str):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[List['Action']]
+        Response[list['Action']]
     """
 
     kwargs = _get_kwargs(
@@ -175,12 +172,11 @@ async def asyncio(
         task_id (str):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        List['Action']
+        list['Action']
     """
 
     return (

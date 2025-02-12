@@ -3,11 +3,11 @@ from typing import Any, TypeVar
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-T = TypeVar("T", bound="PatchedTaskRequestData")
+T = TypeVar("T", bound="TaskRequestDataType0")
 
 
 @_attrs_define
-class PatchedTaskRequestData:
+class TaskRequestDataType0:
     """Custom metadata"""
 
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -15,17 +15,16 @@ class PatchedTaskRequestData:
     def to_dict(self) -> dict[str, Any]:
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
-        field_dict.update({})
 
         return field_dict
 
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         d = src_dict.copy()
-        patched_task_request_data = cls()
+        task_request_data_type_0 = cls()
 
-        patched_task_request_data.additional_properties = d
-        return patched_task_request_data
+        task_request_data_type_0.additional_properties = d
+        return task_request_data_type_0
 
     @property
     def additional_keys(self) -> list[str]:
