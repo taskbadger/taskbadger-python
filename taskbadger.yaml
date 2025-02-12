@@ -47,20 +47,23 @@ paths:
               examples:
                 ListResponse:
                   value:
-                    previous: string
-                    next: string
+                    next: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+                    previous: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
                     results:
-                    - id: 57ae8eVBrH7jbDgmYj6Ut2vR9S
-                      organization: example_org
-                      project: example_org
-                      name: example task
-                      status: processing
-                      value: 63
-                      value_percent: 63
-                      data:
-                        property1: customValue
-                      created: '2022-08-24T14:15:22Z'
-                      updated: '2022-08-24T16:15:22Z'
+                    - previous: string
+                      next: string
+                      results:
+                      - id: 57ae8eVBrH7jbDgmYj6Ut2vR9S
+                        organization: example_org
+                        project: example_org
+                        name: example task
+                        status: processing
+                        value: 63
+                        value_percent: 63
+                        data:
+                          property1: customValue
+                        created: '2022-08-24T14:15:22Z'
+                        updated: '2022-08-24T16:15:22Z'
                   summary: List Response
           description: ''
     post:
@@ -100,6 +103,9 @@ paths:
                   status: pending
                   data:
                     property1: customValue
+                  tags:
+                    project: demo
+                    user: admin
                 summary: Create Payload
         required: true
       security:
@@ -601,9 +607,7 @@ components:
         status:
           type: string
           readOnly: true
-        config:
-          type: object
-          additionalProperties: {}
+        config: {}
         created:
           type: string
           format: date-time
@@ -631,21 +635,25 @@ components:
           type: string
           minLength: 1
           maxLength: 50
-        config:
-          type: object
-          additionalProperties: {}
+        config: {}
       required:
       - integration
       - trigger
     PaginatedTaskList:
       type: object
+      required:
+      - results
       properties:
         next:
           type: string
           nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
         previous:
           type: string
           nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
         results:
           type: array
           items:
@@ -661,9 +669,7 @@ components:
           type: string
           minLength: 1
           maxLength: 50
-        config:
-          type: object
-          additionalProperties: {}
+        config: {}
     PatchedTaskRequest:
       type: object
       properties:
@@ -675,15 +681,6 @@ components:
         status:
           allOf:
           - $ref: '#/components/schemas/StatusEnum'
-          description: |-
-            * `pending` - pending
-            * `pre_processing` - pre_processing
-            * `processing` - processing
-            * `post_processing` - post_processing
-            * `success` - success
-            * `error` - error
-            * `cancelled` - cancelled
-            * `stale` - stale
           default: pending
         value:
           type: integer
@@ -699,8 +696,6 @@ components:
           format: int64
           description: Maximum value of the task. Defaults to 100.
         data:
-          type: object
-          additionalProperties: {}
           nullable: true
           description: Custom metadata
         start_time:
@@ -728,7 +723,15 @@ components:
           minimum: 1
           nullable: true
           description: Maximum time to allow between task updates before considering
-            the task stale. Only applies when task is in a running state. (seconds)
+            the task stale. (seconds)
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 2
+            maxLength: 255
+          description: Tags for the task represented as a mapping from 'namespace'
+            to 'value'.
     StatusEnum:
       enum:
       - pending
@@ -740,6 +743,15 @@ components:
       - cancelled
       - stale
       type: string
+      description: |-
+        * `pending` - pending
+        * `pre_processing` - pre_processing
+        * `processing` - processing
+        * `post_processing` - post_processing
+        * `success` - success
+        * `error` - error
+        * `cancelled` - cancelled
+        * `stale` - stale
     Task:
       type: object
       properties:
@@ -760,15 +772,6 @@ components:
         status:
           allOf:
           - $ref: '#/components/schemas/StatusEnum'
-          description: |-
-            * `pending` - pending
-            * `pre_processing` - pre_processing
-            * `processing` - processing
-            * `post_processing` - post_processing
-            * `success` - success
-            * `error` - error
-            * `cancelled` - cancelled
-            * `stale` - stale
           default: pending
         value:
           type: integer
@@ -788,8 +791,6 @@ components:
           readOnly: true
           nullable: true
         data:
-          type: object
-          additionalProperties: {}
           nullable: true
           description: Custom metadata
         created:
@@ -825,13 +826,21 @@ components:
           minimum: 1
           nullable: true
           description: Maximum time to allow between task updates before considering
-            the task stale. Only applies when task is in a running state. (seconds)
+            the task stale. (seconds)
         url:
           type: string
           readOnly: true
         public_url:
           type: string
           readOnly: true
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+            maxLength: 255
+            minLength: 2
+          description: Tags for the task represented as a mapping from 'namespace'
+            to 'value'.
       required:
       - created
       - id
@@ -853,15 +862,6 @@ components:
         status:
           allOf:
           - $ref: '#/components/schemas/StatusEnum'
-          description: |-
-            * `pending` - pending
-            * `pre_processing` - pre_processing
-            * `processing` - processing
-            * `post_processing` - post_processing
-            * `success` - success
-            * `error` - error
-            * `cancelled` - cancelled
-            * `stale` - stale
           default: pending
         value:
           type: integer
@@ -877,8 +877,6 @@ components:
           format: int64
           description: Maximum value of the task. Defaults to 100.
         data:
-          type: object
-          additionalProperties: {}
           nullable: true
           description: Custom metadata
         start_time:
@@ -906,7 +904,15 @@ components:
           minimum: 1
           nullable: true
           description: Maximum time to allow between task updates before considering
-            the task stale. Only applies when task is in a running state. (seconds)
+            the task stale. (seconds)
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 2
+            maxLength: 255
+          description: Tags for the task represented as a mapping from 'namespace'
+            to 'value'.
       required:
       - name
   securitySchemes:

@@ -18,10 +18,8 @@ from taskbadger.internal.api.task_endpoints import (
 )
 from taskbadger.internal.models import (
     PatchedTaskRequest,
-    PatchedTaskRequestDataType0,
     StatusEnum,
     TaskRequest,
-    TaskRequestDataType0,
 )
 from taskbadger.internal.types import UNSET
 from taskbadger.mug import Badger, Session, Settings
@@ -131,7 +129,7 @@ def create_task(
     scope_data = Badger.current.scope().context
     if scope_data or data:
         data = data or {}
-        task.data = TaskRequestDataType0.from_dict({**scope_data, **data})
+        task.data = {**scope_data, **data}
     if actions:
         task.additional_properties = {"actions": [a.to_dict() for a in actions]}
     kwargs = _make_args(body=task)
@@ -179,7 +177,7 @@ def update_task(
     max_runtime = _none_to_unset(max_runtime)
     stale_timeout = _none_to_unset(stale_timeout)
 
-    data = UNSET if not data else PatchedTaskRequestDataType0.from_dict(data)
+    data = data or UNSET
     body = PatchedTaskRequest(
         name=name,
         status=status,

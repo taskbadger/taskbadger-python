@@ -1,15 +1,11 @@
 import datetime
-from typing import TYPE_CHECKING, Any, TypeVar, Union
+from typing import Any, TypeVar, Union
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
 from ..types import UNSET, Unset
-
-if TYPE_CHECKING:
-    from ..models.action_config import ActionConfig
-
 
 T = TypeVar("T", bound="Action")
 
@@ -25,7 +21,7 @@ class Action:
         status (str):
         created (datetime.datetime):
         updated (datetime.datetime):
-        config (Union[Unset, ActionConfig]):
+        config (Union[Unset, Any]):
     """
 
     id: int
@@ -35,7 +31,7 @@ class Action:
     status: str
     created: datetime.datetime
     updated: datetime.datetime
-    config: Union[Unset, "ActionConfig"] = UNSET
+    config: Union[Unset, Any] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -53,9 +49,7 @@ class Action:
 
         updated = self.updated.isoformat()
 
-        config: Union[Unset, dict[str, Any]] = UNSET
-        if not isinstance(self.config, Unset):
-            config = self.config.to_dict()
+        config = self.config
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -77,8 +71,6 @@ class Action:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
-        from ..models.action_config import ActionConfig
-
         d = src_dict.copy()
         id = d.pop("id")
 
@@ -94,12 +86,7 @@ class Action:
 
         updated = isoparse(d.pop("updated"))
 
-        _config = d.pop("config", UNSET)
-        config: Union[Unset, ActionConfig]
-        if isinstance(_config, Unset):
-            config = UNSET
-        else:
-            config = ActionConfig.from_dict(_config)
+        config = d.pop("config", UNSET)
 
         action = cls(
             id=id,

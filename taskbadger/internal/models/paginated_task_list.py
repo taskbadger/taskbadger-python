@@ -16,17 +16,22 @@ T = TypeVar("T", bound="PaginatedTaskList")
 class PaginatedTaskList:
     """
     Attributes:
-        next_ (Union[None, Unset, str]):
-        previous (Union[None, Unset, str]):
-        results (Union[Unset, list['Task']]):
+        results (list['Task']):
+        next_ (Union[None, Unset, str]):  Example: http://api.example.org/accounts/?cursor=cD00ODY%3D".
+        previous (Union[None, Unset, str]):  Example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3.
     """
 
+    results: list["Task"]
     next_: Union[None, Unset, str] = UNSET
     previous: Union[None, Unset, str] = UNSET
-    results: Union[Unset, list["Task"]] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        results = []
+        for results_item_data in self.results:
+            results_item = results_item_data.to_dict()
+            results.append(results_item)
+
         next_: Union[None, Unset, str]
         if isinstance(self.next_, Unset):
             next_ = UNSET
@@ -39,22 +44,17 @@ class PaginatedTaskList:
         else:
             previous = self.previous
 
-        results: Union[Unset, list[dict[str, Any]]] = UNSET
-        if not isinstance(self.results, Unset):
-            results = []
-            for results_item_data in self.results:
-                results_item = results_item_data.to_dict()
-                results.append(results_item)
-
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
-        field_dict.update({})
+        field_dict.update(
+            {
+                "results": results,
+            }
+        )
         if next_ is not UNSET:
             field_dict["next"] = next_
         if previous is not UNSET:
             field_dict["previous"] = previous
-        if results is not UNSET:
-            field_dict["results"] = results
 
         return field_dict
 
@@ -63,6 +63,12 @@ class PaginatedTaskList:
         from ..models.task import Task
 
         d = src_dict.copy()
+        results = []
+        _results = d.pop("results")
+        for results_item_data in _results:
+            results_item = Task.from_dict(results_item_data)
+
+            results.append(results_item)
 
         def _parse_next_(data: object) -> Union[None, Unset, str]:
             if data is None:
@@ -82,17 +88,10 @@ class PaginatedTaskList:
 
         previous = _parse_previous(d.pop("previous", UNSET))
 
-        results = []
-        _results = d.pop("results", UNSET)
-        for results_item_data in _results or []:
-            results_item = Task.from_dict(results_item_data)
-
-            results.append(results_item)
-
         paginated_task_list = cls(
+            results=results,
             next_=next_,
             previous=previous,
-            results=results,
         )
 
         paginated_task_list.additional_properties = d

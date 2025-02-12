@@ -7,9 +7,7 @@ from taskbadger import Action, EmailIntegration, StatusEnum, WebhookIntegration
 from taskbadger.exceptions import TaskbadgerException
 from taskbadger.internal.models import (
     PatchedTaskRequest,
-    PatchedTaskRequestDataType0,
     TaskRequest,
-    TaskRequestDataType0,
 )
 from taskbadger.internal.types import UNSET, Response
 from taskbadger.mug import Badger
@@ -76,7 +74,7 @@ def test_create(settings, patched_create):
         status=StatusEnum.PRE_PROCESSING,
         value=13,
         value_max=UNSET,
-        data=TaskRequestDataType0.from_dict(data),
+        data=data,
         max_runtime=10,
         stale_timeout=2,
     )
@@ -188,7 +186,7 @@ def _verify_update(settings, patched_update, **kwargs):
     request_params.update(kwargs)
 
     if kwargs.get("data"):
-        request_params["data"] = PatchedTaskRequestDataType0.from_dict(kwargs["data"])
+        request_params["data"] = kwargs["data"]
 
     request = PatchedTaskRequest(**request_params)
     if actions:

@@ -10,7 +10,6 @@ from taskbadger.internal.models import (
     PatchedTaskRequest,
     StatusEnum,
     TaskRequest,
-    TaskRequestDataType0,
 )
 from taskbadger.internal.types import Response
 from tests.utils import task_for_test
@@ -56,7 +55,7 @@ def test_cli_create():
             name="my-task",
             status=StatusEnum.PROCESSING,
             value_max=100,
-            data=TaskRequestDataType0.from_dict({"b": "2", "a": 1, "c": 1}),
+            data={"b": "2", "a": 1, "c": 1},
         )
         create.assert_called_with(
             client=mock.ANY,

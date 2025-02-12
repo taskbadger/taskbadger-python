@@ -9,7 +9,7 @@ from ..models.status_enum import StatusEnum
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
-    from ..models.patched_task_request_data_type_0 import PatchedTaskRequestDataType0
+    from ..models.patched_task_request_tags import PatchedTaskRequestTags
 
 
 T = TypeVar("T", bound="PatchedTaskRequest")
@@ -20,10 +20,17 @@ class PatchedTaskRequest:
     """
     Attributes:
         name (Union[Unset, str]): Name of the task
-        status (Union[Unset, StatusEnum]):  Default: StatusEnum.PENDING.
+        status (Union[Unset, StatusEnum]): * `pending` - pending
+            * `pre_processing` - pre_processing
+            * `processing` - processing
+            * `post_processing` - post_processing
+            * `success` - success
+            * `error` - error
+            * `cancelled` - cancelled
+            * `stale` - stale Default: StatusEnum.PENDING.
         value (Union[None, Unset, int]): Current progress value.
         value_max (Union[Unset, int]): Maximum value of the task. Defaults to 100.
-        data (Union['PatchedTaskRequestDataType0', None, Unset]): Custom metadata
+        data (Union[Unset, Any]): Custom metadata
         start_time (Union[None, Unset, datetime.datetime]): Datetime when the status is set to a running state. Can be
             set via the API.
         end_time (Union[None, Unset, datetime.datetime]): Datetime when status is set to a terminal value.Can be set via
@@ -31,23 +38,24 @@ class PatchedTaskRequest:
         max_runtime (Union[None, Unset, int]): Maximum duration the task can be running for before being considered
             failed. (seconds)
         stale_timeout (Union[None, Unset, int]): Maximum time to allow between task updates before considering the task
-            stale. Only applies when task is in a running state. (seconds)
+            stale. (seconds)
+        tags (Union[Unset, PatchedTaskRequestTags]): Tags for the task represented as a mapping from 'namespace' to
+            'value'.
     """
 
     name: Union[Unset, str] = UNSET
     status: Union[Unset, StatusEnum] = StatusEnum.PENDING
     value: Union[None, Unset, int] = UNSET
     value_max: Union[Unset, int] = UNSET
-    data: Union["PatchedTaskRequestDataType0", None, Unset] = UNSET
+    data: Union[Unset, Any] = UNSET
     start_time: Union[None, Unset, datetime.datetime] = UNSET
     end_time: Union[None, Unset, datetime.datetime] = UNSET
     max_runtime: Union[None, Unset, int] = UNSET
     stale_timeout: Union[None, Unset, int] = UNSET
+    tags: Union[Unset, "PatchedTaskRequestTags"] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        from ..models.patched_task_request_data_type_0 import PatchedTaskRequestDataType0
-
         name = self.name
 
         status: Union[Unset, str] = UNSET
@@ -62,13 +70,7 @@ class PatchedTaskRequest:
 
         value_max = self.value_max
 
-        data: Union[None, Unset, dict[str, Any]]
-        if isinstance(self.data, Unset):
-            data = UNSET
-        elif isinstance(self.data, PatchedTaskRequestDataType0):
-            data = self.data.to_dict()
-        else:
-            data = self.data
+        data = self.data
 
         start_time: Union[None, Unset, str]
         if isinstance(self.start_time, Unset):
@@ -98,6 +100,10 @@ class PatchedTaskRequest:
         else:
             stale_timeout = self.stale_timeout
 
+        tags: Union[Unset, dict[str, Any]] = UNSET
+        if not isinstance(self.tags, Unset):
+            tags = self.tags.to_dict()
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
@@ -119,12 +125,14 @@ class PatchedTaskRequest:
             field_dict["max_runtime"] = max_runtime
         if stale_timeout is not UNSET:
             field_dict["stale_timeout"] = stale_timeout
+        if tags is not UNSET:
+            field_dict["tags"] = tags
 
         return field_dict
 
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
-        from ..models.patched_task_request_data_type_0 import PatchedTaskRequestDataType0
+        from ..models.patched_task_request_tags import PatchedTaskRequestTags
 
         d = src_dict.copy()
         name = d.pop("name", UNSET)
@@ -147,22 +155,7 @@ class PatchedTaskRequest:
 
         value_max = d.pop("value_max", UNSET)
 
-        def _parse_data(data: object) -> Union["PatchedTaskRequestDataType0", None, Unset]:
-            if data is None:
-                return data
-            if isinstance(data, Unset):
-                return data
-            try:
-                if not isinstance(data, dict):
-                    raise TypeError()
-                data_type_0 = PatchedTaskRequestDataType0.from_dict(data)
-
-                return data_type_0
-            except:  # noqa: E722
-                pass
-            return cast(Union["PatchedTaskRequestDataType0", None, Unset], data)
-
-        data = _parse_data(d.pop("data", UNSET))
+        data = d.pop("data", UNSET)
 
         def _parse_start_time(data: object) -> Union[None, Unset, datetime.datetime]:
             if data is None:
@@ -216,6 +209,13 @@ class PatchedTaskRequest:
 
         stale_timeout = _parse_stale_timeout(d.pop("stale_timeout", UNSET))
 
+        _tags = d.pop("tags", UNSET)
+        tags: Union[Unset, PatchedTaskRequestTags]
+        if isinstance(_tags, Unset):
+            tags = UNSET
+        else:
+            tags = PatchedTaskRequestTags.from_dict(_tags)
+
         patched_task_request = cls(
             name=name,
             status=status,
@@ -226,6 +226,7 @@ class PatchedTaskRequest:
             end_time=end_time,
             max_runtime=max_runtime,
             stale_timeout=stale_timeout,
+            tags=tags,
         )
 
         patched_task_request.additional_properties = d

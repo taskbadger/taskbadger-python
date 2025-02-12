@@ -3,14 +3,14 @@ from typing import Any, TypeVar
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-T = TypeVar("T", bound="PatchedActionRequestConfig")
+T = TypeVar("T", bound="TaskRequestTags")
 
 
 @_attrs_define
-class PatchedActionRequestConfig:
-    """ """
+class TaskRequestTags:
+    """Tags for the task represented as a mapping from 'namespace' to 'value'."""
 
-    additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
+    additional_properties: dict[str, str] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         field_dict: dict[str, Any] = {}
@@ -21,19 +21,19 @@ class PatchedActionRequestConfig:
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         d = src_dict.copy()
-        patched_action_request_config = cls()
+        task_request_tags = cls()
 
-        patched_action_request_config.additional_properties = d
-        return patched_action_request_config
+        task_request_tags.additional_properties = d
+        return task_request_tags
 
     @property
     def additional_keys(self) -> list[str]:
         return list(self.additional_properties.keys())
 
-    def __getitem__(self, key: str) -> Any:
+    def __getitem__(self, key: str) -> str:
         return self.additional_properties[key]
 
-    def __setitem__(self, key: str, value: Any) -> None:
+    def __setitem__(self, key: str, value: str) -> None:
         self.additional_properties[key] = value
 
     def __delitem__(self, key: str) -> None:
