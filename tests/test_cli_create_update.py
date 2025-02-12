@@ -10,7 +10,7 @@ from taskbadger.internal.models import (
     PatchedTaskRequest,
     StatusEnum,
     TaskRequest,
-    TaskRequestData,
+    TaskRequestDataType0,
 )
 from taskbadger.internal.types import Response
 from tests.utils import task_for_test
@@ -19,7 +19,7 @@ runner = CliRunner()
 
 
 @pytest.fixture(autouse=True)
-def mock_env():
+def _mock_env():
     with mock.patch.dict(
         os.environ,
         {
@@ -56,13 +56,13 @@ def test_cli_create():
             name="my-task",
             status=StatusEnum.PROCESSING,
             value_max=100,
-            data=TaskRequestData.from_dict({"b": "2", "a": 1, "c": 1}),
+            data=TaskRequestDataType0.from_dict({"b": "2", "a": 1, "c": 1}),
         )
         create.assert_called_with(
             client=mock.ANY,
             organization_slug="org",
             project_slug="project",
-            json_body=request,
+            body=request,
         )
 
 
@@ -85,5 +85,5 @@ def test_cli_update():
             organization_slug="org",
             project_slug="project",
             id="task123",
-            json_body=body,
+            body=body,
         )

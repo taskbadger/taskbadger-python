@@ -8,7 +8,7 @@ from typer.testing import CliRunner
 from taskbadger.cli_main import app
 from taskbadger.internal.models import (
     PatchedTaskRequest,
-    PatchedTaskRequestData,
+    PatchedTaskRequestDataType0,
     StatusEnum,
     TaskRequest,
 )
@@ -49,13 +49,13 @@ def test_cli_long_run():
 def test_cli_capture_output():
     update_patch = _test_cli_run(["echo test"], 0, args=["task_name", "--capture-output"], update_call_count=2)
 
-    body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n"}))
+    body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestDataType0.from_dict({"stdout": "test\n"}))
     update_patch.assert_any_call(
         client=mock.ANY,
         organization_slug="org",
         project_slug="project",
         id=mock.ANY,
-        json_body=body,
+        body=body,
     )
 
 
@@ -71,13 +71,13 @@ def test_cli_capture_output_append():
             update_call_count=3,
         )
 
-    body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n123\n"}))
+    body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestDataType0.from_dict({"stdout": "test\n123\n"}))
     update_patch.assert_any_call(
         client=mock.ANY,
         organization_slug="org",
         project_slug="project",
         id=mock.ANY,
-        json_body=body,
+        body=body,
     )
 
 
@@ -115,7 +115,7 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
         update_mock(*args, **kwargs)
 
         # handle updating task data
-        data = kwargs["json_body"].data
+        data = kwargs["body"].data
         task_return = task_for_test(id=task_id, data=data.additional_properties if data else None)
         return Response(HTTPStatus.OK, b"", {}, task_return)
 
@@ -138,7 +138,7 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
             client=mock.ANY,
             organization_slug="org",
             project_slug="project",
-            json_body=request,
+            body=request,
         )
 
         if return_code == 0:
@@ -146,7 +146,7 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
         else:
             body = PatchedTaskRequest(
                 status=StatusEnum.ERROR,
-                data=PatchedTaskRequestData.from_dict({"return_code": return_code}),
+                data=PatchedTaskRequestDataType0.from_dict({"return_code": return_code}),
             )
 
         assert update_mock.call_count == update_call_count
@@ -155,7 +155,7 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
             organization_slug="org",
             project_slug="project",
             id=task.id,
-            json_body=body,
+            body=body,
         )
         return update_mock
 

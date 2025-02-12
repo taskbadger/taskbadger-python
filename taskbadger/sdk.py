@@ -18,10 +18,10 @@ from taskbadger.internal.api.task_endpoints import (
 )
 from taskbadger.internal.models import (
     PatchedTaskRequest,
-    PatchedTaskRequestData,
+    PatchedTaskRequestDataType0,
     StatusEnum,
     TaskRequest,
-    TaskRequestData,
+    TaskRequestDataType0,
 )
 from taskbadger.internal.types import UNSET
 from taskbadger.mug import Badger, Session, Settings
@@ -131,10 +131,10 @@ def create_task(
     scope_data = Badger.current.scope().context
     if scope_data or data:
         data = data or {}
-        task.data = TaskRequestData.from_dict({**scope_data, **data})
+        task.data = TaskRequestDataType0.from_dict({**scope_data, **data})
     if actions:
         task.additional_properties = {"actions": [a.to_dict() for a in actions]}
-    kwargs = _make_args(json_body=task)
+    kwargs = _make_args(body=task)
     if monitor_id:
         kwargs["x_taskbadger_monitor"] = monitor_id
     with Session() as client:
@@ -179,7 +179,7 @@ def update_task(
     max_runtime = _none_to_unset(max_runtime)
     stale_timeout = _none_to_unset(stale_timeout)
 
-    data = UNSET if not data else PatchedTaskRequestData.from_dict(data)
+    data = UNSET if not data else PatchedTaskRequestDataType0.from_dict(data)
     body = PatchedTaskRequest(
         name=name,
         status=status,
@@ -191,7 +191,7 @@ def update_task(
     )
     if actions:
         body.additional_properties = {"actions": [a.to_dict() for a in actions]}
-    kwargs = _make_args(id=task_id, json_body=body)
+    kwargs = _make_args(id=task_id, body=body)
     with Session() as client:
         response = task_partial_update.sync_detailed(client=client, **kwargs)
     _check_response(response)
