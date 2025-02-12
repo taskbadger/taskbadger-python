@@ -260,7 +260,10 @@ class Task:
         monitor_id: str = None,
         tags: dict[str, str] = None,
     ) -> "Task":
-        """Create a new task"""
+        """Create a new task
+
+        See [taskbadger.create_task][] for more information.
+        """
         return create_task(
             name,
             status,
@@ -342,6 +345,8 @@ class Task:
         """Generic update method used to update any of the task fields.
 
         This can also be used to add actions.
+
+        See [taskbadger.update_task][] for more information.
         """
         if data and data_merge_strategy:
             if hasattr(data_merge_strategy, "merge"):
@@ -379,8 +384,8 @@ class Task:
         self.update()
 
     @property
-    def data(self):
-        return self._task.data.additional_properties
+    def tags(self):
+        return self._task.tags.to_dict()
 
     def __getattr__(self, item):
         return getattr(self._task, item)

@@ -129,6 +129,7 @@ def _json_task_response(**kwargs):
         "updated": "2022-09-22T06:53:40.683555Z",
         "url": None,
         "public_url": None,
+        "tags": {"tag": "value"},
     }
     response.update(kwargs)
     return response
@@ -145,3 +146,4 @@ def _verify_task(task, **kwargs):
     assert task.value_max == expected["value_max"]
     assert task.value_percent == expected["value_percent"]
     assert task.data == expected["data"]
+    assert task.tags == expected["tags"]
