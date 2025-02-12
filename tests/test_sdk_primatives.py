@@ -8,7 +8,7 @@ from taskbadger.sdk import create_task, get_task, init
 
 
 @pytest.fixture(autouse=True)
-def init_skd():
+def _init_skd():
     init("org", "project", "token")
 
 
@@ -75,6 +75,7 @@ def test_update_task(httpx_mock):
         "value": 150,
         "value_max": 150,
         "data": {"custom": "value"},
+        "tags": {"tag": "value"},
     }
     httpx_mock.add_response(
         url="https://taskbadger.net/api/org/project/tasks/test_id/",

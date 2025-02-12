@@ -8,8 +8,10 @@ from typer.testing import CliRunner
 from taskbadger.cli_main import app
 from taskbadger.internal.models import (
     PatchedTaskRequest,
+    PatchedTaskRequestTags,
     StatusEnum,
     TaskRequest,
+    TaskRequestTags,
 )
 from taskbadger.internal.types import Response
 from tests.utils import task_for_test
@@ -47,6 +49,10 @@ def test_cli_create():
             "b=2",
             "--metadata",
             "a=3",
+            "--tag",
+            "name=foo",
+            "--tag",
+            "bar=baz",
         ]
         result = runner.invoke(app, args, catch_exceptions=False)
         assert result.exit_code == 0, result.output
@@ -56,6 +62,7 @@ def test_cli_create():
             status=StatusEnum.PROCESSING,
             value_max=100,
             data={"b": "2", "a": 1, "c": 1},
+            tags=TaskRequestTags.from_dict({"name": "foo", "bar": "baz"}),
         )
         create.assert_called_with(
             client=mock.ANY,
@@ -72,12 +79,14 @@ def test_cli_update():
 
         result = runner.invoke(
             app,
-            ["update", "task123", "--status=success", "--value", "100"],
+            ["update", "task123", "--status=success", "--value", "100", "--tag", "name=foo"],
             catch_exceptions=False,
         )
         assert result.exit_code == 0, result.output
 
-        body = PatchedTaskRequest(status=StatusEnum.SUCCESS, value=100)
+        body = PatchedTaskRequest(
+            status=StatusEnum.SUCCESS, value=100, tags=PatchedTaskRequestTags.from_dict({"name": "foo"})
+        )
 
         update.assert_called_with(
             client=mock.ANY,

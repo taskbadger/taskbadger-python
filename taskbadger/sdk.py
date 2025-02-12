@@ -18,8 +18,10 @@ from taskbadger.internal.api.task_endpoints import (
 )
 from taskbadger.internal.models import (
     PatchedTaskRequest,
+    PatchedTaskRequestTags,
     StatusEnum,
     TaskRequest,
+    TaskRequestTags,
 )
 from taskbadger.internal.types import UNSET
 from taskbadger.mug import Badger, Session, Settings
@@ -95,6 +97,7 @@ def create_task(
     stale_timeout: int = None,
     actions: list[Action] = None,
     monitor_id: str = None,
+    tags: dict[str, str] = None,
 ) -> "Task":
     """Create a Task.
 
@@ -108,6 +111,7 @@ def create_task(
         stale_timeout: Maximum allowed time between updates (seconds).
         actions: Task actions.
         monitor_id: ID of the monitor to associate this task with.
+        tags: Dictionary of namespace -> value tags.
 
     Returns:
         Task: The created Task object.
@@ -132,6 +136,8 @@ def create_task(
         task.data = {**scope_data, **data}
     if actions:
         task.additional_properties = {"actions": [a.to_dict() for a in actions]}
+    if tags:
+        task.tags = TaskRequestTags.from_dict(tags)
     kwargs = _make_args(body=task)
     if monitor_id:
         kwargs["x_taskbadger_monitor"] = monitor_id
@@ -151,6 +157,7 @@ def update_task(
     max_runtime: int = None,
     stale_timeout: int = None,
     actions: list[Action] = None,
+    tags: dict[str, str] = None,
 ) -> "Task":
     """Update a task.
     Requires only the task ID and fields to update.
@@ -165,6 +172,7 @@ def update_task(
         max_runtime: Maximum expected runtime (seconds).
         stale_timeout: Maximum allowed time between updates (seconds).
         actions: Task actions.
+        tags: Dictionary of namespace -> value tags.
 
     Returns:
         Task: The updated Task object.
@@ -189,6 +197,8 @@ def update_task(
     )
     if actions:
         body.additional_properties = {"actions": [a.to_dict() for a in actions]}
+    if tags:
+        body.tags = PatchedTaskRequestTags.from_dict(tags)
     kwargs = _make_args(id=task_id, body=body)
     with Session() as client:
         response = task_partial_update.sync_detailed(client=client, **kwargs)
@@ -245,6 +255,7 @@ class Task:
         stale_timeout: int = None,
         actions: list[Action] = None,
         monitor_id: str = None,
+        tags: dict[str, str] = None,
     ) -> "Task":
         """Create a new task"""
         return create_task(
@@ -257,6 +268,7 @@ class Task:
             stale_timeout=stale_timeout,
             actions=actions,
             monitor_id=monitor_id,
+            tags=tags,
         )
 
     def __init__(self, task):
@@ -321,6 +333,7 @@ class Task:
         max_runtime: int = None,
         stale_timeout: int = None,
         actions: list[Action] = None,
+        tags: dict[str, str] = None,
         data_merge_strategy: Any = None,
     ):
         """Generic update method used to update any of the task fields.
@@ -345,12 +358,17 @@ class Task:
             max_runtime=max_runtime,
             stale_timeout=stale_timeout,
             actions=actions,
+            tags=tags,
         )
         self._task = task._task
 
     def add_actions(self, actions: list[Action]):
         """Add actions to the task."""
         self.update(actions=actions)
+
+    def tag(self, tags: dict[str, str]):
+        """Add tags to the task."""
+        self.update(tags=tags)
 
     def ping(self):
         """Update the task without changing any values. This can be used in conjunction

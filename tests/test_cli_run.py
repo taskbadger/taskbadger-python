@@ -10,6 +10,7 @@ from taskbadger.internal.models import (
     PatchedTaskRequest,
     StatusEnum,
     TaskRequest,
+    TaskRequestTags,
 )
 from taskbadger.internal.types import UNSET, Response
 from taskbadger.mug import Badger
@@ -35,6 +36,15 @@ def _mock_env():
 
 def test_cli_run_success():
     _test_cli_run(["echo", "test"], 0, args=["task_name"])
+
+
+def test_cli_run_tags():
+    _test_cli_run(
+        ["echo", "test"],
+        0,
+        ["task_name", "--tag", "name=value", "--tag", "name1=value1"],
+        tags={"name": "value", "name1": "value1"},
+    )
 
 
 def test_cli_long_run():
@@ -106,7 +116,7 @@ def test_cli_run_webhook():
     )
 
 
-def _test_cli_run(command, return_code, args=None, action=None, update_call_count=1):
+def _test_cli_run(command, return_code, args=None, action=None, tags=None, update_call_count=1):
     update_mock = mock.MagicMock()
 
     def _update(*args, **kwargs):
@@ -133,6 +143,8 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
         request = TaskRequest(name="task_name", status=StatusEnum.PROCESSING, stale_timeout=10)
         if action:
             request.additional_properties = {"actions": [action]}
+        if tags:
+            request.tags = TaskRequestTags.from_dict(tags)
         create.assert_called_with(
             client=mock.ANY,
             organization_slug="org",
