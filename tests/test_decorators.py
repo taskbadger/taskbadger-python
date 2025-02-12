@@ -20,15 +20,19 @@ def test_track_decorator(update, create):
 
 @mock.patch("taskbadger.decorators.create_task_safe")
 def test_track_decorator_args(create):
-    @track(name="new name", monitor_id="test", max_runtime=1)
+    @track(name="new name", monitor_id="test", max_runtime=1, tags={"name": "value"})
     def test(arg):
         return arg
 
     assert test("test") == "test"
     assert create.call_count == 1
     assert create.call_args.args[0] == "new name"
-    assert create.call_args.kwargs["monitor_id"] == "test"
-    assert create.call_args.kwargs["max_runtime"] == 1
+    assert create.call_args.kwargs == {
+        "status": "processing",
+        "monitor_id": "test",
+        "max_runtime": 1,
+        "tags": {"name": "value"},
+    }
 
 
 @mock.patch("taskbadger.decorators.create_task_safe")

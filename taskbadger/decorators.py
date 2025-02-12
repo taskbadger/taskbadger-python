@@ -14,7 +14,7 @@ def track(
     name: str = None,
     monitor_id: str = None,
     max_runtime: int = None,
-    **kwargs,
+    **task_kwargs,
 ):
     """
     Decorator to track a function as a task.
@@ -50,7 +50,7 @@ def track(
                 status=StatusEnum.PROCESSING,
                 max_runtime=max_runtime,
                 monitor_id=monitor_id,
-                **kwargs,
+                **task_kwargs,
             )
             try:
                 result = func(*args, **kwargs)
