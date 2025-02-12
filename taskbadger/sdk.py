@@ -37,12 +37,13 @@ def init(
     project_slug: str = None,
     token: str = None,
     systems: list[System] = None,
+    tags: dict[str, str] = None,
 ):
     """Initialize Task Badger client
 
     Call this function once per thread
     """
-    _init(_TB_HOST, organization_slug, project_slug, token, systems)
+    _init(_TB_HOST, organization_slug, project_slug, token, systems, tags)
 
 
 def _init(
@@ -51,6 +52,7 @@ def _init(
     project_slug: str = None,
     token: str = None,
     systems: list[System] = None,
+    tags: dict[str, str] = None,
 ):
     host = host or os.environ.get("TASKBADGER_HOST", "https://taskbadger.net")
     organization_slug = organization_slug or os.environ.get("TASKBADGER_ORG")
@@ -66,7 +68,7 @@ def _init(
             project_slug,
             systems={system.identifier: system for system in systems},
         )
-        Badger.current.bind(settings)
+        Badger.current.bind(settings, tags)
     else:
         raise ConfigurationError(
             host=host,

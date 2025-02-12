@@ -23,7 +23,12 @@ def mock_config_location():
 
 @pytest.fixture()
 def _mock_config(mock_config_location):
-    config = Config(organization_slug="test_org", project_slug="test_project", token="test_token")
+    config = Config(
+        organization_slug="test_org",
+        project_slug="test_project",
+        token="test_token",
+        tags={"env": "prod", "host": "localhost"},
+    )
     write_config(config)
 
 
@@ -67,7 +72,7 @@ def test_info_args_trump_env():
 @pytest.mark.usefixtures("_mock_config")
 def test_info_config():
     result = runner.invoke(app, ["info"])
-    _check_output(result, "test_org", "test_project", "test_token")
+    _check_output(result, "test_org", "test_project", "test_token", tags={"env": "prod", "host": "localhost"})
 
 
 @mock.patch.dict(
@@ -82,13 +87,13 @@ def test_info_config():
 @pytest.mark.usefixtures("_mock_config")
 def test_info_config_env():
     result = runner.invoke(app, ["info"])
-    _check_output(result, "org2", "project2", "token2")
+    _check_output(result, "org2", "project2", "token2", tags={"env": "prod", "host": "localhost"})
 
 
 @pytest.mark.usefixtures("_mock_config")
 def test_info_config_args():
     result = runner.invoke(app, ["-o", "org1", "-p", "project1", "info"])
-    _check_output(result, "org1", "project1", "test_token")
+    _check_output(result, "org1", "project1", "test_token", tags={"env": "prod", "host": "localhost"})
 
 
 @mock.patch.dict(
@@ -103,7 +108,7 @@ def test_info_config_args():
 @pytest.mark.usefixtures("_mock_config")
 def test_info_config_env_args():
     result = runner.invoke(app, ["-o", "org1", "-p", "project1", "info"])
-    _check_output(result, "org1", "project1", "token2")
+    _check_output(result, "org1", "project1", "token2", tags={"env": "prod", "host": "localhost"})
 
 
 def test_configure(mock_config_location):
@@ -122,8 +127,13 @@ def test_configure(mock_config_location):
     }
 
 
-def _check_output(result, org, project, token):
+def _check_output(result, org, project, token, tags=None):
     assert result.exit_code == 0
     assert f"Organization slug: {org}" in result.stdout
     assert f"Project slug: {project}" in result.stdout
     assert f"Auth token: {token}" in result.stdout
+    if tags:
+        for key, value in tags.items():
+            assert f"{key}: {value}" in result.stdout
+    else:
+        assert "Tags:" not in result.stdout
