@@ -130,14 +130,15 @@ def create_task(
         max_runtime=max_runtime,
         stale_timeout=stale_timeout,
     )
-    scope_data = Badger.current.scope().context
-    if scope_data or data:
+    scope = Badger.current.scope()
+    if scope.context or data:
         data = data or {}
-        task.data = {**scope_data, **data}
+        task.data = {**scope.context, **data}
     if actions:
         task.additional_properties = {"actions": [a.to_dict() for a in actions]}
-    if tags:
-        task.tags = TaskRequestTags.from_dict(tags)
+    if scope.tags or tags:
+        tags = tags or {}
+        task.tags = TaskRequestTags.from_dict({**scope.tags, **tags})
     kwargs = _make_args(body=task)
     if monitor_id:
         kwargs["x_taskbadger_monitor"] = monitor_id

@@ -77,11 +77,13 @@ def test_celery_task_with_args(celery_session_app, celery_session_worker, bind_s
             (2, 2),
             taskbadger_name="new_name",
             taskbadger_value_max=10,
-            taskbadger_kwargs={"data": {"foo": "bar"}},
+            taskbadger_kwargs={"data": {"foo": "bar"}, "tags": {"bar": "baz"}},
         )
         assert result.get(timeout=10, propagate=True) == 4
 
-    create.assert_called_once_with("new_name", value_max=10, data={"foo": "bar"}, status=StatusEnum.PENDING)
+    create.assert_called_once_with(
+        "new_name", value_max=10, data={"foo": "bar"}, tags={"bar": "baz"}, status=StatusEnum.PENDING
+    )
 
 
 def test_celery_task_with_kwargs(celery_session_app, celery_session_worker, bind_settings):

@@ -83,17 +83,22 @@ class Scope:
     def __init__(self):
         self.stack = []
         self.context = {}
+        self.tags = {}
 
     def __enter__(self):
-        self.stack.append(self.context)
+        self.stack.append((self.context, self.tags))
         self.context = self.context.copy()
+        self.tags = self.tags.copy()
         return self
 
     def __exit__(self, *args):
-        self.context = self.stack.pop()
+        self.context, self.tags = self.stack.pop()
 
     def __setitem__(self, key, value):
         self.context[key] = value
+
+    def tag(self, tags: dict[str, str]):
+        self.tags.update(tags)
 
 
 class MugMeta(type):
