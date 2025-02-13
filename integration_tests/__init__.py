@@ -32,5 +32,8 @@ else:
         os.environ.get("TASKBADGER_PROJECT", ""),
         os.environ.get("TASKBADGER_API_KEY", ""),
         systems=[CelerySystemIntegration()],
+        tags={
+            "env": "integration",
+        },
     )
     print(f"\nIntegration tests configuration:\n    {badger.mug.Badger.current.settings}\n")
