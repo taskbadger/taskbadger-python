@@ -34,6 +34,7 @@ def test_celery(celery_session_app, celery_session_worker):
     assert tb_task.status == StatusEnum.SUCCESS
     assert tb_task.value == 100
     assert tb_task.data == {"result": a + b}
+    assert tb_task.tags == {"env": "integration"}
 
 
 def test_celery_auto_track(celery_session_app, celery_session_worker):
