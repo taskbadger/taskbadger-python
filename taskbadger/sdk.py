@@ -1,9 +1,10 @@
 import logging
 import os
-from typing import Any
+from typing import Any, Optional
 
 from taskbadger.exceptions import (
     ConfigurationError,
+    MissingConfiguration,
     ServerError,
     TaskbadgerException,
     Unauthorized,
@@ -21,11 +22,11 @@ from taskbadger.internal.models import (
     PatchedTaskRequestTags,
     StatusEnum,
     TaskRequest,
-    TaskRequestTags,
 )
 from taskbadger.internal.types import UNSET
-from taskbadger.mug import Badger, Session, Settings
+from taskbadger.mug import Badger, Callback, Session, Settings
 from taskbadger.systems import System
+from taskbadger.utils import import_string
 
 log = logging.getLogger("taskbadger")
 
@@ -38,12 +39,13 @@ def init(
     token: str = None,
     systems: list[System] = None,
     tags: dict[str, str] = None,
+    before_create: Callback = None,
 ):
     """Initialize Task Badger client
 
     Call this function once per thread
     """
-    _init(_TB_HOST, organization_slug, project_slug, token, systems, tags)
+    _init(_TB_HOST, organization_slug, project_slug, token, systems, tags, before_create)
 
 
 def _init(
@@ -53,11 +55,18 @@ def _init(
     token: str = None,
     systems: list[System] = None,
     tags: dict[str, str] = None,
+    before_create: Callback = None,
 ):
     host = host or os.environ.get("TASKBADGER_HOST", "https://taskbadger.net")
     organization_slug = organization_slug or os.environ.get("TASKBADGER_ORG")
     project_slug = project_slug or os.environ.get("TASKBADGER_PROJECT")
     token = token or os.environ.get("TASKBADGER_API_KEY")
+
+    if before_create and isinstance(before_create, str):
+        try:
+            before_create = import_string(before_create)
+        except ImportError as e:
+            raise ConfigurationError(f"Could not import module: {before_create}") from e
 
     if host and organization_slug and project_slug and token:
         systems = systems or []
@@ -67,10 +76,11 @@ def _init(
             organization_slug,
             project_slug,
             systems={system.identifier: system for system in systems},
+            before_create=before_create,
         )
         Badger.current.bind(settings, tags)
     else:
-        raise ConfigurationError(
+        raise MissingConfiguration(
             host=host,
             organization_slug=organization_slug,
             project_slug=project_slug,
@@ -100,7 +110,7 @@ def create_task(
     actions: list[Action] = None,
     monitor_id: str = None,
     tags: dict[str, str] = None,
-) -> "Task":
+) -> Optional["Task"]:
     """Create a Task.
 
     Arguments:
@@ -118,29 +128,33 @@ def create_task(
     Returns:
         Task: The created Task object.
     """
-    value = _none_to_unset(value)
-    value_max = _none_to_unset(value_max)
-    data = _none_to_unset(data)
-    max_runtime = _none_to_unset(max_runtime)
-    stale_timeout = _none_to_unset(stale_timeout)
-
-    task = TaskRequest(
-        name=name,
-        status=status,
-        value=value,
-        value_max=value_max,
-        max_runtime=max_runtime,
-        stale_timeout=stale_timeout,
-    )
+    task_dict = {
+        "name": name,
+        "status": status,
+    }
+    if value is not None:
+        task_dict["value"] = value
+    if value_max is not None:
+        task_dict["value_max"] = value_max
+    if max_runtime is not None:
+        task_dict["max_runtime"] = max_runtime
+    if stale_timeout is not None:
+        task_dict["stale_timeout"] = stale_timeout
     scope = Badger.current.scope()
     if scope.context or data:
         data = data or {}
-        task.data = {**scope.context, **data}
+        task_dict["data"] = {**scope.context, **data}
     if actions:
-        task.additional_properties = {"actions": [a.to_dict() for a in actions]}
+        task_dict["actions"] = [a.to_dict() for a in actions]
     if scope.tags or tags:
         tags = tags or {}
-        task.tags = TaskRequestTags.from_dict({**scope.tags, **tags})
+        task_dict["tags"] = {**scope.tags, **tags}
+
+    task_dict = Badger.current.call_before_create(task_dict)
+    if not task_dict:
+        return None
+
+    task = TaskRequest.from_dict(task_dict)
     kwargs = _make_args(body=task)
     if monitor_id:
         kwargs["x_taskbadger_monitor"] = monitor_id
@@ -259,7 +273,7 @@ class Task:
         actions: list[Action] = None,
         monitor_id: str = None,
         tags: dict[str, str] = None,
-    ) -> "Task":
+    ) -> Optional["Task"]:
         """Create a new task
 
         See [taskbadger.create_task][] for more information.

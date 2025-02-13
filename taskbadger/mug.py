@@ -2,12 +2,15 @@ import dataclasses
 from contextlib import ContextDecorator
 from contextvars import ContextVar
 from copy import deepcopy
-from typing import Union
+from typing import Callable, Optional, Union
 
 from taskbadger.internal import AuthenticatedClient
 from taskbadger.systems import System
 
 _local = ContextVar("taskbadger_client")
+
+
+Callback = Union[str, Callable[[dict], Optional[dict]]]
 
 
 @dataclasses.dataclass
@@ -17,6 +20,7 @@ class Settings:
     organization_slug: str
     project_slug: str
     systems: dict[str, System] = dataclasses.field(default_factory=dict)
+    before_create: Callback = None
 
     def get_client(self):
         return AuthenticatedClient(self.base_url, self.token)
@@ -139,6 +143,11 @@ class Badger(metaclass=MugMeta):
 
     def scope(self) -> Scope:
         return self._scope
+
+    def call_before_create(self, task: dict) -> Optional[dict]:
+        if self.settings and self.settings.before_create:
+            return self.settings.before_create(task)
+        return task
 
     @classmethod
     def is_configured(cls):

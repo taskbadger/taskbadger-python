@@ -3,7 +3,7 @@ from unittest import mock
 
 import pytest
 
-from taskbadger import Action, EmailIntegration, StatusEnum, WebhookIntegration
+from taskbadger import Action, EmailIntegration, StatusEnum, WebhookIntegration, create_task
 from taskbadger.exceptions import TaskbadgerException
 from taskbadger.internal.models import (
     PatchedTaskRequest,
@@ -93,6 +93,42 @@ def test_create(settings, patched_create):
         project_slug="project",
         body=request,
     )
+
+
+def test_before_create_update_task(settings, patched_create):
+    def before_create(task):
+        tags = task.setdefault("tags", {})
+        tags["new"] = "tag"
+        return task
+
+    settings.before_create = before_create
+
+    api_task = task_for_test()
+    patched_create.return_value = Response(HTTPStatus.OK, b"", {}, api_task)
+
+    task = create_task(name="task name")
+    assert task.id == api_task.id
+
+    request = TaskRequest.from_dict(
+        {
+            "name": "task name",
+            "status": StatusEnum.PENDING,
+            "tags": {"new": "tag"},
+        }
+    )
+    assert patched_create.call_args[1]["body"] == request
+
+
+def test_before_create_filter(settings, patched_create):
+    def before_create(_):
+        return None
+
+    settings.before_create = before_create
+
+    task = create_task(name="task name")
+    assert task is None
+
+    patched_create.assert_not_called()
 
 
 def test_update_status(settings, patched_update):
