@@ -22,19 +22,21 @@ def test_scope_context():
     with scope:
         assert scope.stack == [({}, {})]
         scope.context["foo"] = "bar"
+        scope.context["nit"] = [1]
         scope.tags["name"] = "value"
         with scope:
-            assert scope.stack == [({}, {}), ({"foo": "bar"}, {"name": "value"})]
-            assert scope.context == {"foo": "bar"}
+            assert scope.stack == [({}, {}), ({"foo": "bar", "nit": [1]}, {"name": "value"})]
+            assert scope.context == {"foo": "bar", "nit": [1]}
             assert scope.tags == {"name": "value"}
             scope.context["bar"] = "bazz"
+            scope.context["nit"].append(2)
             scope.tags["bar"] = "bazz"
             with scope:
-                assert scope.context == {"foo": "bar", "bar": "bazz"}
+                assert scope.context == {"foo": "bar", "bar": "bazz", "nit": [1, 2]}
                 assert scope.tags == {"name": "value", "bar": "bazz"}
                 scope.context.clear()
                 scope.tags.clear()
-        assert scope.context == {"foo": "bar"}
+        assert scope.context == {"foo": "bar", "nit": [1]}
         assert scope.tags == {"name": "value"}
         assert scope.stack == [({}, {})]
     assert scope.context == {}

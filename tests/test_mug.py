@@ -9,7 +9,7 @@ from taskbadger.mug import GLOBAL_MUG, Badger, Session, Settings
 
 @pytest.fixture(autouse=True)
 def _bind_settings():
-    Badger.current.bind(Settings("https://taskbadger.net", "token", "org", "proj"))
+    Badger.current.bind(Settings("https://taskbadger.net", "token", "org", "proj"), tags={"env": "test"})
 
 
 def test_session_singleton():
@@ -18,6 +18,8 @@ def test_session_singleton():
     assert session.client is None
     assert session.stack == []
     assert session == Badger.current.session()
+
+    assert Badger.current.scope().tags == {"env": "test"}
 
 
 def test_session_global():
@@ -90,3 +92,10 @@ class TestThread(threading.Thread):
         with session as client:
             assert client is not None
             self.clients.append(client)
+
+        assert Badger.current.scope().tags == {"env": "test"}
+        with Badger.current.scope() as scope:
+            scope.tag({"thread": self.name})
+            assert scope.tags == {"env": "test", "thread": self.name}
+
+        assert Badger.current.scope().tags == {"env": "test"}

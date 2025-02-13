@@ -1,6 +1,7 @@
 import dataclasses
 from contextlib import ContextDecorator
 from contextvars import ContextVar
+from copy import deepcopy
 from typing import Union
 
 from taskbadger.internal import AuthenticatedClient
@@ -87,8 +88,8 @@ class Scope:
 
     def __enter__(self):
         self.stack.append((self.context, self.tags))
-        self.context = self.context.copy()
-        self.tags = self.tags.copy()
+        self.context = deepcopy(self.context)
+        self.tags = deepcopy(self.tags)
         return self
 
     def __exit__(self, *args):
@@ -116,17 +117,19 @@ class MugMeta(type):
 
 class Badger(metaclass=MugMeta):
     def __init__(self, settings_or_mug=None):
-        if isinstance(settings_or_mug, Badger):
-            self.settings = settings_or_mug.settings
-        else:
-            self.settings = settings_or_mug
-
         self._session = ReentrantSession()
         self._scope = Scope()
 
+        if isinstance(settings_or_mug, Badger):
+            self.settings = settings_or_mug.settings
+            self._scope.context = deepcopy(settings_or_mug._scope.context)
+            self._scope.tags = deepcopy(settings_or_mug._scope.tags)
+        else:
+            self.settings = settings_or_mug
+
     def bind(self, settings, tags=None):
         self.settings = settings
-        self.scope().tags = tags or {}
+        self._scope.tags = tags or {}
 
     def session(self) -> ReentrantSession:
         return self._session
