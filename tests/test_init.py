@@ -7,7 +7,10 @@ from taskbadger.mug import _local
 
 @pytest.fixture(autouse=True)
 def _reset():
+    b_global = Badger.current
     _local.set(Badger())
+    yield
+    _local.set(b_global)
 
 
 def test_init():
