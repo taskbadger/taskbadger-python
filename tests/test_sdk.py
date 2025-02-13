@@ -7,9 +7,7 @@ from taskbadger import Action, EmailIntegration, StatusEnum, WebhookIntegration
 from taskbadger.exceptions import TaskbadgerException
 from taskbadger.internal.models import (
     PatchedTaskRequest,
-    PatchedTaskRequestData,
     TaskRequest,
-    TaskRequestData,
 )
 from taskbadger.internal.types import UNSET, Response
 from taskbadger.mug import Badger
@@ -76,7 +74,7 @@ def test_create(settings, patched_create):
         status=StatusEnum.PRE_PROCESSING,
         value=13,
         value_max=UNSET,
-        data=TaskRequestData.from_dict(data),
+        data=data,
         max_runtime=10,
         stale_timeout=2,
     )
@@ -93,7 +91,7 @@ def test_create(settings, patched_create):
         client=mock.ANY,
         organization_slug="org",
         project_slug="project",
-        json_body=request,
+        body=request,
     )
 
 
@@ -188,7 +186,7 @@ def _verify_update(settings, patched_update, **kwargs):
     request_params.update(kwargs)
 
     if kwargs.get("data"):
-        request_params["data"] = PatchedTaskRequestData.from_dict(kwargs["data"])
+        request_params["data"] = kwargs["data"]
 
     request = PatchedTaskRequest(**request_params)
     if actions:
@@ -200,5 +198,5 @@ def _verify_update(settings, patched_update, **kwargs):
         organization_slug="org",
         project_slug="project",
         id=mock.ANY,
-        json_body=request,
+        body=request,
     )

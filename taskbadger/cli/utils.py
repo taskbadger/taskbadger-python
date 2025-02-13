@@ -28,7 +28,7 @@ def get_actions(action_def: tuple[str, str, str]) -> list[Action]:
     return []
 
 
-def get_metadata(metadata_kv: list[str], metadata_json: str) -> dict:
+def merge_kv_json(metadata_kv: list[str], metadata_json: str) -> dict:
     metadata = {}
     for kv in metadata_kv:
         k, v = kv.strip().split("=", 1)

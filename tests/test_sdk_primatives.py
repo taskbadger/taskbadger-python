@@ -8,7 +8,7 @@ from taskbadger.sdk import create_task, get_task, init
 
 
 @pytest.fixture(autouse=True)
-def init_skd():
+def _init_skd():
     init("org", "project", "token")
 
 
@@ -75,6 +75,7 @@ def test_update_task(httpx_mock):
         "value": 150,
         "value_max": 150,
         "data": {"custom": "value"},
+        "tags": {"tag": "value"},
     }
     httpx_mock.add_response(
         url="https://taskbadger.net/api/org/project/tasks/test_id/",
@@ -128,6 +129,7 @@ def _json_task_response(**kwargs):
         "updated": "2022-09-22T06:53:40.683555Z",
         "url": None,
         "public_url": None,
+        "tags": {"tag": "value"},
     }
     response.update(kwargs)
     return response
@@ -144,3 +146,4 @@ def _verify_task(task, **kwargs):
     assert task.value_max == expected["value_max"]
     assert task.value_percent == expected["value_percent"]
     assert task.data == expected["data"]
+    assert task.tags == expected["tags"]

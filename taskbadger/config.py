@@ -1,6 +1,6 @@
 import dataclasses
-import inspect
 import os
+import textwrap
 from pathlib import Path
 
 import tomlkit
@@ -18,6 +18,7 @@ class Config:
     organization_slug: str = None
     project_slug: str = None
     host: str = _TB_HOST
+    tags: dict = None
 
     def is_valid(self):
         return bool(self.token and self.organization_slug and self.project_slug)
@@ -51,18 +52,26 @@ class Config:
             organization_slug=overrides.get("org") or _from_env("ORG", defaults.get("org")),
             project_slug=overrides.get("project") or _from_env("PROJECT", defaults.get("project")),
             host=overrides.get("host") or auth.get("host"),
+            tags=config_dict.get("tags", {}),
         )
 
     def __str__(self):
         host = ""
-        if self.host != _TB_HOST:
-            host = f"\n            Host: {self.host}"
-        return inspect.cleandoc(
-            f"""
+        if self.host and self.host != _TB_HOST:
+            host = f"Host: {self.host or '-'}\n"
+        tags = ""
+        if self.tags:
+            tags = "Tags:\n  " + "\n  ".join(f"{k}: {v}" for k, v in self.tags.items())
+        return (
+            textwrap.dedent(
+                f"""
             Organization slug: {self.organization_slug or "-"}
             Project slug: {self.project_slug or "-"}
-            Auth token: {self.token or "-"}{host}
+            Auth token: {self.token or "-"}
             """
+            )
+            + host
+            + tags
         )
 
 
@@ -79,6 +88,11 @@ def write_config(config):
     )
 
     doc.add("auth", table().add("token", config.token))
+    if config.tags:
+        tags = table()
+        for key, value in config.tags.items():
+            tags.add(key, value)
+        doc.add("tags", tags)
 
     config_path = _get_config_path()
     if not config_path.parent.exists():

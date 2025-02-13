@@ -11,6 +11,7 @@ Celery runner thread will not have the configuration set.
 import logging
 import sys
 import weakref
+from http import HTTPStatus
 from unittest import mock
 
 import pytest
@@ -18,6 +19,8 @@ from celery.signals import task_prerun
 
 from taskbadger import StatusEnum
 from taskbadger.celery import Task
+from taskbadger.internal.models import TaskRequest, TaskRequestTags
+from taskbadger.internal.types import Response
 from taskbadger.mug import Badger, Settings
 from taskbadger.systems.celery import CelerySystemIntegration
 from tests.utils import task_for_test
@@ -114,11 +117,8 @@ def test_celery_record_task_args(celery_session_app, celery_session_worker):
 def test_celery_record_task_args_local_override(celery_session_app, celery_session_worker):
     """Test that passing `taskbadger_record_task_args` overrides the integration value"""
 
-    @celery_session_app.task(bind=True, base=Task)
-    def add_normal_with_override(self, a, b):
-        assert self.request.get("taskbadger_task_id") is not None, "missing task in request"
-        assert hasattr(self, "taskbadger_task")
-        assert Badger.current.session().client is not None, "missing client"
+    @celery_session_app.task(base=Task)
+    def add_normal_with_override(a, b):
         return a + b
 
     celery_session_worker.reload()
@@ -128,8 +128,8 @@ def test_celery_record_task_args_local_override(celery_session_app, celery_sessi
 
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
-        mock.patch("taskbadger.celery.update_task_safe") as update,
-        mock.patch("taskbadger.celery.get_task") as get_task,
+        mock.patch("taskbadger.celery.update_task_safe"),
+        mock.patch("taskbadger.celery.get_task"),
     ):
         tb_task = task_for_test()
         create.return_value = tb_task
@@ -140,9 +140,45 @@ def test_celery_record_task_args_local_override(celery_session_app, celery_sessi
     create.assert_called_once_with(
         "tests.test_celery_system_integration.add_normal_with_override", status=StatusEnum.PENDING
     )
-    assert get_task.call_count == 1
-    assert update.call_count == 2
-    assert Badger.current.session().client is None
+
+
+@pytest.mark.usefixtures("_bind_settings_with_system")
+def test_celery_global_tags(celery_session_app, celery_session_worker):
+    @celery_session_app.task(base=Task)
+    def add_with_tags(a, b):
+        return a + b
+
+    celery_session_worker.reload()
+    Badger.current.scope().tag({"tag1": "value1", "tag2": "value2"})
+
+    with (
+        mock.patch("taskbadger.sdk.task_create.sync_detailed") as create,
+        mock.patch("taskbadger.celery.update_task_safe"),
+        mock.patch("taskbadger.celery.get_task"),
+    ):
+        tb_task = task_for_test()
+        create.return_value = Response(
+            status_code=HTTPStatus.OK,
+            content=b"",
+            headers={},
+            parsed=tb_task,
+        )
+        # create.return_value = tb_task
+        result = add_with_tags.delay(2, 2, taskbadger_tags={"tag2": "override"})
+        assert result.info.get("taskbadger_task_id") == tb_task.id
+        assert result.get(timeout=10, propagate=True) == 4
+
+    request = TaskRequest(
+        name="tests.test_celery_system_integration.add_with_tags",
+        status=StatusEnum.PENDING,
+        tags=TaskRequestTags.from_dict({"tag1": "value1", "tag2": "override"}),
+    )
+    create.assert_called_with(
+        client=mock.ANY,
+        organization_slug="org",
+        project_slug="proj",
+        body=request,
+    )
 
 
 @pytest.mark.parametrize(

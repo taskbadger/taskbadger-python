@@ -8,9 +8,9 @@ from typer.testing import CliRunner
 from taskbadger.cli_main import app
 from taskbadger.internal.models import (
     PatchedTaskRequest,
-    PatchedTaskRequestData,
     StatusEnum,
     TaskRequest,
+    TaskRequestTags,
 )
 from taskbadger.internal.types import UNSET, Response
 from taskbadger.mug import Badger
@@ -38,6 +38,15 @@ def test_cli_run_success():
     _test_cli_run(["echo", "test"], 0, args=["task_name"])
 
 
+def test_cli_run_tags():
+    _test_cli_run(
+        ["echo", "test"],
+        0,
+        ["task_name", "--tag", "name=value", "--tag", "name1=value1"],
+        tags={"name": "value", "name1": "value1"},
+    )
+
+
 def test_cli_long_run():
     def _should_update_task(last_update, update_frequency_seconds):
         return True
@@ -49,13 +58,13 @@ def test_cli_long_run():
 def test_cli_capture_output():
     update_patch = _test_cli_run(["echo test"], 0, args=["task_name", "--capture-output"], update_call_count=2)
 
-    body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n"}))
+    body = PatchedTaskRequest(status=UNSET, data={"stdout": "test\n"})
     update_patch.assert_any_call(
         client=mock.ANY,
         organization_slug="org",
         project_slug="project",
         id=mock.ANY,
-        json_body=body,
+        body=body,
     )
 
 
@@ -71,13 +80,13 @@ def test_cli_capture_output_append():
             update_call_count=3,
         )
 
-    body = PatchedTaskRequest(status=UNSET, data=PatchedTaskRequestData.from_dict({"stdout": "test\n123\n"}))
+    body = PatchedTaskRequest(status=UNSET, data={"stdout": "test\n123\n"})
     update_patch.assert_any_call(
         client=mock.ANY,
         organization_slug="org",
         project_slug="project",
         id=mock.ANY,
-        json_body=body,
+        body=body,
     )
 
 
@@ -107,7 +116,7 @@ def test_cli_run_webhook():
     )
 
 
-def _test_cli_run(command, return_code, args=None, action=None, update_call_count=1):
+def _test_cli_run(command, return_code, args=None, action=None, tags=None, update_call_count=1):
     update_mock = mock.MagicMock()
 
     def _update(*args, **kwargs):
@@ -115,8 +124,8 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
         update_mock(*args, **kwargs)
 
         # handle updating task data
-        data = kwargs["json_body"].data
-        task_return = task_for_test(id=task_id, data=data.additional_properties if data else None)
+        data = kwargs["body"].data
+        task_return = task_for_test(id=task_id, data=data if data else None)
         return Response(HTTPStatus.OK, b"", {}, task_return)
 
     with (
@@ -134,11 +143,13 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
         request = TaskRequest(name="task_name", status=StatusEnum.PROCESSING, stale_timeout=10)
         if action:
             request.additional_properties = {"actions": [action]}
+        if tags:
+            request.tags = TaskRequestTags.from_dict(tags)
         create.assert_called_with(
             client=mock.ANY,
             organization_slug="org",
             project_slug="project",
-            json_body=request,
+            body=request,
         )
 
         if return_code == 0:
@@ -146,7 +157,7 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
         else:
             body = PatchedTaskRequest(
                 status=StatusEnum.ERROR,
-                data=PatchedTaskRequestData.from_dict({"return_code": return_code}),
+                data={"return_code": return_code},
             )
 
         assert update_mock.call_count == update_call_count
@@ -155,7 +166,7 @@ def _test_cli_run(command, return_code, args=None, action=None, update_call_coun
             organization_slug="org",
             project_slug="project",
             id=task.id,
-            json_body=body,
+            body=body,
         )
         return update_mock
 

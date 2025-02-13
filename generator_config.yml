@@ -1,6 +1,5 @@
 project_name_override: taskbadger-python
 package_name_override: taskbadger/internal
 post_hooks:
-  - "autoflake -i -r --remove-all-unused-imports --remove-unused-variables --ignore-init-module-imports ."
-  - "isort ."
-  - "black ."
+  - "ruff format ."
+  - "ruff check . --fix"

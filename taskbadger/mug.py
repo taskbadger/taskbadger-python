@@ -83,17 +83,22 @@ class Scope:
     def __init__(self):
         self.stack = []
         self.context = {}
+        self.tags = {}
 
     def __enter__(self):
-        self.stack.append(self.context)
+        self.stack.append((self.context, self.tags))
         self.context = self.context.copy()
+        self.tags = self.tags.copy()
         return self
 
     def __exit__(self, *args):
-        self.context = self.stack.pop()
+        self.context, self.tags = self.stack.pop()
 
     def __setitem__(self, key, value):
         self.context[key] = value
+
+    def tag(self, tags: dict[str, str]):
+        self.tags.update(tags)
 
 
 class MugMeta(type):
@@ -119,8 +124,9 @@ class Badger(metaclass=MugMeta):
         self._session = ReentrantSession()
         self._scope = Scope()
 
-    def bind(self, settings):
+    def bind(self, settings, tags=None):
         self.settings = settings
+        self.scope().tags = tags or {}
 
     def session(self) -> ReentrantSession:
         return self._session

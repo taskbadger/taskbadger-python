@@ -2,7 +2,7 @@ import typer
 from rich import print
 
 from taskbadger import DefaultMergeStrategy, Session, StatusEnum, Task
-from taskbadger.cli.utils import configure_api, err_console, get_actions
+from taskbadger.cli.utils import configure_api, err_console, get_actions, merge_kv_json
 from taskbadger.process import ProcessRunner
 
 
@@ -19,6 +19,11 @@ def run(
         show_default=False,
         help="Action definition e.g. 'success,error email to:me@email.com'",
     ),
+    tag: list[str] = typer.Option(
+        None,
+        show_default=False,
+        help="Tags: 'name=value' pair to associate with the task. Can be specified multiple times.",
+    ),
     capture_output: bool = typer.Option(False, help="Capture stdout and stderr."),
 ):
     """Execute a command using the CLI and create a Task to track its outcome.
@@ -34,6 +39,7 @@ def run(
     """
     configure_api(ctx)
     actions = get_actions(action_def)
+    tags = merge_kv_json(tag, "")
     stale_timeout = update_frequency * 2
     with Session():
         try:
@@ -43,6 +49,7 @@ def run(
                 stale_timeout=stale_timeout,
                 actions=actions,
                 monitor_id=monitor_id,
+                tags=tags,
             )
         except Exception as e:
             err_console.print(f"Error creating task: {e}")

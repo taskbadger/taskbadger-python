@@ -13,29 +13,30 @@ def _get_kwargs(
     organization_slug: str,
     project_slug: str,
     *,
-    cursor: Union[Unset, None, str] = UNSET,
-    page_size: Union[Unset, None, int] = UNSET,
+    cursor: Union[Unset, str] = UNSET,
+    page_size: Union[Unset, int] = UNSET,
 ) -> dict[str, Any]:
-    pass
-
     params: dict[str, Any] = {}
+
     params["cursor"] = cursor
 
     params["page_size"] = page_size
 
     params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
 
-    return {
+    _kwargs: dict[str, Any] = {
         "method": "get",
         "url": f"/api/{organization_slug}/{project_slug}/tasks/",
         "params": params,
     }
 
+    return _kwargs
+
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
 ) -> Optional[PaginatedTaskList]:
-    if response.status_code == HTTPStatus.OK:
+    if response.status_code == 200:
         response_200 = PaginatedTaskList.from_dict(response.json())
 
         return response_200
@@ -61,8 +62,8 @@ def sync_detailed(
     project_slug: str,
     *,
     client: AuthenticatedClient,
-    cursor: Union[Unset, None, str] = UNSET,
-    page_size: Union[Unset, None, int] = UNSET,
+    cursor: Union[Unset, str] = UNSET,
+    page_size: Union[Unset, int] = UNSET,
 ) -> Response[PaginatedTaskList]:
     """List Tasks
 
@@ -71,12 +72,11 @@ def sync_detailed(
     Args:
         organization_slug (str):
         project_slug (str):
-        cursor (Union[Unset, None, str]):
-        page_size (Union[Unset, None, int]):
+        cursor (Union[Unset, str]):
+        page_size (Union[Unset, int]):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -102,8 +102,8 @@ def sync(
     project_slug: str,
     *,
     client: AuthenticatedClient,
-    cursor: Union[Unset, None, str] = UNSET,
-    page_size: Union[Unset, None, int] = UNSET,
+    cursor: Union[Unset, str] = UNSET,
+    page_size: Union[Unset, int] = UNSET,
 ) -> Optional[PaginatedTaskList]:
     """List Tasks
 
@@ -112,12 +112,11 @@ def sync(
     Args:
         organization_slug (str):
         project_slug (str):
-        cursor (Union[Unset, None, str]):
-        page_size (Union[Unset, None, int]):
+        cursor (Union[Unset, str]):
+        page_size (Union[Unset, int]):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -138,8 +137,8 @@ async def asyncio_detailed(
     project_slug: str,
     *,
     client: AuthenticatedClient,
-    cursor: Union[Unset, None, str] = UNSET,
-    page_size: Union[Unset, None, int] = UNSET,
+    cursor: Union[Unset, str] = UNSET,
+    page_size: Union[Unset, int] = UNSET,
 ) -> Response[PaginatedTaskList]:
     """List Tasks
 
@@ -148,12 +147,11 @@ async def asyncio_detailed(
     Args:
         organization_slug (str):
         project_slug (str):
-        cursor (Union[Unset, None, str]):
-        page_size (Union[Unset, None, int]):
+        cursor (Union[Unset, str]):
+        page_size (Union[Unset, int]):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -177,8 +175,8 @@ async def asyncio(
     project_slug: str,
     *,
     client: AuthenticatedClient,
-    cursor: Union[Unset, None, str] = UNSET,
-    page_size: Union[Unset, None, int] = UNSET,
+    cursor: Union[Unset, str] = UNSET,
+    page_size: Union[Unset, int] = UNSET,
 ) -> Optional[PaginatedTaskList]:
     """List Tasks
 
@@ -187,12 +185,11 @@ async def asyncio(
     Args:
         organization_slug (str):
         project_slug (str):
-        cursor (Union[Unset, None, str]):
-        page_size (Union[Unset, None, int]):
+        cursor (Union[Unset, str]):
+        page_size (Union[Unset, int]):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:

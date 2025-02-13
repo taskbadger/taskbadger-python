@@ -15,21 +15,26 @@ def _get_kwargs(
     project_slug: str,
     task_id: str,
     *,
-    json_body: ActionRequest,
+    body: ActionRequest,
 ) -> dict[str, Any]:
-    pass
+    headers: dict[str, Any] = {}
 
-    json_json_body = json_body.to_dict()
-
-    return {
+    _kwargs: dict[str, Any] = {
         "method": "post",
         "url": f"/api/{organization_slug}/{project_slug}/tasks/{task_id}/actions/",
-        "json": json_json_body,
     }
+
+    _body = body.to_dict()
+
+    _kwargs["json"] = _body
+    headers["Content-Type"] = "application/json"
+
+    _kwargs["headers"] = headers
+    return _kwargs
 
 
 def _parse_response(*, client: Union[AuthenticatedClient, Client], response: httpx.Response) -> Optional[Action]:
-    if response.status_code == HTTPStatus.CREATED:
+    if response.status_code == 201:
         response_201 = Action.from_dict(response.json())
 
         return response_201
@@ -54,7 +59,7 @@ def sync_detailed(
     task_id: str,
     *,
     client: AuthenticatedClient,
-    json_body: ActionRequest,
+    body: ActionRequest,
 ) -> Response[Action]:
     """Create Action
 
@@ -64,11 +69,10 @@ def sync_detailed(
         organization_slug (str):
         project_slug (str):
         task_id (str):
-        json_body (ActionRequest):
+        body (ActionRequest):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -79,7 +83,7 @@ def sync_detailed(
         organization_slug=organization_slug,
         project_slug=project_slug,
         task_id=task_id,
-        json_body=json_body,
+        body=body,
     )
 
     response = client.get_httpx_client().request(
@@ -95,7 +99,7 @@ def sync(
     task_id: str,
     *,
     client: AuthenticatedClient,
-    json_body: ActionRequest,
+    body: ActionRequest,
 ) -> Optional[Action]:
     """Create Action
 
@@ -105,11 +109,10 @@ def sync(
         organization_slug (str):
         project_slug (str):
         task_id (str):
-        json_body (ActionRequest):
+        body (ActionRequest):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -121,7 +124,7 @@ def sync(
         project_slug=project_slug,
         task_id=task_id,
         client=client,
-        json_body=json_body,
+        body=body,
     ).parsed
 
 
@@ -131,7 +134,7 @@ async def asyncio_detailed(
     task_id: str,
     *,
     client: AuthenticatedClient,
-    json_body: ActionRequest,
+    body: ActionRequest,
 ) -> Response[Action]:
     """Create Action
 
@@ -141,11 +144,10 @@ async def asyncio_detailed(
         organization_slug (str):
         project_slug (str):
         task_id (str):
-        json_body (ActionRequest):
+        body (ActionRequest):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -156,7 +158,7 @@ async def asyncio_detailed(
         organization_slug=organization_slug,
         project_slug=project_slug,
         task_id=task_id,
-        json_body=json_body,
+        body=body,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -170,7 +172,7 @@ async def asyncio(
     task_id: str,
     *,
     client: AuthenticatedClient,
-    json_body: ActionRequest,
+    body: ActionRequest,
 ) -> Optional[Action]:
     """Create Action
 
@@ -180,11 +182,10 @@ async def asyncio(
         organization_slug (str):
         project_slug (str):
         task_id (str):
-        json_body (ActionRequest):
+        body (ActionRequest):
 
     Raises:
-        errors.UnexpectedStatus: If the server returns an undocumented status code
-            and Client.raise_on_unexpected_status is True.
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
@@ -197,6 +198,6 @@ async def asyncio(
             project_slug=project_slug,
             task_id=task_id,
             client=client,
-            json_body=json_body,
+            body=body,
         )
     ).parsed

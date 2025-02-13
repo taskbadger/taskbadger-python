@@ -11,7 +11,7 @@ from taskbadger.cli.utils import (
     configure_api,
     err_console,
     get_actions,
-    get_metadata,
+    merge_kv_json,
 )
 
 
@@ -69,12 +69,23 @@ def create(
         show_default=False,
         help="Metadata to associate with the task. Must be valid JSON.",
     ),
+    tag: list[str] = typer.Option(
+        None,
+        show_default=False,
+        help="Metadata 'key=value' pair to associate with the task. Can be specified multiple times.",
+    ),
+    tags_json: str = typer.Option(
+        None,
+        show_default=False,
+        help="Tags to associate with the task. Must be valid JSON mapping name -> value.",
+    ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Minimal output. Only the Task ID."),
 ):
     """Create a task."""
     configure_api(ctx)
     actions = get_actions(action_def)
-    metadata = get_metadata(metadata, metadata_json)
+    metadata = merge_kv_json(metadata, metadata_json)
+    tags = merge_kv_json(tag, tags_json)
 
     try:
         task = create_task(
@@ -84,6 +95,7 @@ def create(
             data=metadata,
             actions=actions,
             monitor_id=monitor_id,
+            tags=tags,
         )
     except Exception as e:
         err_console.print(f"Error creating task: {e}")
@@ -119,12 +131,23 @@ def update(
         show_default=False,
         help="Metadata to associate with the task. Must be valid JSON.",
     ),
+    tag: list[str] = typer.Option(
+        None,
+        show_default=False,
+        help="Metadata 'key=value' pair to associate with the task. Can be specified multiple times.",
+    ),
+    tags_json: str = typer.Option(
+        None,
+        show_default=False,
+        help="Tags to associate with the task. Must be valid JSON mapping name -> value.",
+    ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="No output."),
 ):
     """Update a task."""
     configure_api(ctx)
     actions = get_actions(action_def)
-    metadata = get_metadata(metadata, metadata_json)
+    metadata = merge_kv_json(metadata, metadata_json)
+    tags = merge_kv_json(tag, tags_json)
 
     try:
         task = update_task(
@@ -135,6 +158,7 @@ def update(
             value_max=value_max,
             data=metadata,
             actions=actions,
+            tags=tags,
         )
     except Exception as e:
         err_console.print(f"Error creating task: {e}")

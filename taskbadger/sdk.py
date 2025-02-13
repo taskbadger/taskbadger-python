@@ -18,10 +18,10 @@ from taskbadger.internal.api.task_endpoints import (
 )
 from taskbadger.internal.models import (
     PatchedTaskRequest,
-    PatchedTaskRequestData,
+    PatchedTaskRequestTags,
     StatusEnum,
     TaskRequest,
-    TaskRequestData,
+    TaskRequestTags,
 )
 from taskbadger.internal.types import UNSET
 from taskbadger.mug import Badger, Session, Settings
@@ -37,12 +37,13 @@ def init(
     project_slug: str = None,
     token: str = None,
     systems: list[System] = None,
+    tags: dict[str, str] = None,
 ):
     """Initialize Task Badger client
 
     Call this function once per thread
     """
-    _init(_TB_HOST, organization_slug, project_slug, token, systems)
+    _init(_TB_HOST, organization_slug, project_slug, token, systems, tags)
 
 
 def _init(
@@ -51,6 +52,7 @@ def _init(
     project_slug: str = None,
     token: str = None,
     systems: list[System] = None,
+    tags: dict[str, str] = None,
 ):
     host = host or os.environ.get("TASKBADGER_HOST", "https://taskbadger.net")
     organization_slug = organization_slug or os.environ.get("TASKBADGER_ORG")
@@ -66,7 +68,7 @@ def _init(
             project_slug,
             systems={system.identifier: system for system in systems},
         )
-        Badger.current.bind(settings)
+        Badger.current.bind(settings, tags)
     else:
         raise ConfigurationError(
             host=host,
@@ -97,6 +99,7 @@ def create_task(
     stale_timeout: int = None,
     actions: list[Action] = None,
     monitor_id: str = None,
+    tags: dict[str, str] = None,
 ) -> "Task":
     """Create a Task.
 
@@ -110,6 +113,7 @@ def create_task(
         stale_timeout: Maximum allowed time between updates (seconds).
         actions: Task actions.
         monitor_id: ID of the monitor to associate this task with.
+        tags: Dictionary of namespace -> value tags.
 
     Returns:
         Task: The created Task object.
@@ -128,13 +132,16 @@ def create_task(
         max_runtime=max_runtime,
         stale_timeout=stale_timeout,
     )
-    scope_data = Badger.current.scope().context
-    if scope_data or data:
+    scope = Badger.current.scope()
+    if scope.context or data:
         data = data or {}
-        task.data = TaskRequestData.from_dict({**scope_data, **data})
+        task.data = {**scope.context, **data}
     if actions:
         task.additional_properties = {"actions": [a.to_dict() for a in actions]}
-    kwargs = _make_args(json_body=task)
+    if scope.tags or tags:
+        tags = tags or {}
+        task.tags = TaskRequestTags.from_dict({**scope.tags, **tags})
+    kwargs = _make_args(body=task)
     if monitor_id:
         kwargs["x_taskbadger_monitor"] = monitor_id
     with Session() as client:
@@ -153,6 +160,7 @@ def update_task(
     max_runtime: int = None,
     stale_timeout: int = None,
     actions: list[Action] = None,
+    tags: dict[str, str] = None,
 ) -> "Task":
     """Update a task.
     Requires only the task ID and fields to update.
@@ -167,6 +175,7 @@ def update_task(
         max_runtime: Maximum expected runtime (seconds).
         stale_timeout: Maximum allowed time between updates (seconds).
         actions: Task actions.
+        tags: Dictionary of namespace -> value tags.
 
     Returns:
         Task: The updated Task object.
@@ -179,7 +188,7 @@ def update_task(
     max_runtime = _none_to_unset(max_runtime)
     stale_timeout = _none_to_unset(stale_timeout)
 
-    data = UNSET if not data else PatchedTaskRequestData.from_dict(data)
+    data = data or UNSET
     body = PatchedTaskRequest(
         name=name,
         status=status,
@@ -191,7 +200,9 @@ def update_task(
     )
     if actions:
         body.additional_properties = {"actions": [a.to_dict() for a in actions]}
-    kwargs = _make_args(id=task_id, json_body=body)
+    if tags:
+        body.tags = PatchedTaskRequestTags.from_dict(tags)
+    kwargs = _make_args(id=task_id, body=body)
     with Session() as client:
         response = task_partial_update.sync_detailed(client=client, **kwargs)
     _check_response(response)
@@ -247,8 +258,12 @@ class Task:
         stale_timeout: int = None,
         actions: list[Action] = None,
         monitor_id: str = None,
+        tags: dict[str, str] = None,
     ) -> "Task":
-        """Create a new task"""
+        """Create a new task
+
+        See [taskbadger.create_task][] for more information.
+        """
         return create_task(
             name,
             status,
@@ -259,6 +274,7 @@ class Task:
             stale_timeout=stale_timeout,
             actions=actions,
             monitor_id=monitor_id,
+            tags=tags,
         )
 
     def __init__(self, task):
@@ -323,11 +339,14 @@ class Task:
         max_runtime: int = None,
         stale_timeout: int = None,
         actions: list[Action] = None,
+        tags: dict[str, str] = None,
         data_merge_strategy: Any = None,
     ):
         """Generic update method used to update any of the task fields.
 
         This can also be used to add actions.
+
+        See [taskbadger.update_task][] for more information.
         """
         if data and data_merge_strategy:
             if hasattr(data_merge_strategy, "merge"):
@@ -347,6 +366,7 @@ class Task:
             max_runtime=max_runtime,
             stale_timeout=stale_timeout,
             actions=actions,
+            tags=tags,
         )
         self._task = task._task
 
@@ -354,14 +374,18 @@ class Task:
         """Add actions to the task."""
         self.update(actions=actions)
 
+    def tag(self, tags: dict[str, str]):
+        """Add tags to the task."""
+        self.update(tags=tags)
+
     def ping(self):
         """Update the task without changing any values. This can be used in conjunction
         with 'stale_timeout' to indicate that the task is still running."""
         self.update()
 
     @property
-    def data(self):
-        return self._task.data.additional_properties
+    def tags(self):
+        return self._task.tags.to_dict()
 
     def __getattr__(self, item):
         return getattr(self._task, item)

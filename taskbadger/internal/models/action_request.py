@@ -1,13 +1,9 @@
-from typing import TYPE_CHECKING, Any, TypeVar, Union
+from typing import Any, TypeVar, Union
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
 from ..types import UNSET, Unset
-
-if TYPE_CHECKING:
-    from ..models.action_request_config import ActionRequestConfig
-
 
 T = TypeVar("T", bound="ActionRequest")
 
@@ -18,20 +14,20 @@ class ActionRequest:
     Attributes:
         trigger (str):
         integration (str):
-        config (Union[Unset, ActionRequestConfig]):
+        config (Union[Unset, Any]):
     """
 
     trigger: str
     integration: str
-    config: Union[Unset, "ActionRequestConfig"] = UNSET
+    config: Union[Unset, Any] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         trigger = self.trigger
+
         integration = self.integration
-        config: Union[Unset, dict[str, Any]] = UNSET
-        if not isinstance(self.config, Unset):
-            config = self.config.to_dict()
+
+        config = self.config
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -48,19 +44,12 @@ class ActionRequest:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
-        from ..models.action_request_config import ActionRequestConfig
-
         d = src_dict.copy()
         trigger = d.pop("trigger")
 
         integration = d.pop("integration")
 
-        _config = d.pop("config", UNSET)
-        config: Union[Unset, ActionRequestConfig]
-        if isinstance(_config, Unset):
-            config = UNSET
-        else:
-            config = ActionRequestConfig.from_dict(_config)
+        config = d.pop("config", UNSET)
 
         action_request = cls(
             trigger=trigger,

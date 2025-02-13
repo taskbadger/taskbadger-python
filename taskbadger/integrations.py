@@ -2,7 +2,7 @@ import dataclasses
 from typing import Any
 
 from taskbadger.exceptions import TaskbadgerException
-from taskbadger.internal.models import ActionRequest, ActionRequestConfig
+from taskbadger.internal.models import ActionRequest
 
 
 def from_config(integration_id: str, config: str):
@@ -47,8 +47,8 @@ class EmailIntegration(Integration):
     to: str  # custom type
     id: str = "email"
 
-    def request_config(self) -> ActionRequestConfig:
-        return ActionRequestConfig.from_dict({"to": self.to})
+    def request_config(self) -> dict:
+        return {"to": self.to}
 
 
 @dataclasses.dataclass
@@ -56,8 +56,8 @@ class WebhookIntegration(Integration):
     type = "webhook"
     id: str
 
-    def request_config(self) -> ActionRequestConfig:
-        return ActionRequestConfig.from_dict({})
+    def request_config(self) -> dict:
+        return {}
 
 
 ALL = [EmailIntegration, WebhookIntegration]

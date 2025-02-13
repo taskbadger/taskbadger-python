@@ -8,7 +8,7 @@ from taskbadger.mug import GLOBAL_MUG, Badger, Session, Settings
 
 
 @pytest.fixture(autouse=True)
-def bind_settings():
+def _bind_settings():
     Badger.current.bind(Settings("https://taskbadger.net", "token", "org", "proj"))
 
 

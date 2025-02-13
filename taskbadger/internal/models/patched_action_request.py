@@ -1,13 +1,9 @@
-from typing import TYPE_CHECKING, Any, TypeVar, Union
+from typing import Any, TypeVar, Union
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
 from ..types import UNSET, Unset
-
-if TYPE_CHECKING:
-    from ..models.patched_action_request_config import PatchedActionRequestConfig
-
 
 T = TypeVar("T", bound="PatchedActionRequest")
 
@@ -18,20 +14,20 @@ class PatchedActionRequest:
     Attributes:
         trigger (Union[Unset, str]):
         integration (Union[Unset, str]):
-        config (Union[Unset, PatchedActionRequestConfig]):
+        config (Union[Unset, Any]):
     """
 
     trigger: Union[Unset, str] = UNSET
     integration: Union[Unset, str] = UNSET
-    config: Union[Unset, "PatchedActionRequestConfig"] = UNSET
+    config: Union[Unset, Any] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         trigger = self.trigger
+
         integration = self.integration
-        config: Union[Unset, dict[str, Any]] = UNSET
-        if not isinstance(self.config, Unset):
-            config = self.config.to_dict()
+
+        config = self.config
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -47,19 +43,12 @@ class PatchedActionRequest:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
-        from ..models.patched_action_request_config import PatchedActionRequestConfig
-
         d = src_dict.copy()
         trigger = d.pop("trigger", UNSET)
 
         integration = d.pop("integration", UNSET)
 
-        _config = d.pop("config", UNSET)
-        config: Union[Unset, PatchedActionRequestConfig]
-        if isinstance(_config, Unset):
-            config = UNSET
-        else:
-            config = PatchedActionRequestConfig.from_dict(_config)
+        config = d.pop("config", UNSET)
 
         patched_action_request = cls(
             trigger=trigger,
