@@ -125,8 +125,8 @@ def test_before_create_filter(settings, patched_create):
 
     settings.before_create = before_create
 
-    task = create_task(name="task name")
-    assert task is None
+    with pytest.raises(TaskbadgerException):
+        create_task(name="task name")
 
     patched_create.assert_not_called()
 

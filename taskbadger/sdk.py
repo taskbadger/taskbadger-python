@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 
 from taskbadger.exceptions import (
     ConfigurationError,
@@ -110,7 +110,7 @@ def create_task(
     actions: list[Action] = None,
     monitor_id: str = None,
     tags: dict[str, str] = None,
-) -> Optional["Task"]:
+) -> "Task":
     """Create a Task.
 
     Arguments:
@@ -152,7 +152,7 @@ def create_task(
 
     task_dict = Badger.current.call_before_create(task_dict)
     if not task_dict:
-        return None
+        raise TaskbadgerException("before_create callback returned None")
 
     task = TaskRequest.from_dict(task_dict)
     kwargs = _make_args(body=task)
@@ -273,7 +273,7 @@ class Task:
         actions: list[Action] = None,
         monitor_id: str = None,
         tags: dict[str, str] = None,
-    ) -> Optional["Task"]:
+    ) -> "Task":
         """Create a new task
 
         See [taskbadger.create_task][] for more information.
