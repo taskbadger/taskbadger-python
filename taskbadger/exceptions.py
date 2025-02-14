@@ -1,4 +1,8 @@
 class ConfigurationError(Exception):
+    pass
+
+
+class MissingConfiguration(ConfigurationError):
     def __init__(self, **kwargs):
         self.missing = [name for name, arg in kwargs.items() if arg is None]
 
