@@ -1,11 +1,11 @@
-from datetime import datetime
+import datetime
 
 import taskbadger as badger
 from taskbadger import StatusEnum
 
 
 def test_basics():
-    data = {"now": datetime.utcnow().isoformat()}
+    data = {"now": datetime.datetime.now(datetime.timezone.utc).isoformat()}
     task = badger.create_task("test basics", data=data)
     task.success(100)
     assert task.status == StatusEnum.SUCCESS
