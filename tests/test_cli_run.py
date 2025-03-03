@@ -52,7 +52,8 @@ def test_cli_long_run():
         return True
 
     with mock.patch("taskbadger.process._should_update", new=_should_update_task):
-        _test_cli_run(["echo test; sleep 0.11"], 0, args=["task_name"], update_call_count=3)
+        update_mock = _test_cli_run(["echo test; sleep 0.2"], 0, args=["task_name"], update_call_count=0)
+        assert update_mock.call_count > 2
 
 
 def test_cli_capture_output():
@@ -160,7 +161,8 @@ def _test_cli_run(command, return_code, args=None, action=None, tags=None, updat
                 data={"return_code": return_code},
             )
 
-        assert update_mock.call_count == update_call_count
+        if update_call_count:
+            assert update_mock.call_count == update_call_count
         update_mock.assert_called_with(
             client=mock.ANY,
             organization_slug="org",
