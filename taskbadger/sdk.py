@@ -327,31 +327,39 @@ class Task:
         """Update the task status"""
         self.update(status=status)
 
-    def increment_progress(self, amount: int, min_value_interval: int = None, min_time_interval: int = None):
+    def increment_progress(self, amount: int, value_step: int = None, rate_limit: int = None):
         """Increment the task progress by adding the specified amount to the current value.
         If the task value is not set it will be set to `amount`.
 
         Arguments:
             amount: The amount to increment the task value by.
-            min_value_interval: The minimum change in value required to trigger an update.
-            min_time_interval: The minimum interval between updates in seconds.
+            value_step: The minimum change in value required to trigger an update.
+            rate_limit: The minimum interval between updates in seconds.
+
+        If either `value_step` or `rate_limit` is set, the task will only be updated if the
+        specified conditions are met. If both are set, the task will be updated if either
+        condition is met.
         """
         value = self._task.value
         value_norm = value if value is not UNSET and value is not None else 0
         new_amount = value_norm + amount
-        self.update_progress(new_amount, min_value_interval, min_time_interval)
+        self.update_progress(new_amount, value_step, rate_limit)
 
-    def update_progress(self, value: int, min_value_interval: int = None, min_time_interval: int = None):
+    def update_progress(self, value: int, value_step: int = None, rate_limit: int = None):
         """Update task progress.
 
         Arguments:
             value: The new value to set.
-            min_value_interval: The minimum change in value required to trigger an update.
-            min_time_interval: The minimum interval between updates in seconds.
+            value_step: The minimum change in value required to trigger an update.
+            rate_limit: The minimum interval between updates in seconds.
+
+        If either `value_step` or `rate_limit` is set, the task will only be updated if the
+        specified conditions are met. If both are set, the task will be updated if either
+        condition is met.
         """
-        skip_check = not (min_value_interval or min_time_interval)
-        time_check = min_time_interval and self._check_update_time_interval(min_time_interval)
-        value_check = min_value_interval and self._check_update_value_interval(value, min_value_interval)
+        skip_check = not (value_step or rate_limit)
+        time_check = rate_limit and self._check_update_time_interval(rate_limit)
+        value_check = value_step and self._check_update_value_interval(value, value_step)
         if skip_check or time_check or value_check:
             self.update(value=value)
 
@@ -408,15 +416,15 @@ class Task:
         """Add tags to the task."""
         self.update(tags=tags)
 
-    def ping(self, min_time_interval=None):
+    def ping(self, rate_limit=None):
         """Update the task without changing any values. This can be used in conjunction
         with 'stale_timeout' to indicate that the task is still running.
 
         Arguments:
-            min_time_interval: The minimum interval between pings in seconds. If set this will only
-                update the task if the last update was more than `min_time_interval` seconds ago.
+            rate_limit: The minimum interval between pings in seconds. If set this will only
+                update the task if the last update was more than `rate_limit` seconds ago.
         """
-        if self._check_update_time_interval(min_time_interval):
+        if self._check_update_time_interval(rate_limit):
             self.update()
 
     @property
@@ -432,8 +440,8 @@ class Task:
         except Exception as e:
             log.warning("Error updating task '%s': %s", self._task.id, e)
 
-    def _check_update_time_interval(self, min_time_interval: int = None):
-        if min_time_interval and self._task.updated:
+    def _check_update_time_interval(self, rate_limit: int = None):
+        if rate_limit and self._task.updated:
             # tzinfo should always be set but for the sake of safety we check
             if self._task.updated.tzinfo is None:
                 tz = None
@@ -442,12 +450,12 @@ class Task:
                 tz = datetime.timezone.utc
             now = datetime.datetime.now(tz)
             time_since = now - self._task.updated
-            return time_since.total_seconds() >= min_time_interval
+            return time_since.total_seconds() >= rate_limit
         return True
 
-    def _check_update_value_interval(self, new_value, min_value_interval: int = None):
-        if min_value_interval and self._task.value:
-            return new_value - self._task.value >= min_value_interval
+    def _check_update_value_interval(self, new_value, value_step: int = None):
+        if value_step and self._task.value:
+            return new_value - self._task.value >= value_step
         return True
 
 
