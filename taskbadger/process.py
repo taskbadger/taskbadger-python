@@ -1,7 +1,7 @@
+import datetime
 import subprocess
 import threading
 import time
-from datetime import datetime
 
 
 class ProcessRunner:
@@ -13,7 +13,7 @@ class ProcessRunner:
         self.returncode = None
 
     def run(self):
-        last_update = datetime.utcnow()
+        last_update = datetime.datetime.now(datetime.timezone.utc)
 
         kwargs = {}
         if self.capture_output:
@@ -28,7 +28,7 @@ class ProcessRunner:
         while process.poll() is None:
             time.sleep(0.1)
             if _should_update(last_update, self.update_frequency):
-                last_update = datetime.utcnow()
+                last_update = datetime.datetime.now(datetime.timezone.utc)
                 if self.capture_output:
                     yield {"stdout": stdout.read(), "stderr": stderr.read()}
                 else:
@@ -75,4 +75,4 @@ class Reader:
 
 
 def _should_update(last_update: datetime, update_frequency_seconds):
-    return (datetime.utcnow() - last_update).total_seconds() >= update_frequency_seconds
+    return (datetime.datetime.now(datetime.timezone.utc) - last_update).total_seconds() >= update_frequency_seconds

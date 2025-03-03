@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 
 from taskbadger import track
 
@@ -7,7 +7,7 @@ from taskbadger import track
 def my_task(arg1, arg2, kwarg1=None, kwarg2="demo"):
     print("Hello from my_task")
     print(f"arg1={arg1}, arg2={arg2}, kwarg1={kwarg1}, kwarg2={kwarg2}")
-    return ["Hello from my_task", datetime.utcnow()]
+    return ["Hello from my_task", datetime.datetime.now(datetime.timezone.utc)]
 
 
 if __name__ == "__main__":
