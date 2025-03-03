@@ -435,7 +435,11 @@ class Task:
     def _check_update_time_interval(self, min_time_interval: int = None):
         if min_time_interval and self._task.updated:
             # tzinfo should always be set but for the sake of safety we check
-            tz = None if self._task.updated.tzinfo is None else datetime.UTC
+            if self._task.updated.tzinfo is None:
+                tz = None
+            else:
+                # Use timezone.utc for Python <3.11 compatibility
+                tz = datetime.timezone.utc
             now = datetime.datetime.now(tz)
             time_since = now - self._task.updated
             return time_since.total_seconds() >= min_time_interval

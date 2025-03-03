@@ -12,8 +12,8 @@ def task_for_test(**kwargs):
     kwargs["url"] = None
     kwargs["public_url"] = None
     kwargs["value_percent"] = None
-    kwargs["created"] = datetime.datetime.now(datetime.UTC)
-    kwargs["updated"] = datetime.datetime.now(datetime.UTC)
+    kwargs["created"] = datetime.datetime.now(datetime.timezone.utc)
+    kwargs["updated"] = datetime.datetime.now(datetime.timezone.utc)
     return TaskInternal(
         task_id,
         "org",
