@@ -1,3 +1,4 @@
+import datetime
 from http import HTTPStatus
 from unittest import mock
 
@@ -151,6 +152,26 @@ def test_update_data(settings, patched_update):
 
     # expected request
     _verify_update(settings, patched_update, data={"a": 1})
+
+
+def test_ping(settings, patched_update):
+    task = Task(task_for_test())
+
+    updated_at = task.updated
+    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test())
+    task.ping(min_ping_interval=1)
+    assert len(patched_update.call_args_list) == 0
+
+    task.ping()
+    _verify_update(settings, patched_update)
+    assert task.updated > updated_at
+
+    task.ping(min_ping_interval=1)
+    assert len(patched_update.call_args_list) == 1
+
+    task._task.updated = task._task.updated - datetime.timedelta(seconds=1)
+    task.ping(min_ping_interval=1)
+    assert len(patched_update.call_args_list) == 2
 
 
 def test_increment_progress(settings, patched_update):

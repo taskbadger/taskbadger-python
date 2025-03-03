@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 from uuid import uuid4
 
 from taskbadger.internal.models import Task as TaskInternal
@@ -12,8 +12,8 @@ def task_for_test(**kwargs):
     kwargs["url"] = None
     kwargs["public_url"] = None
     kwargs["value_percent"] = None
-    kwargs["created"] = datetime.utcnow()
-    kwargs["updated"] = datetime.utcnow()
+    kwargs["created"] = datetime.datetime.now(datetime.UTC)
+    kwargs["updated"] = datetime.datetime.now(datetime.UTC)
     return TaskInternal(
         task_id,
         "org",

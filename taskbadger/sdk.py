@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 from typing import Any
@@ -392,9 +393,21 @@ class Task:
         """Add tags to the task."""
         self.update(tags=tags)
 
-    def ping(self):
+    def ping(self, min_ping_interval=None):
         """Update the task without changing any values. This can be used in conjunction
-        with 'stale_timeout' to indicate that the task is still running."""
+        with 'stale_timeout' to indicate that the task is still running.
+
+        Arguments:
+            min_ping_interval: The minimum interval between pings in seconds. If set this will only
+                update the task if the last update was more than `min_ping_interval` seconds ago.
+        """
+        if min_ping_interval and self._task.updated:
+            # tzinfo should always be set but for the sake of safety we check
+            tz = None if self._task.updated.tzinfo is None else datetime.UTC
+            now = datetime.datetime.now(tz)
+            time_since = now - self._task.updated
+            if time_since.total_seconds() < min_ping_interval:
+                return
         self.update()
 
     @property
