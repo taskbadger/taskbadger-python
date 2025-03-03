@@ -327,18 +327,33 @@ class Task:
         """Update the task status"""
         self.update(status=status)
 
-    def increment_progress(self, amount: int):
-        """Increment the task progress.
+    def increment_progress(self, amount: int, min_value_interval: int = None, min_time_interval: int = None):
+        """Increment the task progress by adding the specified amount to the current value.
         If the task value is not set it will be set to `amount`.
+
+        Arguments:
+            amount: The amount to increment the task value by.
+            min_value_interval: The minimum change in value required to trigger an update.
+            min_time_interval: The minimum interval between updates in seconds.
         """
         value = self._task.value
         value_norm = value if value is not UNSET and value is not None else 0
         new_amount = value_norm + amount
-        self.update(value=new_amount)
+        self.update_progress(new_amount, min_value_interval, min_time_interval)
 
-    def update_progress(self, value: int):
-        """Update task progress."""
-        self.update(value=value)
+    def update_progress(self, value: int, min_value_interval: int = None, min_time_interval: int = None):
+        """Update task progress.
+
+        Arguments:
+            value: The new value to set.
+            min_value_interval: The minimum change in value required to trigger an update.
+            min_time_interval: The minimum interval between updates in seconds.
+        """
+        skip_check = not (min_value_interval or min_time_interval)
+        time_check = min_time_interval and self._check_update_time_interval(min_time_interval)
+        value_check = min_value_interval and self._check_update_value_interval(value, min_value_interval)
+        if skip_check or time_check or value_check:
+            self.update(value=value)
 
     def set_value_max(self, value_max: int):
         """Set the `value_max`."""
@@ -393,22 +408,16 @@ class Task:
         """Add tags to the task."""
         self.update(tags=tags)
 
-    def ping(self, min_ping_interval=None):
+    def ping(self, min_time_interval=None):
         """Update the task without changing any values. This can be used in conjunction
         with 'stale_timeout' to indicate that the task is still running.
 
         Arguments:
-            min_ping_interval: The minimum interval between pings in seconds. If set this will only
-                update the task if the last update was more than `min_ping_interval` seconds ago.
+            min_time_interval: The minimum interval between pings in seconds. If set this will only
+                update the task if the last update was more than `min_time_interval` seconds ago.
         """
-        if min_ping_interval and self._task.updated:
-            # tzinfo should always be set but for the sake of safety we check
-            tz = None if self._task.updated.tzinfo is None else datetime.UTC
-            now = datetime.datetime.now(tz)
-            time_since = now - self._task.updated
-            if time_since.total_seconds() < min_ping_interval:
-                return
-        self.update()
+        if self._check_update_time_interval(min_time_interval):
+            self.update()
 
     @property
     def tags(self):
@@ -422,6 +431,20 @@ class Task:
             self.update(**kwargs)
         except Exception as e:
             log.warning("Error updating task '%s': %s", self._task.id, e)
+
+    def _check_update_time_interval(self, min_time_interval: int = None):
+        if min_time_interval and self._task.updated:
+            # tzinfo should always be set but for the sake of safety we check
+            tz = None if self._task.updated.tzinfo is None else datetime.UTC
+            now = datetime.datetime.now(tz)
+            time_since = now - self._task.updated
+            return time_since.total_seconds() >= min_time_interval
+        return True
+
+    def _check_update_value_interval(self, new_value, min_value_interval: int = None):
+        if min_value_interval and self._task.value:
+            return new_value - self._task.value >= min_value_interval
+        return True
 
 
 def _none_to_unset(value):

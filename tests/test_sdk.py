@@ -159,18 +159,77 @@ def test_ping(settings, patched_update):
 
     updated_at = task.updated
     patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test())
-    task.ping(min_ping_interval=1)
+    task.ping(min_time_interval=1)
     assert len(patched_update.call_args_list) == 0
 
     task.ping()
     _verify_update(settings, patched_update)
     assert task.updated > updated_at
 
-    task.ping(min_ping_interval=1)
+    task.ping(min_time_interval=1)
     assert len(patched_update.call_args_list) == 1
 
     task._task.updated = task._task.updated - datetime.timedelta(seconds=1)
-    task.ping(min_ping_interval=1)
+    task.ping(min_time_interval=1)
+    assert len(patched_update.call_args_list) == 2
+
+
+def test_update_progress_min_time_interval(settings, patched_update):
+    task = Task(task_for_test(value=1))
+
+    updated_at = task.updated
+    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test())
+    task.update_progress(2, min_time_interval=1)
+    assert len(patched_update.call_args_list) == 0
+
+    task.update_progress(2)
+    _verify_update(settings, patched_update, value=2)
+    assert task.updated > updated_at
+
+    task.update_progress(3, min_time_interval=1)
+    assert len(patched_update.call_args_list) == 1
+
+    task._task.updated = task._task.updated - datetime.timedelta(seconds=1)
+    task.update_progress(3, min_time_interval=1)
+    assert len(patched_update.call_args_list) == 2
+
+
+def test_update_progress_min_value_interval(settings, patched_update):
+    task = Task(task_for_test(value=1))
+
+    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test(value=4))
+    task.update_progress(4, min_value_interval=5)
+    assert len(patched_update.call_args_list) == 0
+
+    task.update_progress(4)
+    _verify_update(settings, patched_update, value=4)
+
+    task.update_progress(8, min_value_interval=5)
+    assert len(patched_update.call_args_list) == 1
+
+    task.update_progress(9, min_value_interval=5)
+    assert len(patched_update.call_args_list) == 2
+
+
+def test_update_progress_min_interval_both(settings, patched_update):
+    task = Task(task_for_test(value=1))
+
+    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test(value=4))
+    # neither checks pass
+    task.update_progress(4, min_time_interval=1, min_value_interval=5)
+    assert len(patched_update.call_args_list) == 0
+
+    # value check passes
+    task.update_progress(6, min_time_interval=1, min_value_interval=5)
+    _verify_update(settings, patched_update, value=6)
+
+    # neither checks pass
+    task.update_progress(8, min_time_interval=1, min_value_interval=5)
+    assert len(patched_update.call_args_list) == 1
+
+    # time check passes
+    task._task.updated = task._task.updated - datetime.timedelta(seconds=1)
+    task.update_progress(6, min_time_interval=1, min_value_interval=5)
     assert len(patched_update.call_args_list) == 2
 
 
