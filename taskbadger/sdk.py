@@ -327,23 +327,14 @@ class Task:
         """Update the task status"""
         self.update(status=status)
 
-    def increment_progress(self, amount: int, value_step: int = None, rate_limit: int = None):
+    def increment_progress(self, amount: int):
         """Increment the task progress by adding the specified amount to the current value.
         If the task value is not set it will be set to `amount`.
-
-        Arguments:
-            amount: The amount to increment the task value by.
-            value_step: The minimum change in value required to trigger an update.
-            rate_limit: The minimum interval between updates in seconds.
-
-        If either `value_step` or `rate_limit` is set, the task will only be updated if the
-        specified conditions are met. If both are set, the task will be updated if either
-        condition is met.
         """
         value = self._task.value
         value_norm = value if value is not UNSET and value is not None else 0
         new_amount = value_norm + amount
-        self.update_progress(new_amount, value_step, rate_limit)
+        self.update(value=new_amount)
 
     def update_progress(self, value: int, value_step: int = None, rate_limit: int = None):
         """Update task progress.
