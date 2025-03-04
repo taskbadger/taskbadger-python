@@ -154,6 +154,19 @@ def test_update_data(settings, patched_update):
     _verify_update(settings, patched_update, data={"a": 1})
 
 
+def test_increment_value(settings, patched_update):
+    api_task = task_for_test()
+    task = Task(api_task)
+
+    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test(value=10))
+
+    task.increment_value(10)
+    _verify_update(settings, patched_update, value=10)
+
+    task.increment_value(5)
+    _verify_update(settings, patched_update, value=15)
+
+
 def test_ping(settings, patched_update):
     task = Task(task_for_test())
 
@@ -179,18 +192,18 @@ def test_update_progress_rate_limit(settings, patched_update):
 
     updated_at = task.updated
     patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test())
-    task.update_progress(2, rate_limit=1)
+    task.update_value(2, rate_limit=1)
     assert len(patched_update.call_args_list) == 0
 
-    task.update_progress(2)
+    task.update_value(2)
     _verify_update(settings, patched_update, value=2)
     assert task.updated > updated_at
 
-    task.update_progress(3, rate_limit=1)
+    task.update_value(3, rate_limit=1)
     assert len(patched_update.call_args_list) == 1
 
     task._task.updated = task._task.updated - datetime.timedelta(seconds=1)
-    task.update_progress(3, rate_limit=1)
+    task.update_value(3, rate_limit=1)
     assert len(patched_update.call_args_list) == 2
 
 
