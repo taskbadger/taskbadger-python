@@ -334,7 +334,7 @@ class Task:
             DeprecationWarning,
             stacklevel=2,
         )
-        return self.increment_value(amount)
+        self.increment_value(amount)
 
     def increment_value(self, amount: int):
         """Increment the task progress by adding the specified amount to the current value.
@@ -353,13 +353,16 @@ class Task:
         )
         self.update_value(value, value_step, rate_limit)
 
-    def update_value(self, value: int, value_step: int = None, rate_limit: int = None):
+    def update_value(self, value: int, value_step: int = None, rate_limit: int = None) -> bool:
         """Update task progress.
 
         Arguments:
             value: The new value to set.
             value_step: The minimum change in value required to trigger an update.
             rate_limit: The minimum interval between updates in seconds.
+
+        Returns:
+            bool: True if the task was updated, False otherwise
 
         If either `value_step` or `rate_limit` is set, the task will only be updated if the
         specified conditions are met. If both are set, the task will be updated if either
@@ -370,6 +373,8 @@ class Task:
         value_check = value_step and self._check_update_value_interval(value, value_step)
         if skip_check or time_check or value_check:
             self.update(value=value)
+            return True
+        return False
 
     def set_value_max(self, value_max: int):
         """Set the `value_max`."""
@@ -424,16 +429,21 @@ class Task:
         """Add tags to the task."""
         self.update(tags=tags)
 
-    def ping(self, rate_limit=None):
+    def ping(self, rate_limit=None) -> bool:
         """Update the task without changing any values. This can be used in conjunction
         with 'stale_timeout' to indicate that the task is still running.
 
         Arguments:
             rate_limit: The minimum interval between pings in seconds. If set this will only
                 update the task if the last update was more than `rate_limit` seconds ago.
+
+        Returns:
+            bool: True if the task was updated, False otherwise
         """
         if self._check_update_time_interval(rate_limit):
             self.update()
+            return True
+        return False
 
     @property
     def tags(self):

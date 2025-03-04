@@ -172,18 +172,18 @@ def test_ping(settings, patched_update):
 
     updated_at = task.updated
     patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test())
-    task.ping(rate_limit=1)
+    assert not task.ping(rate_limit=1)
     assert len(patched_update.call_args_list) == 0
 
-    task.ping()
+    assert task.ping()
     _verify_update(settings, patched_update)
     assert task.updated > updated_at
 
-    task.ping(rate_limit=1)
+    assert not task.ping(rate_limit=1)
     assert len(patched_update.call_args_list) == 1
 
     task._task.updated = task._task.updated - datetime.timedelta(seconds=1)
-    task.ping(rate_limit=1)
+    assert task.ping(rate_limit=1)
     assert len(patched_update.call_args_list) == 2
 
 
@@ -192,18 +192,18 @@ def test_update_progress_rate_limit(settings, patched_update):
 
     updated_at = task.updated
     patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test())
-    task.update_value(2, rate_limit=1)
+    assert not task.update_value(2, rate_limit=1)
     assert len(patched_update.call_args_list) == 0
 
-    task.update_value(2)
+    assert task.update_value(2)
     _verify_update(settings, patched_update, value=2)
     assert task.updated > updated_at
 
-    task.update_value(3, rate_limit=1)
+    assert not task.update_value(3, rate_limit=1)
     assert len(patched_update.call_args_list) == 1
 
     task._task.updated = task._task.updated - datetime.timedelta(seconds=1)
-    task.update_value(3, rate_limit=1)
+    assert task.update_value(3, rate_limit=1)
     assert len(patched_update.call_args_list) == 2
 
 
