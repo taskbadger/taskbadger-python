@@ -30,7 +30,7 @@ def test_create_task(httpx_mock):
         url="https://taskbadger.net/api/org/project/tasks/",
         method="POST",
         match_headers={"Authorization": "Bearer token"},
-        match_content=b'{"name": "name", "status": "pending"}',
+        match_json={"name": "name", "status": "pending"},
         json=_json_task_response(),
         status_code=201,
     )
@@ -81,7 +81,7 @@ def test_update_task(httpx_mock):
         url="https://taskbadger.net/api/org/project/tasks/test_id/",
         method="PATCH",
         match_headers={"Authorization": "Bearer token"},
-        match_content=json.dumps(expected_body).encode("utf8"),
+        match_json=expected_body,
         json=_json_task_response(),
         status_code=200,
     )
@@ -103,7 +103,7 @@ def test_update_task_actions(httpx_mock):
         url="https://taskbadger.net/api/org/project/tasks/test_id/",
         method="PATCH",
         match_headers={"Authorization": "Bearer token"},
-        match_content=json.dumps(expected_body).encode("utf8"),
+        match_json=expected_body,
         json=_json_task_response(),
         status_code=200,
     )
