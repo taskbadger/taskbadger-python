@@ -393,30 +393,104 @@ def test_task_signature(celery_session_worker):
 
 @pytest.mark.usefixtures("_bind_settings")
 def test_task_map(celery_session_worker):
-    """Tasks executed in a map or starmap are not executed as tasks"""
+    """Tasks executed via map canvas primitive should be tracked.
+
+    Note: The individual function calls within map are not separate Celery tasks,
+    so we track the map operation itself with the inner task's name.
+    """
 
     @celery.shared_task(bind=True, base=Task)
-    def task_map(self, a):
-        assert self.taskbadger_task is None
-        assert Badger.current.session().client is None
+    def task_map_fn(self, a):
         return a * 2
 
     celery_session_worker.reload()
 
-    task_map = task_map.map(list(range(5)))
+    map_canvas = task_map_fn.map(list(range(5)))
 
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe") as update,
-        mock.patch("taskbadger.celery.get_task") as get_task,
+        mock.patch("taskbadger.celery.get_task"),
     ):
-        result = task_map.delay()
+        tb_task = task_for_test()
+        create.return_value = tb_task
+        result = map_canvas.delay()
         assert result.get(timeout=10, propagate=True) == [0, 2, 4, 6, 8]
 
-    assert create.call_count == 0
-    assert get_task.call_count == 0
-    assert update.call_count == 0
+    # Map operation should create one TaskBadger task
+    assert create.call_count == 1
+    # Verify the task name includes inner task name and canvas type/count suffix
+    call_args = create.call_args
+    task_name = call_args[0][0]
+    assert "task_map_fn" in task_name
+    assert task_name.endswith("(map 5)")
+    assert update.call_count == 2  # PROCESSING and SUCCESS
     assert Badger.current.session().client is None
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_task_starmap(celery_session_worker):
+    """Tasks executed via starmap canvas primitive should be tracked."""
+
+    @celery.shared_task(bind=True, base=Task)
+    def task_starmap_fn(self, a, b):
+        return a + b
+
+    celery_session_worker.reload()
+
+    starmap_canvas = task_starmap_fn.starmap([(1, 2), (3, 4), (5, 6)])
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe") as update,
+        mock.patch("taskbadger.celery.get_task"),
+    ):
+        tb_task = task_for_test()
+        create.return_value = tb_task
+        result = starmap_canvas.delay()
+        assert result.get(timeout=10, propagate=True) == [3, 7, 11]
+
+    # Starmap operation should create one TaskBadger task
+    assert create.call_count == 1
+    # Verify the task name includes inner task name and canvas type/count suffix
+    call_args = create.call_args
+    task_name = call_args[0][0]
+    assert "task_starmap_fn" in task_name
+    assert task_name.endswith("(starmap 3)")
+    assert update.call_count == 2  # PROCESSING and SUCCESS
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_task_chunks(celery_session_worker):
+    """Tasks executed via chunks canvas primitive should be tracked."""
+
+    @celery.shared_task(bind=True, base=Task)
+    def task_chunks_fn(self, a):
+        return a * 2
+
+    celery_session_worker.reload()
+
+    # chunks creates multiple starmap tasks
+    chunks_canvas = task_chunks_fn.chunks([(x,) for x in range(6)], 2).group()
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe") as update,
+        mock.patch("taskbadger.celery.get_task"),
+    ):
+        tb_task = task_for_test()
+        create.return_value = tb_task
+        result = chunks_canvas.delay()
+        assert result.get(timeout=10, propagate=True) == [[0, 2], [4, 6], [8, 10]]
+
+    # Each chunk should create a TaskBadger task (3 chunks of 2)
+    assert create.call_count == 3
+    # Verify the task names include inner task name and canvas type/count suffix
+    for call in create.call_args_list:
+        task_name = call[0][0]
+        assert "task_chunks_fn" in task_name
+        assert task_name.endswith("(starmap 2)")  # chunks uses starmap internally
+    assert update.call_count == 6  # 3 tasks * 2 updates each
 
 
 @pytest.mark.usefixtures("_bind_settings")

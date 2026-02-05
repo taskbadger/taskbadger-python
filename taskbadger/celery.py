@@ -212,8 +212,91 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
         ctask.update_state(task_id=headers["id"], state="PENDING", meta=meta)
 
 
+def _maybe_create_task(signal_sender):
+    """Create a TaskBadger task if one doesn't exist yet.
+
+    This handles cases where before_task_publish didn't fire or was skipped:
+    - Eager mode (before_task_publish doesn't fire)
+    - Canvas primitives like map/starmap/chunks (fire for celery.* tasks)
+    """
+    # Check if task was already created FIRST (before accessing Badger)
+    # This avoids initializing thread-local Badger state for tasks like celery.ping
+    task_id = _get_taskbadger_task_id(signal_sender.request)
+    if task_id:
+        return
+
+    task_name = signal_sender.name
+
+    # Skip built-in celery tasks that we don't track (like celery.ping)
+    # Only handle celery.map and celery.starmap specially
+    if task_name.startswith("celery.") and task_name not in ("celery.map", "celery.starmap"):
+        return
+
+    # For non-canvas tasks, only create if there was an explicit intent to track
+    # (indicated by taskbadger_track header). This prevents creating tasks when
+    # Badger wasn't configured at publish time but has stale config in worker.
+    headers = signal_sender.request.headers or {}
+    is_canvas_task = task_name in ("celery.map", "celery.starmap")
+    if not is_canvas_task and not headers.get("taskbadger_track"):
+        return
+
+    # NOW it's safe to check Badger configuration
+    if not Badger.is_configured():
+        return
+
+    celery_system = Badger.current.settings.get_system_by_id("celery")
+    data = None
+    inner_task = None
+
+    # Handle celery.map and celery.starmap - extract the inner task name
+    if task_name in ("celery.map", "celery.starmap"):
+        canvas_type = task_name.split(".")[-1]  # "map" or "starmap"
+        inner_task_info = signal_sender.request.kwargs.get("task")
+        if inner_task_info:
+            # inner_task_info can be a dict (serialized signature) or a Signature object
+            if isinstance(inner_task_info, dict):
+                task_name = inner_task_info.get("task", task_name)
+            elif hasattr(inner_task_info, "name"):
+                task_name = inner_task_info.name
+            # Get the actual task class to check if it uses Task base
+            inner_task = celery.current_app.tasks.get(task_name)
+        items = signal_sender.request.kwargs.get("it", [])
+        # Convert to list if needed for counting and potential recording
+        items_list = list(items) if not isinstance(items, (list, tuple)) else items
+        item_count = len(items_list)
+        # Append canvas type and item count to task name
+        task_name = f"{task_name} ({canvas_type} {item_count})"
+        data = {"canvas_type": signal_sender.name, "item_count": item_count}
+
+        # Include task items if record_task_args is enabled
+        if celery_system and celery_system.record_task_args:
+            try:
+                _, _, value = serialization.dumps({"items": items_list}, serializer="json")
+                items_data = json.loads(value)
+                data["celery_task_items"] = items_data["items"]
+            except Exception:
+                log.warning("Error serializing canvas items for task '%s'", task_name)
+
+    # Check if we should track this task
+    auto_track = celery_system and celery_system.track_task(task_name)
+    # Check if the task (or inner task for map/starmap) uses our Task base class
+    task_to_check = inner_task if inner_task else signal_sender
+    manual_track = isinstance(task_to_check, Task)
+    if not manual_track and not auto_track:
+        return
+
+    enter_session()
+
+    task = create_task_safe(task_name, status=StatusEnum.PENDING, data=data)
+    if task:
+        # Store the task ID in the request so _update_task can find it
+        signal_sender.request.update({TB_TASK_ID: task.id})
+        safe_get_task.cache.set((task.id,), task)
+
+
 @task_prerun.connect
 def task_prerun_handler(sender=None, **kwargs):
+    _maybe_create_task(sender)
     _update_task(sender, StatusEnum.PROCESSING)
 
 
