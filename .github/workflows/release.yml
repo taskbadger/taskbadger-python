@@ -24,13 +24,13 @@ jobs:
         ports:
           - 6379:6379
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
-          python-version: "3.9"
-      - uses: astral-sh/setup-uv@v3
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
       - name: Add version to environment vars
@@ -51,7 +51,7 @@ jobs:
       - name: Build
         run: uv build
       - name: Create Release Draft
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
