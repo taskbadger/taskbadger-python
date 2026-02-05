@@ -1,6 +1,6 @@
 [project]
 name = "taskbadger"
-version = "1.6.2"
+version = "1.6.3"
 description = "The official Python SDK for Task Badger"
 requires-python = ">=3.9"
 authors = []
