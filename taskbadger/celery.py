@@ -131,7 +131,7 @@ class Task(celery.Task):
 
         result = super().apply_async(*args, **kwargs)
 
-        tb_task_id = result.info.get(TB_TASK_ID) if result.info else None
+        tb_task_id = result.info.get(TB_TASK_ID) if isinstance(result.info, dict) else None
         setattr(result, TB_TASK_ID, tb_task_id)
 
         _get_task = functools.partial(get_task, tb_task_id) if tb_task_id else lambda: None
