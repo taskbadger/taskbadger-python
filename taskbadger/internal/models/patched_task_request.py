@@ -1,6 +1,6 @@
 import datetime
 from collections.abc import Mapping
-from typing import Any, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -8,6 +8,10 @@ from dateutil.parser import isoparse
 
 from ..models.status_enum import StatusEnum
 from ..types import UNSET, Unset
+
+if TYPE_CHECKING:
+    from ..models.patched_task_request_tags import PatchedTaskRequestTags
+
 
 T = TypeVar("T", bound="PatchedTaskRequest")
 
@@ -38,6 +42,8 @@ class PatchedTaskRequest:
             failed. (seconds)
         stale_timeout (Union[None, Unset, int]): Maximum time to allow between task updates before considering the task
             stale. (seconds)
+        tags (Union[Unset, PatchedTaskRequestTags]): Tags for the task represented as a mapping from 'namespace' to
+            'value'.
     """
 
     name: Union[Unset, str] = UNSET
@@ -50,6 +56,7 @@ class PatchedTaskRequest:
     time_to_start: Union[None, Unset, str] = UNSET
     max_runtime: Union[None, Unset, int] = UNSET
     stale_timeout: Union[None, Unset, int] = UNSET
+    tags: Union[Unset, "PatchedTaskRequestTags"] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -103,6 +110,10 @@ class PatchedTaskRequest:
         else:
             stale_timeout = self.stale_timeout
 
+        tags: Union[Unset, dict[str, Any]] = UNSET
+        if not isinstance(self.tags, Unset):
+            tags = self.tags.to_dict()
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
@@ -126,11 +137,15 @@ class PatchedTaskRequest:
             field_dict["max_runtime"] = max_runtime
         if stale_timeout is not UNSET:
             field_dict["stale_timeout"] = stale_timeout
+        if tags is not UNSET:
+            field_dict["tags"] = tags
 
         return field_dict
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
+        from ..models.patched_task_request_tags import PatchedTaskRequestTags
+
         d = dict(src_dict)
         name = d.pop("name", UNSET)
 
@@ -215,6 +230,13 @@ class PatchedTaskRequest:
 
         stale_timeout = _parse_stale_timeout(d.pop("stale_timeout", UNSET))
 
+        _tags = d.pop("tags", UNSET)
+        tags: Union[Unset, PatchedTaskRequestTags]
+        if isinstance(_tags, Unset):
+            tags = UNSET
+        else:
+            tags = PatchedTaskRequestTags.from_dict(_tags)
+
         patched_task_request = cls(
             name=name,
             status=status,
@@ -226,6 +248,7 @@ class PatchedTaskRequest:
             time_to_start=time_to_start,
             max_runtime=max_runtime,
             stale_timeout=stale_timeout,
+            tags=tags,
         )
 
         patched_task_request.additional_properties = d

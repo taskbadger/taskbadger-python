@@ -729,6 +729,14 @@ components:
           nullable: true
           description: Maximum time to allow between task updates before considering
             the task stale. (seconds)
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 2
+            maxLength: 255
+          description: Tags for the task represented as a mapping from 'namespace'
+            to 'value'.
     StatusEnum:
       enum:
       - pending
@@ -839,9 +847,8 @@ components:
           type: object
           additionalProperties:
             type: string
-            maxLength: 255
             minLength: 2
-          readOnly: true
+            maxLength: 255
           description: Tags for the task represented as a mapping from 'namespace'
             to 'value'.
       required:
@@ -851,7 +858,6 @@ components:
       - organization
       - project
       - public_url
-      - tags
       - updated
       - url
       - value_percent
@@ -914,6 +920,14 @@ components:
           nullable: true
           description: Maximum time to allow between task updates before considering
             the task stale. (seconds)
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 2
+            maxLength: 255
+          description: Tags for the task represented as a mapping from 'namespace'
+            to 'value'.
       required:
       - name
   securitySchemes:
