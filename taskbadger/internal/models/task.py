@@ -1,4 +1,5 @@
 import datetime
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
@@ -28,6 +29,7 @@ class Task:
         updated (datetime.datetime):
         url (str):
         public_url (str):
+        tags (TaskTags): Tags for the task represented as a mapping from 'namespace' to 'value'.
         status (Union[Unset, StatusEnum]): * `pending` - pending
             * `pre_processing` - pre_processing
             * `processing` - processing
@@ -43,11 +45,12 @@ class Task:
             set via the API.
         end_time (Union[None, Unset, datetime.datetime]): Datetime when status is set to a terminal value.Can be set via
             the API.
+        time_to_start (Union[None, Unset, str]): Duration between task creation and when status first changes from
+            pending. (seconds)
         max_runtime (Union[None, Unset, int]): Maximum duration the task can be running for before being considered
             failed. (seconds)
         stale_timeout (Union[None, Unset, int]): Maximum time to allow between task updates before considering the task
             stale. (seconds)
-        tags (Union[Unset, TaskTags]): Tags for the task represented as a mapping from 'namespace' to 'value'.
     """
 
     id: str
@@ -59,15 +62,16 @@ class Task:
     updated: datetime.datetime
     url: str
     public_url: str
+    tags: "TaskTags"
     status: Union[Unset, StatusEnum] = StatusEnum.PENDING
     value: Union[None, Unset, int] = UNSET
     value_max: Union[Unset, int] = UNSET
     data: Union[Unset, Any] = UNSET
     start_time: Union[None, Unset, datetime.datetime] = UNSET
     end_time: Union[None, Unset, datetime.datetime] = UNSET
+    time_to_start: Union[None, Unset, str] = UNSET
     max_runtime: Union[None, Unset, int] = UNSET
     stale_timeout: Union[None, Unset, int] = UNSET
-    tags: Union[Unset, "TaskTags"] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -89,6 +93,8 @@ class Task:
         url = self.url
 
         public_url = self.public_url
+
+        tags = self.tags.to_dict()
 
         status: Union[Unset, str] = UNSET
         if not isinstance(self.status, Unset):
@@ -120,6 +126,12 @@ class Task:
         else:
             end_time = self.end_time
 
+        time_to_start: Union[None, Unset, str]
+        if isinstance(self.time_to_start, Unset):
+            time_to_start = UNSET
+        else:
+            time_to_start = self.time_to_start
+
         max_runtime: Union[None, Unset, int]
         if isinstance(self.max_runtime, Unset):
             max_runtime = UNSET
@@ -131,10 +143,6 @@ class Task:
             stale_timeout = UNSET
         else:
             stale_timeout = self.stale_timeout
-
-        tags: Union[Unset, dict[str, Any]] = UNSET
-        if not isinstance(self.tags, Unset):
-            tags = self.tags.to_dict()
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -149,6 +157,7 @@ class Task:
                 "updated": updated,
                 "url": url,
                 "public_url": public_url,
+                "tags": tags,
             }
         )
         if status is not UNSET:
@@ -163,20 +172,20 @@ class Task:
             field_dict["start_time"] = start_time
         if end_time is not UNSET:
             field_dict["end_time"] = end_time
+        if time_to_start is not UNSET:
+            field_dict["time_to_start"] = time_to_start
         if max_runtime is not UNSET:
             field_dict["max_runtime"] = max_runtime
         if stale_timeout is not UNSET:
             field_dict["stale_timeout"] = stale_timeout
-        if tags is not UNSET:
-            field_dict["tags"] = tags
 
         return field_dict
 
     @classmethod
-    def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
+    def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         from ..models.task_tags import TaskTags
 
-        d = src_dict.copy()
+        d = dict(src_dict)
         id = d.pop("id")
 
         organization = d.pop("organization")
@@ -199,6 +208,8 @@ class Task:
         url = d.pop("url")
 
         public_url = d.pop("public_url")
+
+        tags = TaskTags.from_dict(d.pop("tags"))
 
         _status = d.pop("status", UNSET)
         status: Union[Unset, StatusEnum]
@@ -254,6 +265,15 @@ class Task:
 
         end_time = _parse_end_time(d.pop("end_time", UNSET))
 
+        def _parse_time_to_start(data: object) -> Union[None, Unset, str]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, str], data)
+
+        time_to_start = _parse_time_to_start(d.pop("time_to_start", UNSET))
+
         def _parse_max_runtime(data: object) -> Union[None, Unset, int]:
             if data is None:
                 return data
@@ -272,13 +292,6 @@ class Task:
 
         stale_timeout = _parse_stale_timeout(d.pop("stale_timeout", UNSET))
 
-        _tags = d.pop("tags", UNSET)
-        tags: Union[Unset, TaskTags]
-        if isinstance(_tags, Unset):
-            tags = UNSET
-        else:
-            tags = TaskTags.from_dict(_tags)
-
         task = cls(
             id=id,
             organization=organization,
@@ -289,15 +302,16 @@ class Task:
             updated=updated,
             url=url,
             public_url=public_url,
+            tags=tags,
             status=status,
             value=value,
             value_max=value_max,
             data=data,
             start_time=start_time,
             end_time=end_time,
+            time_to_start=time_to_start,
             max_runtime=max_runtime,
             stale_timeout=stale_timeout,
-            tags=tags,
         )
 
         task.additional_properties = d

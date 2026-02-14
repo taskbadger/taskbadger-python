@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
@@ -59,10 +60,10 @@ class PaginatedTaskList:
         return field_dict
 
     @classmethod
-    def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
+    def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         from ..models.task import Task
 
-        d = src_dict.copy()
+        d = dict(src_dict)
         results = []
         _results = d.pop("results")
         for results_item_data in _results:

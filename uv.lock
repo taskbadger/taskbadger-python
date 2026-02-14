@@ -1,6 +1,10 @@
 version = 1
 revision = 3
 requires-python = ">=3.9"
+resolution-markers = [
+    "python_full_version >= '3.10'",
+    "python_full_version < '3.10'",
+]
 
 [[package]]
 name = "amqp"
@@ -562,7 +566,7 @@ wheels = [
 
 [[package]]
 name = "openapi-python-client"
-version = "0.23.1"
+version = "0.26.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -577,9 +581,9 @@ dependencies = [
     { name = "typer" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/09/0d/b18fcaf82f6e0ba1eb9eaf0b76ce25283b46521a775330299d298017861b/openapi_python_client-0.23.1.tar.gz", hash = "sha256:f45c54708bc883ba4727162137cb1e058305ad72dc76df618e5505d4a4a0c851", size = 123161, upload-time = "2025-01-22T16:01:29.882Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a1/dd/eda1ecf8bec21dd92f4729a743adb1e496b2bb67e2b60ce6652d74efc477/openapi_python_client-0.26.2.tar.gz", hash = "sha256:99ed575573b49c322456052a344bcdb352edc520c3b7a7fed62347ab6a03c60b", size = 126186, upload-time = "2025-10-06T14:20:42.225Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fc/4c/8be4dee3b3b5ee42584413c3cc1cef811635159be1488402a99799c293e2/openapi_python_client-0.23.1-py3-none-any.whl", hash = "sha256:3a6e571ed20cde82d9c51c4a81e037600ae798ec9d3aba0cab4b4f89f4f20ef3", size = 179495, upload-time = "2025-01-22T16:01:28.172Z" },
+    { url = "https://files.pythonhosted.org/packages/a5/97/5cbc4147d67bf4dbe428f4c41cfac808e2b61c2c1a71ce2ec52a4f604569/openapi_python_client-0.26.2-py3-none-any.whl", hash = "sha256:5b615bf359872a77c220797cce0214d02ab7552d9ef5bc2c11b24d8dda609ad4", size = 183641, upload-time = "2025-10-06T14:20:40.457Z" },
 ]
 
 [[package]]
@@ -1097,7 +1101,7 @@ wheels = [
 
 [[package]]
 name = "taskbadger"
-version = "1.6.2"
+version = "1.6.3"
 source = { editable = "." }
 dependencies = [
     { name = "attrs" },
