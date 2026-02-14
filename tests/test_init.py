@@ -1,3 +1,5 @@
+import warnings
+
 import pytest
 
 from taskbadger import Badger, init
@@ -14,16 +16,22 @@ def _reset():
 
 
 def test_init():
-    init("org", "project", "token", before_create=lambda x: x)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        init("org", "project", "token", before_create=lambda x: x)
 
 
 def test_init_import_before_create():
-    init("org", "project", "token", before_create="tests.test_init._before_create")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        init("org", "project", "token", before_create="tests.test_init._before_create")
 
 
 def test_init_import_before_create_fail():
-    with pytest.raises(ConfigurationError):
-        init("org", "project", "token", before_create="missing")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        with pytest.raises(ConfigurationError):
+            init("org", "project", "token", before_create="missing")
 
 
 def _before_create(_):

@@ -6,6 +6,7 @@ from rich import print
 from taskbadger import __version__
 from taskbadger.cli import create, get, list_tasks_command, run, update
 from taskbadger.config import get_config, write_config
+from taskbadger.sdk import _parse_token
 
 app = typer.Typer(
     rich_markup_mode="rich",
@@ -30,9 +31,18 @@ def version_callback(value: bool):
 def configure(ctx: typer.Context):
     """Update CLI configuration."""
     config = ctx.meta["tb_config"]
-    config.organization_slug = typer.prompt("Organization slug", default=config.organization_slug)
-    config.project_slug = typer.prompt("Project slug", default=config.project_slug)
-    config.token = typer.prompt("API Key", default=config.token)
+    token = typer.prompt("API Key", default=config.token)
+    parsed = _parse_token(token)
+    if parsed:
+        org_slug, project_slug, api_key = parsed
+        print(f"Project key detected — organization: [green]{org_slug}[/green], project: [green]{project_slug}[/green]")
+        config.organization_slug = org_slug
+        config.project_slug = project_slug
+        config.token = token
+    else:
+        config.organization_slug = typer.prompt("Organization slug", default=config.organization_slug)
+        config.project_slug = typer.prompt("Project slug", default=config.project_slug)
+        config.token = token
     path = write_config(config)
     print(f"Config written to [green]{path}[/green]")
 
