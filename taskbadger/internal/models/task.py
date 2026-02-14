@@ -1,4 +1,5 @@
 import datetime
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
@@ -43,6 +44,8 @@ class Task:
             set via the API.
         end_time (Union[None, Unset, datetime.datetime]): Datetime when status is set to a terminal value.Can be set via
             the API.
+        time_to_start (Union[None, Unset, str]): Duration between task creation and when status first changes from
+            pending. (seconds)
         max_runtime (Union[None, Unset, int]): Maximum duration the task can be running for before being considered
             failed. (seconds)
         stale_timeout (Union[None, Unset, int]): Maximum time to allow between task updates before considering the task
@@ -65,6 +68,7 @@ class Task:
     data: Union[Unset, Any] = UNSET
     start_time: Union[None, Unset, datetime.datetime] = UNSET
     end_time: Union[None, Unset, datetime.datetime] = UNSET
+    time_to_start: Union[None, Unset, str] = UNSET
     max_runtime: Union[None, Unset, int] = UNSET
     stale_timeout: Union[None, Unset, int] = UNSET
     tags: Union[Unset, "TaskTags"] = UNSET
@@ -120,6 +124,12 @@ class Task:
         else:
             end_time = self.end_time
 
+        time_to_start: Union[None, Unset, str]
+        if isinstance(self.time_to_start, Unset):
+            time_to_start = UNSET
+        else:
+            time_to_start = self.time_to_start
+
         max_runtime: Union[None, Unset, int]
         if isinstance(self.max_runtime, Unset):
             max_runtime = UNSET
@@ -163,6 +173,8 @@ class Task:
             field_dict["start_time"] = start_time
         if end_time is not UNSET:
             field_dict["end_time"] = end_time
+        if time_to_start is not UNSET:
+            field_dict["time_to_start"] = time_to_start
         if max_runtime is not UNSET:
             field_dict["max_runtime"] = max_runtime
         if stale_timeout is not UNSET:
@@ -173,10 +185,10 @@ class Task:
         return field_dict
 
     @classmethod
-    def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
+    def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         from ..models.task_tags import TaskTags
 
-        d = src_dict.copy()
+        d = dict(src_dict)
         id = d.pop("id")
 
         organization = d.pop("organization")
@@ -254,6 +266,15 @@ class Task:
 
         end_time = _parse_end_time(d.pop("end_time", UNSET))
 
+        def _parse_time_to_start(data: object) -> Union[None, Unset, str]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, str], data)
+
+        time_to_start = _parse_time_to_start(d.pop("time_to_start", UNSET))
+
         def _parse_max_runtime(data: object) -> Union[None, Unset, int]:
             if data is None:
                 return data
@@ -295,6 +316,7 @@ class Task:
             data=data,
             start_time=start_time,
             end_time=end_time,
+            time_to_start=time_to_start,
             max_runtime=max_runtime,
             stale_timeout=stale_timeout,
             tags=tags,

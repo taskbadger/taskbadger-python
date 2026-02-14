@@ -710,6 +710,11 @@ components:
           nullable: true
           description: Datetime when status is set to a terminal value.Can be set
             via the API.
+        time_to_start:
+          type: string
+          nullable: true
+          description: Duration between task creation and when status first changes
+            from pending. (seconds)
         max_runtime:
           type: integer
           maximum: 2147483647
@@ -813,6 +818,11 @@ components:
           nullable: true
           description: Datetime when status is set to a terminal value.Can be set
             via the API.
+        time_to_start:
+          type: string
+          nullable: true
+          description: Duration between task creation and when status first changes
+            from pending. (seconds)
         max_runtime:
           type: integer
           maximum: 2147483647
@@ -837,8 +847,8 @@ components:
           type: object
           additionalProperties:
             type: string
-            maxLength: 255
             minLength: 2
+            maxLength: 255
           description: Tags for the task represented as a mapping from 'namespace'
             to 'value'.
       required:
@@ -891,6 +901,11 @@ components:
           nullable: true
           description: Datetime when status is set to a terminal value.Can be set
             via the API.
+        time_to_start:
+          type: string
+          nullable: true
+          description: Duration between task creation and when status first changes
+            from pending. (seconds)
         max_runtime:
           type: integer
           maximum: 2147483647

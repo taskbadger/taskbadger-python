@@ -24,9 +24,8 @@ def _get_kwargs(
         "url": f"/api/{organization_slug}/{project_slug}/tasks/{task_id}/actions/",
     }
 
-    _body = body.to_dict()
+    _kwargs["json"] = body.to_dict()
 
-    _kwargs["json"] = _body
     headers["Content-Type"] = "application/json"
 
     _kwargs["headers"] = headers
@@ -38,6 +37,7 @@ def _parse_response(*, client: Union[AuthenticatedClient, Client], response: htt
         response_201 = Action.from_dict(response.json())
 
         return response_201
+
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
     else:

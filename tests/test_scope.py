@@ -58,9 +58,12 @@ def test_create_task_with_scope(httpx_mock):
             url="https://taskbadger.net/api/org/project/tasks/",
             method="POST",
             match_headers={"Authorization": "Bearer token"},
-            match_content=b'{"name": "name", "status": "pending", '
-            b'"data": {"foo": "bar", "bar": "buzzer"}, '
-            b'"tags": {"name": "value", "name1": "value1"}}',
+            match_json={
+                "name": "name",
+                "status": "pending",
+                "data": {"foo": "bar", "bar": "buzzer"},
+                "tags": {"name": "value", "name1": "value1"},
+            },
             json=_json_task_response(),
             status_code=201,
         )
