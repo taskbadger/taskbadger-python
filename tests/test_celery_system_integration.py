@@ -10,6 +10,7 @@ Celery runner thread will not have the configuration set.
 
 import logging
 import sys
+import time
 import weakref
 from http import HTTPStatus
 from unittest import mock
@@ -24,6 +25,18 @@ from taskbadger.internal.types import Response
 from taskbadger.mug import Badger, Settings
 from taskbadger.systems.celery import CelerySystemIntegration
 from tests.utils import task_for_test
+
+
+def _wait_for_mock_calls(mock_obj, expected_count, timeout=5):
+    """Wait for a mock to reach the expected call count.
+
+    Celery stores the task result before firing task_success, so
+    ``result.get()`` can return before the success signal handler runs.
+    Without this wait the mock context may exit before the handler fires.
+    """
+    deadline = time.monotonic() + timeout
+    while mock_obj.call_count < expected_count and time.monotonic() < deadline:
+        time.sleep(0.05)
 
 
 @pytest.fixture()
@@ -71,6 +84,7 @@ def test_celery_auto_track_task(celery_session_app, celery_session_worker):
         result = add_normal.delay(2, 2)
         assert result.info.get("taskbadger_task_id") == tb_task.id
         assert result.get(timeout=10, propagate=True) == 4
+        _wait_for_mock_calls(update, 2)
 
     create.assert_called_once()
     assert get_task.call_count == 1
@@ -102,6 +116,7 @@ def test_celery_record_task_args(celery_session_app, celery_session_worker):
         result = add_normal.delay(2, 2)
         assert result.info.get("taskbadger_task_id") == tb_task.id
         assert result.get(timeout=10, propagate=True) == 4
+        _wait_for_mock_calls(update, 2)
 
     create.assert_called_once_with(
         "tests.test_celery_system_integration.add_normal",

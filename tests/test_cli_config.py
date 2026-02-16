@@ -112,7 +112,7 @@ def test_info_config_env_args():
 
 
 def test_configure(mock_config_location):
-    result = runner.invoke(app, ["configure"], input="an-org\na-project\na-token")
+    result = runner.invoke(app, ["configure"], input="a-token\nan-org\na-project")
     assert result.exit_code == 0
     assert mock_config_location.is_file()
     with mock_config_location.open("rt", encoding="utf-8") as fp:

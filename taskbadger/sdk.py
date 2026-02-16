@@ -1,3 +1,4 @@
+import base64
 import datetime
 import logging
 import os
@@ -35,6 +36,26 @@ log = logging.getLogger("taskbadger")
 _TB_HOST = "https://taskbadger.net"
 
 
+def _parse_token(token):
+    """Try to decode a project API key.
+
+    Project keys are base64-encoded strings in the format ``org/project/key``.
+
+    Returns:
+        A tuple of ``(organization_slug, project_slug, api_key)`` if *token*
+        is a valid project key, otherwise ``None``.
+    """
+    try:
+        decoded = base64.b64decode(token, validate=True).decode("utf-8")
+    except Exception:
+        return None
+
+    parts = decoded.split("/")
+    if len(parts) == 3 and all(parts):
+        return tuple(parts)
+    return None
+
+
 def init(
     organization_slug: str = None,
     project_slug: str = None,
@@ -43,9 +64,16 @@ def init(
     tags: dict[str, str] = None,
     before_create: Callback = None,
 ):
-    """Initialize Task Badger client
+    """Initialize Task Badger client.
 
-    Call this function once per thread
+    If *token* is a project API key (base64-encoded ``org/project/key``),
+    the organization and project slugs are extracted automatically and
+    *organization_slug* / *project_slug* are ignored.
+
+    For legacy API keys, *organization_slug* and *project_slug* are
+    required and a deprecation warning is emitted.
+
+    Call this function once per thread.
     """
     _init(_TB_HOST, organization_slug, project_slug, token, systems, tags, before_create)
 
@@ -63,6 +91,17 @@ def _init(
     organization_slug = organization_slug or os.environ.get("TASKBADGER_ORG")
     project_slug = project_slug or os.environ.get("TASKBADGER_PROJECT")
     token = token or os.environ.get("TASKBADGER_API_KEY")
+
+    if token:
+        parsed = _parse_token(token)
+        if parsed:
+            organization_slug, project_slug, token = parsed
+        else:
+            warnings.warn(
+                "Legacy API keys are deprecated. Please switch to a project API key.",
+                DeprecationWarning,
+                stacklevel=3,
+            )
 
     if before_create and isinstance(before_create, str):
         try:

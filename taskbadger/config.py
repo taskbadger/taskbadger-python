@@ -7,7 +7,7 @@ import tomlkit
 import typer
 from tomlkit import document, table
 
-from taskbadger.sdk import _TB_HOST, _init
+from taskbadger.sdk import _TB_HOST, _init, _parse_token
 
 APP_NAME = "taskbadger"
 
@@ -47,10 +47,20 @@ class Config:
         """
         defaults = config_dict.get("defaults", {})
         auth = config_dict.get("auth", {})
+        token = overrides.get("token") or _from_env("API_KEY", auth.get("token"))
+        organization_slug = overrides.get("org") or _from_env("ORG", defaults.get("org"))
+        project_slug = overrides.get("project") or _from_env("PROJECT", defaults.get("project"))
+
+        if token:
+            parsed = _parse_token(token)
+            if parsed:
+                organization_slug = parsed[0]
+                project_slug = parsed[1]
+
         return Config(
-            token=overrides.get("token") or _from_env("API_KEY", auth.get("token")),
-            organization_slug=overrides.get("org") or _from_env("ORG", defaults.get("org")),
-            project_slug=overrides.get("project") or _from_env("PROJECT", defaults.get("project")),
+            token=token,
+            organization_slug=organization_slug,
+            project_slug=project_slug,
             host=overrides.get("host") or auth.get("host"),
             tags=config_dict.get("tags", {}),
         )

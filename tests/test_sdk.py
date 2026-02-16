@@ -1,4 +1,5 @@
 import datetime
+import warnings
 from http import HTTPStatus
 from unittest import mock
 
@@ -18,7 +19,9 @@ from tests.utils import task_for_test
 
 @pytest.fixture(autouse=True)
 def _init_skd():
-    init("org", "project", "token")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        init("org", "project", "token")
 
 
 @pytest.fixture()

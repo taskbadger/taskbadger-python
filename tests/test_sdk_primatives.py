@@ -1,3 +1,5 @@
+import warnings
+
 import pytest
 
 from taskbadger import Action, EmailIntegration, StatusEnum, update_task
@@ -7,7 +9,9 @@ from taskbadger.sdk import create_task, get_task, init
 
 @pytest.fixture(autouse=True)
 def _init_skd():
-    init("org", "project", "token")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        init("org", "project", "token")
 
 
 def test_get_task(httpx_mock):

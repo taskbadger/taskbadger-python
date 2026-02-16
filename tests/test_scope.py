@@ -1,3 +1,5 @@
+import warnings
+
 import pytest
 
 from taskbadger import create_task, init
@@ -46,7 +48,9 @@ def test_scope_context():
 
 @pytest.fixture(autouse=True)
 def _init_skd():
-    init("org", "project", "token")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        init("org", "project", "token")
 
 
 def test_create_task_with_scope(httpx_mock):
