@@ -1,10 +1,5 @@
 import logging
-from typing import Optional
-
-try:
-    from typing import ParamSpec
-except ImportError:
-    from typing_extensions import ParamSpec
+from typing import ParamSpec
 
 from .mug import Badger
 from .sdk import Task, create_task, update_task
@@ -14,7 +9,7 @@ P = ParamSpec("P")
 log = logging.getLogger("taskbadger")
 
 
-def create_task_safe(name: str, **kwargs: P.kwargs) -> Optional[Task]:
+def create_task_safe(name: str, **kwargs: P.kwargs) -> Task | None:
     """Safely create a task. Any errors are handled and logged.
 
     Arguments:
@@ -33,7 +28,7 @@ def create_task_safe(name: str, **kwargs: P.kwargs) -> Optional[Task]:
         log.warning("Error creating task '%s': %s", name, e)
 
 
-def update_task_safe(task_id: str, **kwargs: P.kwargs) -> Optional[Task]:
+def update_task_safe(task_id: str, **kwargs: P.kwargs) -> Task | None:
     """Safely update a task. Any errors are handled and logged.
 
     Arguments:
