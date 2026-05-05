@@ -23,15 +23,11 @@ __all__ = [
     "update_task",
 ]
 
-try:
-    import importlib.metadata as importlib_metadata
-except ModuleNotFoundError:
-    import importlib_metadata
-
+from importlib.metadata import PackageNotFoundError, version
 
 try:
-    __version__ = importlib_metadata.version(__name__)
-except importlib_metadata.PackageNotFoundError:
+    __version__ = version(__name__)
+except PackageNotFoundError:
     __version__ = "dev"
 
 
