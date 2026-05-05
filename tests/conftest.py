@@ -3,7 +3,7 @@ import pytest
 from taskbadger.mug import Badger, Settings
 
 
-@pytest.fixture()
+@pytest.fixture
 def _bind_settings():
     Badger.current.bind(Settings("https://taskbadger.net", "token", "org", "proj"))
     yield

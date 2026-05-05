@@ -39,7 +39,7 @@ def _wait_for_mock_calls(mock_obj, expected_count, timeout=5):
         time.sleep(0.05)
 
 
-@pytest.fixture()
+@pytest.fixture
 def _bind_settings_with_system():
     systems = [CelerySystemIntegration()]
     Badger.current.bind(

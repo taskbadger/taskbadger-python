@@ -1,6 +1,5 @@
 import json
 from enum import Enum
-from typing import Optional
 
 import typer
 from rich import print
@@ -29,7 +28,7 @@ def get_actions(action_def: tuple[str, str, str]) -> list[Action]:
     return []
 
 
-def merge_kv_json(metadata_kv: Optional[list[str]], metadata_json: str) -> dict:
+def merge_kv_json(metadata_kv: list[str] | None, metadata_json: str) -> dict:
     metadata = {}
     for kv in metadata_kv or []:
         k, v = kv.strip().split("=", 1)

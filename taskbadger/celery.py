@@ -263,7 +263,7 @@ def _maybe_create_task(signal_sender):
             inner_task = celery.current_app.tasks.get(task_name)
         items = signal_sender.request.kwargs.get("it", [])
         # Convert to list if needed for counting and potential recording
-        items_list = list(items) if not isinstance(items, (list, tuple)) else items
+        items_list = list(items) if not isinstance(items, list | tuple) else items
         item_count = len(items_list)
         # Append canvas type and item count to task name
         task_name = f"{task_name} ({canvas_type} {item_count})"

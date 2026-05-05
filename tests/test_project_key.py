@@ -102,7 +102,7 @@ class TestInitWithProjectKey:
             init("org", "project", "legacy-token")
 
     def test_init_legacy_key_still_works(self):
-        with pytest.warns(DeprecationWarning):
+        with pytest.warns(DeprecationWarning, match="Legacy API keys are deprecated"):
             init("org", "project", "legacy-token")
         settings = Badger.current.settings
         assert settings.organization_slug == "org"
@@ -152,7 +152,7 @@ class TestConfigFromDictWithProjectKey:
 runner = CliRunner()
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_config_location():
     config_path = Path(__file__).parent / "_mock_config_project_key"
     with mock.patch("taskbadger.config._get_config_path", return_value=config_path):

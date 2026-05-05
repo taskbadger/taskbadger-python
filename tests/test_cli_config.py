@@ -21,7 +21,7 @@ def mock_config_location():
         os.remove(config_path)
 
 
-@pytest.fixture()
+@pytest.fixture
 def _mock_config(mock_config_location):
     config = Config(
         organization_slug="test_org",
