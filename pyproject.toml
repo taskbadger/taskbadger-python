@@ -22,7 +22,6 @@ dependencies = [
     "httpx >=0.20.0",
     "attrs >=21.3.0",
     "python-dateutil >=2.8.0",
-    "typer[all] <0.10.0",
     "tomlkit >=0.12.5",
     "importlib-metadata >=1.0; python_version < '3.8'",
     "typing-extensions >=4.7.1; python_version <= '3.9'",
@@ -41,6 +40,10 @@ include = [
 [project.optional-dependencies]
 celery = [
     "celery>=4.0.0,<6.0.0",
+]
+cli = [
+    "typer >=0.12",
+    "rich >=13.0",
 ]
 
 [tool.uv]
@@ -64,6 +67,7 @@ dev = [
     "pytest-celery",
     "redis",
     "openapi-python-client",
+    "taskbadger[cli]",
 ]
 
 [project.scripts]

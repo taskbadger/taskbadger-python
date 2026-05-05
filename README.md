@@ -16,6 +16,12 @@ For full documentation go to https://docs.taskbadger.net/python/.
 pip install taskbadger
 ```
 
+To use the `taskbadger` command-line tool, install the `cli` extra:
+
+```bash
+pip install 'taskbadger[cli]'
+```
+
 ### Client Usage
 
 ```python

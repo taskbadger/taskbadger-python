@@ -1,99 +1,107 @@
+import sys
 from typing import Optional
 
-import typer
-from rich import print
+try:
+    import typer
+    from rich import print
+except ImportError as exc:
+    _missing = exc.name or "typer"
 
-from taskbadger import __version__
-from taskbadger.cli import create, get, list_tasks_command, run, update
-from taskbadger.config import get_config, write_config
-from taskbadger.sdk import _parse_token
+    def app() -> None:
+        sys.stderr.write(
+            f"The Task Badger CLI requires the '{_missing}' package, which is not installed.\n"
+            "Install the CLI extras with:\n\n"
+            "    pip install 'taskbadger[cli]'\n"
+        )
+        sys.exit(1)
+else:
+    from taskbadger import __version__
+    from taskbadger.cli import create, get, list_tasks_command, run, update
+    from taskbadger.config import get_config, write_config
+    from taskbadger.sdk import _parse_token
 
-app = typer.Typer(
-    rich_markup_mode="rich",
-    context_settings={"help_option_names": ["-h", "--help"]},
-)
+    app = typer.Typer(
+        rich_markup_mode="rich",
+        context_settings={"help_option_names": ["-h", "--help"]},
+    )
 
+    app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": False})(run)
+    app.command(context_settings={"ignore_unknown_options": False})(get)
+    app.command(context_settings={"ignore_unknown_options": False})(create)
+    app.command(context_settings={"ignore_unknown_options": False})(update)
+    app.command("list", context_settings={"ignore_unknown_options": False})(list_tasks_command)
 
-app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": False})(run)
-app.command(context_settings={"ignore_unknown_options": False})(get)
-app.command(context_settings={"ignore_unknown_options": False})(create)
-app.command(context_settings={"ignore_unknown_options": False})(update)
-app.command("list", context_settings={"ignore_unknown_options": False})(list_tasks_command)
+    def version_callback(value: bool):
+        if value:
+            print(f"Task Badger CLI Version: {__version__}")
+            raise typer.Exit()
 
+    @app.command()
+    def configure(ctx: typer.Context):
+        """Update CLI configuration."""
+        config = ctx.meta["tb_config"]
+        token = typer.prompt("API Key", default=config.token)
+        parsed = _parse_token(token)
+        if parsed:
+            org_slug, project_slug, api_key = parsed
+            print(
+                f"Project key detected — organization: [green]{org_slug}[/green], "
+                f"project: [green]{project_slug}[/green]"
+            )
+            config.organization_slug = org_slug
+            config.project_slug = project_slug
+            config.token = token
+        else:
+            config.organization_slug = typer.prompt("Organization slug", default=config.organization_slug)
+            config.project_slug = typer.prompt("Project slug", default=config.project_slug)
+            config.token = token
+        path = write_config(config)
+        print(f"Config written to [green]{path}[/green]")
 
-def version_callback(value: bool):
-    if value:
-        print(f"Task Badger CLI Version: {__version__}")
-        raise typer.Exit()
+    @app.command()
+    def docs():
+        """Open Task Badger docs in a browser."""
+        typer.launch("https://docs.taskbadger.net")
 
+    @app.command()
+    def info(ctx: typer.Context):
+        """Show CLI configuration."""
+        config = ctx.meta["tb_config"]
+        print(str(config))
 
-@app.command()
-def configure(ctx: typer.Context):
-    """Update CLI configuration."""
-    config = ctx.meta["tb_config"]
-    token = typer.prompt("API Key", default=config.token)
-    parsed = _parse_token(token)
-    if parsed:
-        org_slug, project_slug, api_key = parsed
-        print(f"Project key detected — organization: [green]{org_slug}[/green], project: [green]{project_slug}[/green]")
-        config.organization_slug = org_slug
-        config.project_slug = project_slug
-        config.token = token
-    else:
-        config.organization_slug = typer.prompt("Organization slug", default=config.organization_slug)
-        config.project_slug = typer.prompt("Project slug", default=config.project_slug)
-        config.token = token
-    path = write_config(config)
-    print(f"Config written to [green]{path}[/green]")
+    @app.callback()
+    def main(
+        ctx: typer.Context,
+        org: Optional[str] = typer.Option(
+            None,
+            "--org",
+            "-o",
+            metavar="TASKBADGER_ORG",
+            show_default=False,
+            help="Organization Slug. This will override values from the config file and environment variables.",
+        ),
+        project: Optional[str] = typer.Option(
+            None,
+            "--project",
+            "-p",
+            show_envvar=False,
+            metavar="TASKBADGER_PROJECT",
+            show_default=False,
+            help="Project Slug. This will override values from the config file and environment variables.",
+        ),
+        version: Optional[bool] = typer.Option(  # noqa
+            None,
+            "--version",
+            callback=version_callback,
+            is_eager=True,
+            help="Show CLI Version",
+        ),
+    ):
+        """
+        Task Badger CLI
+        """
+        config = get_config(org=org, project=project)
+        ctx.meta["tb_config"] = config
 
-
-@app.command()
-def docs():
-    """Open Task Badger docs in a browser."""
-    typer.launch("https://docs.taskbadger.net")
-
-
-@app.command()
-def info(ctx: typer.Context):
-    """Show CLI configuration."""
-    config = ctx.meta["tb_config"]
-    print(str(config))
-
-
-@app.callback()
-def main(
-    ctx: typer.Context,
-    org: Optional[str] = typer.Option(
-        None,
-        "--org",
-        "-o",
-        metavar="TASKBADGER_ORG",
-        show_default=False,
-        help="Organization Slug. This will override values from the config file and environment variables.",
-    ),
-    project: Optional[str] = typer.Option(
-        None,
-        "--project",
-        "-p",
-        show_envvar=False,
-        metavar="TASKBADGER_PROJECT",
-        show_default=False,
-        help="Project Slug. This will override values from the config file and environment variables.",
-    ),
-    version: Optional[bool] = typer.Option(  # noqa
-        None,
-        "--version",
-        callback=version_callback,
-        is_eager=True,
-        help="Show CLI Version",
-    ),
-):
-    """
-    Task Badger CLI
-    """
-    config = get_config(org=org, project=project)
-    ctx.meta["tb_config"] = config
-
-
-if __name__ == "__main__":
-    app()
+    if __name__ == "__main__":
+        app()
