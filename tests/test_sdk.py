@@ -190,7 +190,7 @@ def test_ping(settings, patched_update):
     assert len(patched_update.call_args_list) == 2
 
 
-def test_update_progress_rate_limit(settings, patched_update):
+def test_update_value_rate_limit(settings, patched_update):
     task = Task(task_for_test(value=1))
 
     updated_at = task.updated
@@ -210,56 +210,43 @@ def test_update_progress_rate_limit(settings, patched_update):
     assert len(patched_update.call_args_list) == 2
 
 
-def test_update_progress_value_step(settings, patched_update):
+def test_update_value_value_step(settings, patched_update):
     task = Task(task_for_test(value=1))
 
     patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test(value=4))
-    task.update_progress(4, value_step=5)
+    task.update_value(4, value_step=5)
     assert len(patched_update.call_args_list) == 0
 
-    task.update_progress(4)
+    task.update_value(4)
     _verify_update(settings, patched_update, value=4)
 
-    task.update_progress(8, value_step=5)
+    task.update_value(8, value_step=5)
     assert len(patched_update.call_args_list) == 1
 
-    task.update_progress(9, value_step=5)
+    task.update_value(9, value_step=5)
     assert len(patched_update.call_args_list) == 2
 
 
-def test_update_progress_min_interval_both(settings, patched_update):
+def test_update_value_min_interval_both(settings, patched_update):
     task = Task(task_for_test(value=1))
 
     patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test(value=4))
     # neither checks pass
-    task.update_progress(4, rate_limit=1, value_step=5)
+    task.update_value(4, rate_limit=1, value_step=5)
     assert len(patched_update.call_args_list) == 0
 
     # value check passes
-    task.update_progress(6, rate_limit=1, value_step=5)
+    task.update_value(6, rate_limit=1, value_step=5)
     _verify_update(settings, patched_update, value=6)
 
     # neither checks pass
-    task.update_progress(8, rate_limit=1, value_step=5)
+    task.update_value(8, rate_limit=1, value_step=5)
     assert len(patched_update.call_args_list) == 1
 
     # time check passes
     task._task.updated = task._task.updated - datetime.timedelta(seconds=1)
-    task.update_progress(6, rate_limit=1, value_step=5)
+    task.update_value(6, rate_limit=1, value_step=5)
     assert len(patched_update.call_args_list) == 2
-
-
-def test_increment_progress(settings, patched_update):
-    api_task = task_for_test()
-    task = Task(api_task)
-
-    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, task_for_test(value=10))
-
-    task.increment_progress(10)
-    _verify_update(settings, patched_update, value=10)
-
-    task.increment_progress(10)
-    _verify_update(settings, patched_update, value=20)
 
 
 def test_update_timeouts(settings, patched_update):
