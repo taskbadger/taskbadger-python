@@ -367,14 +367,6 @@ class Task:
         """Update the task status"""
         self.update(status=status)
 
-    def increment_progress(self, amount: int):
-        warnings.warn(
-            "'task.increment_progress' will be removed in v1.7.0. Use 'task.increment_value' instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        self.increment_value(amount)
-
     def increment_value(self, amount: int):
         """Increment the task progress by adding the specified amount to the current value.
         If the task value is not set it will be set to `amount`.
@@ -383,14 +375,6 @@ class Task:
         value_norm = value if value is not UNSET and value is not None else 0
         new_amount = value_norm + amount
         self.update(value=new_amount)
-
-    def update_progress(self, value: int, value_step: int = None, rate_limit: int = None):
-        warnings.warn(
-            "'task.update_progress' will be removed in v1.7.0. Use 'task.update_value' instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        self.update_value(value, value_step, rate_limit)
 
     def update_value(self, value: int, value_step: int = None, rate_limit: int = None) -> bool:
         """Update task progress.
