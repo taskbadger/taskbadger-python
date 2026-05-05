@@ -24,24 +24,24 @@ def _init_skd():
         init("org", "project", "token")
 
 
-@pytest.fixture()
+@pytest.fixture
 def settings():
     return Badger.current.settings
 
 
-@pytest.fixture()
+@pytest.fixture
 def patched_get():
     with mock.patch("taskbadger.sdk.task_get.sync") as get:
         yield get
 
 
-@pytest.fixture()
+@pytest.fixture
 def patched_create():
     with mock.patch("taskbadger.sdk.task_create.sync_detailed") as create:
         yield create
 
 
-@pytest.fixture()
+@pytest.fixture
 def patched_update():
     with mock.patch("taskbadger.sdk.task_partial_update.sync_detailed") as update:
         yield update

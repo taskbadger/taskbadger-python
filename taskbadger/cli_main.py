@@ -72,7 +72,7 @@ else:
     @app.callback()
     def main(
         ctx: typer.Context,
-        org: Optional[str] = typer.Option(
+        org: str | None = typer.Option(
             None,
             "--org",
             "-o",
@@ -80,7 +80,7 @@ else:
             show_default=False,
             help="Organization Slug. This will override values from the config file and environment variables.",
         ),
-        project: Optional[str] = typer.Option(
+        project: str | None = typer.Option(
             None,
             "--project",
             "-p",
