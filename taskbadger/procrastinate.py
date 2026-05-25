@@ -11,6 +11,7 @@ Public API:
 
 from __future__ import annotations
 
+import collections
 import functools
 import inspect
 import logging
@@ -18,7 +19,7 @@ from contextvars import ContextVar
 
 from .internal.models import StatusEnum
 from .mug import Badger
-from .safe_sdk import update_task_safe
+from .safe_sdk import create_task_safe, update_task_safe
 from .sdk import DefaultMergeStrategy, get_task
 
 log = logging.getLogger("taskbadger")
@@ -105,6 +106,7 @@ def _instrument_task(task, system=None, manual=False, opts=None):
             finally:
                 _current_tb_task_id.reset(token)
 
+    _wrap_defer(task)
     task.func = wrapped
     setattr(task, _INSTRUMENTED_ATTR, True)
     setattr(task, "_taskbadger_system", system)
@@ -116,19 +118,103 @@ def _update_status(tb_id, status, exception=None):
         return
 
     if exception is not None or status in TERMINAL_STATES:
-        try:
-            current = get_task(tb_id)
-        except Exception as e:
-            log.warning("Error fetching task '%s': %s", tb_id, e)
-            current = None
+        current = _safe_get_task(tb_id)
         if current is not None and current.status in TERMINAL_STATES:
             return
         data = None
         if exception is not None and current is not None:
-            data = DefaultMergeStrategy().merge(current.data, {"exception": str(exception)})
-        if data:
+            base = dict(current.data) if current.data else None
+            data = DefaultMergeStrategy().merge(base, {"exception": str(exception)})
+        if data is not None:
             update_task_safe(tb_id, status=status, data=data)
         else:
             update_task_safe(tb_id, status=status)
     else:
         update_task_safe(tb_id, status=status)
+
+
+class _Cache:
+    def __init__(self, maxsize=128):
+        self.cache = collections.OrderedDict()
+        self.maxsize = maxsize
+
+    def set(self, key, value):
+        self.cache[key] = value
+        if len(self.cache) > self.maxsize:
+            self.cache.popitem(last=False)
+
+    def get(self, key):
+        return self.cache.get(key)
+
+    def unset(self, key):
+        self.cache.pop(key, None)
+
+
+_task_cache = _Cache()
+
+
+def _safe_get_task(task_id):
+    cached = _task_cache.get(task_id)
+    if cached is not None:
+        return cached
+    try:
+        task = get_task(task_id)
+    except Exception as e:
+        log.warning("Error fetching task '%s': %s", task_id, e)
+        return None
+    _task_cache.set(task_id, task)
+    return task
+
+
+def _wrap_defer(task):
+    """Wrap ``task.defer`` and ``task.defer_async`` so they create a TaskBadger
+    task in PENDING state and inject its id into the job's task_kwargs.
+
+    The original defer methods are stashed on the task to keep the wrap
+    idempotent (a second call replaces nothing because the marker is set)."""
+    original_defer = task.defer
+    original_defer_async = task.defer_async
+
+    @functools.wraps(original_defer)
+    def defer(**kwargs):
+        kwargs = _maybe_create_pending(task, kwargs)
+        return original_defer(**kwargs)
+
+    @functools.wraps(original_defer_async)
+    async def defer_async(**kwargs):
+        kwargs = _maybe_create_pending(task, kwargs)
+        return await original_defer_async(**kwargs)
+
+    task.defer = defer
+    task.defer_async = defer_async
+
+
+def _maybe_create_pending(task, kwargs):
+    """Decide whether to track this defer, and if so create the TaskBadger
+    task and inject its id into ``kwargs``. Always returns the kwargs dict."""
+    if not Badger.is_configured():
+        return kwargs
+
+    system = getattr(task, "_taskbadger_system", None)
+    manual = getattr(task, _MANUAL_ATTR, False)
+    auto = bool(system) and system.track_task(task.name)
+    if not manual and not auto:
+        return kwargs
+
+    opts = dict(getattr(task, _OPTS_ATTR, {}) or {})
+    name = opts.pop("name", None) or task.name
+    create_kwargs = {"status": StatusEnum.PENDING}
+    for key in ("value_max", "tags"):
+        if key in opts and opts[key] is not None:
+            create_kwargs[key] = opts[key]
+    user_data = opts.get("data")
+    if user_data:
+        create_kwargs["data"] = dict(user_data)
+
+    tb_task = create_task_safe(name, **create_kwargs)
+    if tb_task is None:
+        return kwargs
+
+    new_kwargs = dict(kwargs)
+    new_kwargs[TB_TASK_ID_KWARG] = tb_task.id
+    return new_kwargs
