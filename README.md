@@ -92,3 +92,9 @@ taskbadger.init(
     )],
 )
 ```
+
+#### Known limitations
+
+- **`task.configure(...).defer(...)` is not tracked.** Procrastinate's `configure()` returns a separate `JobDeferrer` whose methods bypass our wrapper. Use `task.defer(...)` directly for tracked deferrals. Tasks deferred via `configure().defer()` will run normally but will not appear in TaskBadger.
+- **`task.batch_defer*` is not tracked.** Same reason as `configure().defer()`.
+- **Tasks added via `app.add_tasks_from(blueprint)` after `ProcrastinateSystemIntegration` is constructed are not auto-instrumented.** Construct the integration after all blueprints are registered, or apply `@track` to those tasks explicitly.

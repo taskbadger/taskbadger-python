@@ -46,6 +46,11 @@ class ProcrastinateSystemIntegration(System):
         if not self.auto_track_tasks:
             return False
 
+        # Never auto-track Procrastinate's built-in housekeeping tasks
+        # (e.g. ``builtin:procrastinate.builtin_tasks.remove_old_jobs``).
+        if task_name.startswith("builtin:") or task_name.startswith("procrastinate."):
+            return False
+
         if self.excludes:
             for exclude in self.excludes:
                 if re.fullmatch(exclude, task_name):
