@@ -222,3 +222,41 @@ def _maybe_create_pending(task, kwargs):
     new_kwargs = dict(kwargs)
     new_kwargs[TB_TASK_ID_KWARG] = tb_task.id
     return new_kwargs
+
+
+_TRACK_OPT_KEYS = ("name", "value_max", "tags", "data", "record_task_args")
+
+
+def track(original_task=None, **opts):
+    """Opt a Procrastinate task into TaskBadger tracking.
+
+    Usage:
+
+        @track
+        @app.task(...)
+        def my_task(...): ...
+
+        @track(name="custom", value_max=100, tags={"env": "prod"})
+        @app.task(...)
+        async def big_job(...): ...
+
+    Accepted keyword options (all optional):
+        name: TaskBadger task name (defaults to the Procrastinate task's name).
+        value_max: Maximum value for the TaskBadger task.
+        tags: Dict of tags applied to the TaskBadger task.
+        data: Dict of initial data merged into the TaskBadger task.
+        record_task_args: If True, serialize the Procrastinate job kwargs and
+            store them under ``data["procrastinate_task_kwargs"]``. Defaults to
+            ``None`` meaning "inherit from system integration if any, else False".
+    """
+    unknown = set(opts) - set(_TRACK_OPT_KEYS)
+    if unknown:
+        raise TypeError(f"track() got unexpected keyword arguments: {sorted(unknown)}")
+
+    def wrap(task):
+        _instrument_task(task, system=None, manual=True, opts=opts)
+        return task
+
+    if original_task is None:
+        return wrap
+    return wrap(original_task)

@@ -7,7 +7,7 @@ import pytest
 from procrastinate import testing
 
 from taskbadger import StatusEnum
-from taskbadger.procrastinate import TB_TASK_ID_KWARG, _instrument_task
+from taskbadger.procrastinate import TB_TASK_ID_KWARG, _instrument_task, track
 from tests.utils import task_for_test
 
 
@@ -181,3 +181,70 @@ def test_end_to_end_via_worker(app):
     create.assert_called_once()
     statuses = [c.kwargs["status"] for c in update.call_args_list]
     assert statuses == [StatusEnum.PROCESSING, StatusEnum.SUCCESS]
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_track_bare_form(app):
+    @track
+    @app.task(name="bare")
+    def bare(a):
+        return a
+
+    tb = task_for_test()
+    with mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb):
+        bare.defer(a=1)
+
+    assert getattr(bare, "_taskbadger_manual") is True
+    # Inspect the actual Procrastinate job - jobs is a dict keyed by int, kwargs under "args"
+    jobs = list(app.connector.jobs.values())
+    assert jobs[0]["args"][TB_TASK_ID_KWARG] == tb.id
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_track_parameterized(app):
+    @track(name="custom", value_max=10, tags={"env": "test"}, data={"k": "v"})
+    @app.task(name="raw_name")
+    def raw(a):
+        return a
+
+    tb = task_for_test()
+    with mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create:
+        raw.defer(a=1)
+
+    create.assert_called_once()
+    assert create.call_args.args == ("custom",)
+    assert create.call_args.kwargs == {
+        "status": StatusEnum.PENDING,
+        "value_max": 10,
+        "tags": {"env": "test"},
+        "data": {"k": "v"},
+    }
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_track_idempotent(app):
+    @track
+    @track
+    @app.task(name="dup")
+    def dup(a):
+        return a
+
+    # Two @track applications must not double-wrap; defer once still creates one
+    # PENDING task and injects one id.
+    tb = task_for_test()
+    with mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create:
+        dup.defer(a=1)
+    assert create.call_count == 1
+    jobs = list(app.connector.jobs.values())
+    args = jobs[0]["args"]
+    # Reserved key appears exactly once
+    assert list(args).count(TB_TASK_ID_KWARG) == 1
+
+
+def test_track_unknown_opt_raises(app):
+    @app.task(name="bad")
+    def bad():
+        pass
+
+    with pytest.raises(TypeError, match="unexpected keyword"):
+        track(name="x", does_not_exist=True)(bad)
