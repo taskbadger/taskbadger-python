@@ -300,3 +300,34 @@ def current_task():
     if tb_id is None:
         return None
     return _safe_get_task(tb_id)
+
+
+def _patch_app_task(app, system):
+    """Replace ``app.task`` with a wrapper that instruments newly-registered
+    tasks under the supplied ``system``. Idempotent — a second call replaces
+    the wrapper but keeps the same original task method."""
+    original = getattr(app, "_taskbadger_original_task", None) or app.task
+    if not getattr(app, "_taskbadger_original_task", None):
+        app._taskbadger_original_task = original
+
+    @functools.wraps(original)
+    def patched(*args, **kwargs):
+        task = original(*args, **kwargs)
+        # ``original`` may return the Task directly or a decorator depending on
+        # call form. Procrastinate's ``app.task`` always returns a decorator
+        # when called with arguments and the Task when called bare.
+        if callable(task) and not hasattr(task, "name"):
+            # decorator form: wrap the returned decorator
+            inner_decorator = task
+
+            @functools.wraps(inner_decorator)
+            def outer(func):
+                t = inner_decorator(func)
+                _instrument_task(t, system=system)
+                return t
+
+            return outer
+        _instrument_task(task, system=system)
+        return task
+
+    app.task = patched
