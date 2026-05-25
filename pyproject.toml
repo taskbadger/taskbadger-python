@@ -44,6 +44,9 @@ cli = [
     "typer >=0.12",
     "rich >=13.0",
 ]
+procrastinate = [
+    "procrastinate>=3.0",
+]
 
 [tool.uv]
 package = true
@@ -58,6 +61,7 @@ documentation = "https://docs.taskbadger.net/"
 [dependency-groups]
 dev = [
     "pre-commit",
+    "procrastinate",
     "pytest",
     "pytest-httpx",
     "invoke",
