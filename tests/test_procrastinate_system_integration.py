@@ -4,7 +4,7 @@ import procrastinate
 import pytest
 from procrastinate import testing
 
-from taskbadger.procrastinate import _INSTRUMENTED_ATTR, TB_TASK_ID_KWARG, _task_cache
+from taskbadger.procrastinate import _INSTRUMENTED_ATTR, TB_TASK_ID_KWARG, _task_cache, track
 from taskbadger.systems.procrastinate import ProcrastinateSystemIntegration
 from tests.utils import task_for_test
 
@@ -86,3 +86,40 @@ def test_auto_track_excludes_skip(app):
         flush.defer()
 
     create.assert_not_called()
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_wraps_tasks_registered_after_init(app):
+    ProcrastinateSystemIntegration(app=app, auto_track_tasks=True)
+
+    @app.task(name="late")
+    def late(a):
+        return a
+
+    assert getattr(late, _INSTRUMENTED_ATTR) is True
+
+    tb = task_for_test()
+    with mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create:
+        late.defer(a=1)
+
+    create.assert_called_once()
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_track_plus_auto_track_no_double_wrap(app):
+    @track
+    @app.task(name="manual_plus_auto")
+    def both():
+        pass
+
+    ProcrastinateSystemIntegration(app=app, auto_track_tasks=True)
+
+    # _instrument_task is idempotent — system init must not re-wrap.
+    tb = task_for_test()
+    with mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create:
+        both.defer()
+
+    assert create.call_count == 1
+    jobs = list(app.connector.jobs.values())
+    args = jobs[0]["args"]
+    assert list(args).count(TB_TASK_ID_KWARG) == 1
