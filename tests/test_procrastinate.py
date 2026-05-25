@@ -81,6 +81,7 @@ def test_worker_marks_error(app):
         mock.patch("taskbadger.procrastinate.get_task") as get,
     ):
         get.return_value = task_for_test(status=StatusEnum.PROCESSING, data={"x": 1})
+        update.return_value = task_for_test(status=StatusEnum.PROCESSING, data={"x": 1})
         with pytest.raises(ValueError, match="nope"):
             boom.func(**{TB_TASK_ID_KWARG: "tb-789"})
 

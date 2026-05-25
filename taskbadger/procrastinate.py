@@ -126,11 +126,14 @@ def _update_status(tb_id, status, exception=None):
             base = dict(current.data) if current.data else None
             data = DefaultMergeStrategy().merge(base, {"exception": str(exception)})
         if data is not None:
-            update_task_safe(tb_id, status=status, data=data)
+            updated = update_task_safe(tb_id, status=status, data=data)
         else:
-            update_task_safe(tb_id, status=status)
+            updated = update_task_safe(tb_id, status=status)
     else:
-        update_task_safe(tb_id, status=status)
+        updated = update_task_safe(tb_id, status=status)
+
+    if updated is not None:
+        _task_cache.set(tb_id, updated)
 
 
 class _Cache:
@@ -170,8 +173,9 @@ def _wrap_defer(task):
     """Wrap ``task.defer`` and ``task.defer_async`` so they create a TaskBadger
     task in PENDING state and inject its id into the job's task_kwargs.
 
-    The original defer methods are stashed on the task to keep the wrap
-    idempotent (a second call replaces nothing because the marker is set)."""
+    Not idempotent on its own — the caller (``_instrument_task``) gates this
+    via ``_INSTRUMENTED_ATTR`` so each task is wrapped at most once.
+    """
     original_defer = task.defer
     original_defer_async = task.defer_async
 
