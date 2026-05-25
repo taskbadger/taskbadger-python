@@ -7,7 +7,7 @@ import pytest
 from procrastinate import testing
 
 from taskbadger import StatusEnum
-from taskbadger.procrastinate import TB_TASK_ID_KWARG, _instrument_task, track
+from taskbadger.procrastinate import TB_TASK_ID_KWARG, _instrument_task, _task_cache, current_task, track
 from tests.utils import task_for_test
 
 
@@ -17,6 +17,13 @@ def _check_log_errors(caplog):
     errors = [r.getMessage() for r in caplog.get_records("call") if r.levelno == logging.ERROR]
     if errors:
         pytest.fail(f"log errors during tests: {errors}")
+
+
+@pytest.fixture(autouse=True)
+def _clear_task_cache():
+    _task_cache.cache.clear()
+    yield
+    _task_cache.cache.clear()
 
 
 @pytest.fixture
@@ -248,3 +255,55 @@ def test_track_unknown_opt_raises(app):
 
     with pytest.raises(TypeError, match="unexpected keyword"):
         track(name="x", does_not_exist=True)(bad)
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_current_task_inside_body(app):
+    captured = {}
+
+    @track
+    @app.task(name="capture")
+    def capture():
+        captured["task"] = current_task()
+
+    tb = task_for_test()
+    with (
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb),
+        mock.patch("taskbadger.procrastinate.update_task_safe", return_value=tb),
+        mock.patch("taskbadger.procrastinate.get_task", return_value=tb),
+    ):
+        capture.defer()
+        app.run_worker(wait=False, install_signal_handlers=False, listen_notify=False)
+
+    assert captured["task"] is not None
+    assert captured["task"].id == tb.id
+
+
+def test_current_task_outside_returns_none():
+    assert current_task() is None
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_user_set_terminal_state_not_overwritten(app):
+    @track
+    @app.task(name="self_complete")
+    def self_complete():
+        pass
+
+    tb_pending = task_for_test(status=StatusEnum.PENDING)
+    tb_done = task_for_test(id=tb_pending.id, status=StatusEnum.SUCCESS)
+
+    with (
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb_pending),
+        mock.patch("taskbadger.procrastinate.update_task_safe") as update,
+        mock.patch("taskbadger.procrastinate.get_task", return_value=tb_done),
+    ):
+        self_complete.defer()
+        app.run_worker(wait=False, install_signal_handlers=False, listen_notify=False)
+
+    # The wrapper's post-call SUCCESS update is skipped because the cached
+    # task is already SUCCESS. PROCESSING update is still allowed (early path).
+    statuses = [c.kwargs["status"] for c in update.call_args_list]
+    assert StatusEnum.PROCESSING in statuses
+    # Last attempted SUCCESS call should be suppressed
+    assert statuses.count(StatusEnum.SUCCESS) == 0

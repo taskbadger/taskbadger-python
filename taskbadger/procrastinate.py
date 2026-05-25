@@ -118,6 +118,10 @@ def _update_status(tb_id, status, exception=None):
         return
 
     if exception is not None or status in TERMINAL_STATES:
+        # Bypass the cache for the terminal-state check: the user may have
+        # updated the task to a terminal state via the regular SDK during
+        # the body, which wouldn't be reflected in our local cache.
+        _task_cache.unset(tb_id)
         current = _safe_get_task(tb_id)
         if current is not None and current.status in TERMINAL_STATES:
             return
@@ -260,3 +264,15 @@ def track(original_task=None, **opts):
     if original_task is None:
         return wrap
     return wrap(original_task)
+
+
+def current_task():
+    """Return the TaskBadger Task for the currently-running Procrastinate job.
+
+    Returns ``None`` outside of a tracked task or if the task can't be fetched.
+    Result is cached for the lifetime of the worker process via an LRU.
+    """
+    tb_id = _current_tb_task_id.get()
+    if tb_id is None:
+        return None
+    return _safe_get_task(tb_id)
