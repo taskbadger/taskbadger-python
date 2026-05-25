@@ -324,3 +324,28 @@ def test_record_task_args_stores_kwargs(app):
         "existing": 1,
         "procrastinate_task_kwargs": {"a": 5, "b": 6},
     }
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_pass_context_forwards_context(app):
+    seen = {}
+
+    @track
+    @app.task(name="ctx_task", pass_context=True)
+    def ctx_task(context, a):
+        seen["context"] = context
+        seen["a"] = a
+
+    tb = task_for_test()
+    with (
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb),
+        mock.patch("taskbadger.procrastinate.update_task_safe"),
+        mock.patch("taskbadger.procrastinate.get_task", return_value=tb),
+    ):
+        ctx_task.defer(a=42)
+        app.run_worker(wait=False, install_signal_handlers=False, listen_notify=False)
+
+    assert seen["a"] == 42
+    # Context object should be passed through unchanged
+    assert seen["context"] is not None
+    assert seen["context"].task is ctx_task

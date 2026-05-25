@@ -68,6 +68,8 @@ def _instrument_task(task, system=None, manual=False, opts=None):
     original_func = task.func
     is_async = inspect.iscoroutinefunction(original_func)
 
+    # pass_context=True works transparently: Procrastinate passes the context
+    # object as the first positional arg; our *args/**kwargs wrapper forwards it.
     if is_async:
 
         @functools.wraps(original_func)
