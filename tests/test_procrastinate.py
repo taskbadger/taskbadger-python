@@ -307,3 +307,20 @@ def test_user_set_terminal_state_not_overwritten(app):
     assert StatusEnum.PROCESSING in statuses
     # Last attempted SUCCESS call should be suppressed
     assert statuses.count(StatusEnum.SUCCESS) == 0
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_record_task_args_stores_kwargs(app):
+    @track(record_task_args=True, data={"existing": 1})
+    @app.task(name="recorder")
+    def recorder(a, b):
+        return a + b
+
+    tb = task_for_test()
+    with mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create:
+        recorder.defer(a=5, b=6)
+
+    assert create.call_args.kwargs["data"] == {
+        "existing": 1,
+        "procrastinate_task_kwargs": {"a": 5, "b": 6},
+    }

@@ -14,6 +14,7 @@ from __future__ import annotations
 import collections
 import functools
 import inspect
+import json
 import logging
 from contextvars import ContextVar
 
@@ -215,9 +216,17 @@ def _maybe_create_pending(task, kwargs):
     for key in ("value_max", "tags"):
         if key in opts and opts[key] is not None:
             create_kwargs[key] = opts[key]
-    user_data = opts.get("data")
-    if user_data:
-        create_kwargs["data"] = dict(user_data)
+
+    data = dict(opts.get("data") or {})
+
+    record_args = opts.get("record_task_args")
+    if record_args is None:
+        record_args = bool(system) and system.record_task_args
+    if record_args:
+        data["procrastinate_task_kwargs"] = _serialize_kwargs(kwargs)
+
+    if data:
+        create_kwargs["data"] = data
 
     tb_task = create_task_safe(name, **create_kwargs)
     if tb_task is None:
@@ -226,6 +235,19 @@ def _maybe_create_pending(task, kwargs):
     new_kwargs = dict(kwargs)
     new_kwargs[TB_TASK_ID_KWARG] = tb_task.id
     return new_kwargs
+
+
+def _serialize_kwargs(kwargs):
+    """Return a JSON-roundtrippable copy of the defer kwargs.
+
+    Procrastinate already requires kwargs be JSON-serializable, so a json
+    dumps/loads roundtrip is safe. Non-serializable values are dropped with
+    a warning."""
+    try:
+        return json.loads(json.dumps(kwargs))
+    except (TypeError, ValueError) as e:
+        log.warning("Error serializing task arguments: %s", e)
+        return {}
 
 
 _TRACK_OPT_KEYS = ("name", "value_max", "tags", "data", "record_task_args")
