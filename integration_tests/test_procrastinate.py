@@ -36,18 +36,31 @@ def _check_log_errors(caplog):
             pytest.fail(f"log errors during '{when}': {errors}")
 
 
+@pytest.fixture(scope="session")
+def _schema():
+    # apply_schema is NOT idempotent (schema.sql uses bare CREATE TYPE), so
+    # only apply when the schema isn't already present.
+    with psycopg.connect(PROCRASTINATE_DSN) as conn, conn.cursor() as cur:
+        cur.execute("SELECT to_regclass('procrastinate_jobs')")
+        if cur.fetchone()[0] is not None:
+            return
+    schema_conn = procrastinate.SyncPsycopgConnector(conninfo=PROCRASTINATE_DSN)
+    schema_app = procrastinate.App(connector=schema_conn)
+    with schema_app.open():
+        schema_app.schema_manager.apply_schema()
+
+
 @pytest.fixture
-def app():
-    # Async connector even though the tests are sync: run_worker raises
-    # SyncConnectorConfigurationError on SyncPsycopgConnector. Async works in both contexts.
+def app(_schema):
+    # Async connector: run_worker raises SyncConnectorConfigurationError on
+    # SyncPsycopgConnector. Async connectors work in sync contexts too.
     #
-    # Function-scoped because run_worker tears down the sync sub-connector
-    # PsycopgConnector creates inside `app.open()`, and nothing reopens it for
-    # the next test's defer() call. Cheap: apply_schema is idempotent.
+    # Function-scoped because run_worker tears down the sync sub-connector that
+    # PsycopgConnector spawns inside `app.open()`, leaving the next test's
+    # defer() with no usable sync pool.
     conn = procrastinate.PsycopgConnector(conninfo=PROCRASTINATE_DSN)
     app = procrastinate.App(connector=conn)
     with app.open():
-        app.schema_manager.apply_schema()
         yield app
 
 
