@@ -1,10 +1,10 @@
 """Shared internals for taskbadger's optional system integrations
 (Celery, Procrastinate). Not part of the public API.
 
-Each integration creates its own module-level ``TaskCache`` instance and
-defines a thin ``safe_get_task`` wrapper around the shared one defined here.
-``BaseSystemIntegration`` provides the common ctor/include-exclude shape;
-subclasses override ``track_task`` if they need to filter additional
+A single module-level ``TaskCache`` (``task_cache``) is shared across all
+integrations; task ids are UUIDs so cross-integration key collisions are not
+a concern. ``BaseSystemIntegration`` provides the common ctor/include-exclude
+shape; subclasses override ``track_task`` if they need to filter additional
 task names (e.g. Procrastinate built-ins).
 """
 
@@ -51,12 +51,15 @@ class TaskCache:
         self.cache.pop(key, None)
 
 
-def safe_get_task(cache: TaskCache, task_id: str):
+task_cache = TaskCache()
+
+
+def safe_get_task(task_id: str):
     """Cache-aware ``get_task``: returns the cached entry if present, otherwise
-    fetches via the SDK ``get_task`` and caches the result. Errors are logged and
-    swallowed (returns ``None``). ``None`` results are not cached.
+    fetches from the API and caches the result. Errors are logged and swallowed
+    (returns ``None``). ``None`` results are not cached.
     """
-    cached = cache.get(task_id)
+    cached = task_cache.get(task_id)
     if cached is not None:
         return cached
     try:
@@ -64,7 +67,7 @@ def safe_get_task(cache: TaskCache, task_id: str):
     except Exception as e:
         log.warning("Error fetching task '%s': %s", task_id, e)
         return None
-    cache.set(task_id, task)
+    task_cache.set(task_id, task)
     return task
 
 

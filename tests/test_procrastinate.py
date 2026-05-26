@@ -7,7 +7,7 @@ import pytest
 from procrastinate import testing
 
 from taskbadger import StatusEnum
-from taskbadger.procrastinate import TB_TASK_ID_KWARG, _instrument_task, _task_cache, current_task, track
+from taskbadger.procrastinate import TB_TASK_ID_KWARG, _instrument_task, current_task, track
 from tests.utils import task_for_test
 
 
@@ -17,13 +17,6 @@ def _check_log_errors(caplog):
     errors = [r.getMessage() for r in caplog.get_records("call") if r.levelno == logging.ERROR]
     if errors:
         pytest.fail(f"log errors during tests: {errors}")
-
-
-@pytest.fixture(autouse=True)
-def _clear_task_cache():
-    _task_cache.cache.clear()
-    yield
-    _task_cache.cache.clear()
 
 
 @pytest.fixture

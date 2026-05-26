@@ -17,8 +17,7 @@ import json
 import logging
 from contextvars import ContextVar
 
-from ._integrations import TERMINAL_STATES, TaskCache
-from ._integrations import safe_get_task as _shared_safe_get_task
+from ._integrations import TERMINAL_STATES, safe_get_task, task_cache
 from .internal.models import StatusEnum
 from .mug import Badger
 from .safe_sdk import create_task_safe, update_task_safe
@@ -118,8 +117,8 @@ def _update_status(tb_id, status, exception=None):
         # Bypass the cache for the terminal-state check: the user may have
         # updated the task to a terminal state via the regular SDK during
         # the body, which wouldn't be reflected in our local cache.
-        _task_cache.unset(tb_id)
-        current = _safe_get_task(tb_id)
+        task_cache.unset(tb_id)
+        current = safe_get_task(tb_id)
         if current is not None and current.status in TERMINAL_STATES:
             return
         data = None
@@ -134,14 +133,7 @@ def _update_status(tb_id, status, exception=None):
         updated = update_task_safe(tb_id, status=status)
 
     if updated is not None:
-        _task_cache.set(tb_id, updated)
-
-
-_task_cache = TaskCache()
-
-
-def _safe_get_task(task_id):
-    return _shared_safe_get_task(_task_cache, task_id)
+        task_cache.set(tb_id, updated)
 
 
 def _wrap_defer(task):
@@ -267,7 +259,7 @@ def current_task():
     tb_id = _current_tb_task_id.get()
     if tb_id is None:
         return None
-    return _safe_get_task(tb_id)
+    return safe_get_task(tb_id)
 
 
 def _patch_app_task(app, system):

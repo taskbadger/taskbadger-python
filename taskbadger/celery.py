@@ -13,8 +13,7 @@ from celery.signals import (
 from kombu import serialization
 
 from . import sdk
-from ._integrations import TERMINAL_STATES, TaskCache
-from ._integrations import safe_get_task as _shared_safe_get_task
+from ._integrations import TERMINAL_STATES, safe_get_task, task_cache
 from .internal.models import StatusEnum
 from .mug import Badger
 from .safe_sdk import create_task_safe, update_task_safe
@@ -26,8 +25,6 @@ IGNORE_ARGS = {TB_KWARGS_ARG, f"{KWARG_PREFIX}task", f"{KWARG_PREFIX}task_id", f
 TB_TASK_ID = f"{KWARG_PREFIX}task_id"
 
 log = logging.getLogger("taskbadger")
-
-_task_cache = TaskCache()
 
 
 class Task(celery.Task):
@@ -249,7 +246,7 @@ def _maybe_create_task(signal_sender):
     if task:
         # Store the task ID in the request so _update_task can find it
         signal_sender.request.update({TB_TASK_ID: task.id})
-        _task_cache.set(task.id, task)
+        task_cache.set(task.id, task)
 
 
 @task_prerun.connect
@@ -301,7 +298,7 @@ def _update_task(signal_sender, status, einfo=None):
         data = DefaultMergeStrategy().merge(task.data, {"exception": str(einfo)})
     task = update_task_safe(task.id, status=status, data=data)
     if task:
-        _task_cache.set(task_id, task)
+        task_cache.set(task_id, task)
 
 
 def enter_session():
@@ -321,15 +318,11 @@ def exit_session(signal_sender):
     if not task_id or not Badger.is_configured():
         return
 
-    _task_cache.unset(task_id)
+    task_cache.unset(task_id)
 
     session = Badger.current.session()
     if session.client:
         session.__exit__()
-
-
-def safe_get_task(task_id: str):
-    return _shared_safe_get_task(_task_cache, task_id)
 
 
 def _get_taskbadger_task_id(request):

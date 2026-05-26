@@ -1,6 +1,16 @@
 import pytest
 
+from taskbadger._integrations import task_cache
 from taskbadger.mug import Badger, Settings
+
+
+@pytest.fixture(autouse=True)
+def _clear_task_cache():
+    """Clear the shared integrations task cache around every test so cached
+    entries from earlier tests can't leak into later ones."""
+    task_cache.cache.clear()
+    yield
+    task_cache.cache.clear()
 
 
 @pytest.fixture

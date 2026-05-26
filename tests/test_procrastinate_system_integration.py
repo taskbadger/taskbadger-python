@@ -4,16 +4,9 @@ import procrastinate
 import pytest
 from procrastinate import testing
 
-from taskbadger.procrastinate import _INSTRUMENTED_ATTR, TB_TASK_ID_KWARG, _task_cache, track
+from taskbadger.procrastinate import _INSTRUMENTED_ATTR, TB_TASK_ID_KWARG, track
 from taskbadger.systems.procrastinate import ProcrastinateSystemIntegration
 from tests.utils import task_for_test
-
-
-@pytest.fixture(autouse=True)
-def _clear_task_cache():
-    _task_cache.cache.clear()
-    yield
-    _task_cache.cache.clear()
 
 
 @pytest.fixture
