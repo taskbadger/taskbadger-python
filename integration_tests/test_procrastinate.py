@@ -36,14 +36,17 @@ def _check_log_errors(caplog):
             pytest.fail(f"log errors during '{when}': {errors}")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def app():
     # Async connector even though the tests are sync: run_worker raises
     # SyncConnectorConfigurationError on SyncPsycopgConnector. Async works in both contexts.
+    #
+    # Function-scoped because run_worker tears down the sync sub-connector
+    # PsycopgConnector creates inside `app.open()`, and nothing reopens it for
+    # the next test's defer() call. Cheap: apply_schema is idempotent.
     conn = procrastinate.PsycopgConnector(conninfo=PROCRASTINATE_DSN)
     app = procrastinate.App(connector=conn)
     with app.open():
-        # Apply schema (idempotent — Procrastinate's apply_schema is safe to re-run).
         app.schema_manager.apply_schema()
         yield app
 
