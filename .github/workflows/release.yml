@@ -40,7 +40,7 @@ jobs:
           enable-cache: true
       - name: Add version to environment vars
         run: |
-          PROJECT_VERSION=$(uvx dunamai from any --format "{base}")
+          PROJECT_VERSION=$(uvx dunamai from any)
           echo "PROJECT_VERSION=$PROJECT_VERSION" >> $GITHUB_ENV
       - name: Check if tag version matches project version
         run: |
