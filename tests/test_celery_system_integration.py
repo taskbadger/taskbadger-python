@@ -77,7 +77,7 @@ def test_celery_auto_track_task(celery_session_app, celery_session_worker):
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe") as update,
-        mock.patch("taskbadger.celery.get_task") as get_task,
+        mock.patch("taskbadger.sdk.get_task") as get_task,
     ):
         tb_task = task_for_test()
         create.return_value = tb_task
@@ -109,7 +109,7 @@ def test_celery_record_task_args(celery_session_app, celery_session_worker):
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe") as update,
-        mock.patch("taskbadger.celery.get_task") as get_task,
+        mock.patch("taskbadger.sdk.get_task") as get_task,
     ):
         tb_task = task_for_test()
         create.return_value = tb_task
@@ -144,7 +144,7 @@ def test_celery_record_task_args_local_override(celery_session_app, celery_sessi
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe"),
-        mock.patch("taskbadger.celery.get_task"),
+        mock.patch("taskbadger.sdk.get_task"),
     ):
         tb_task = task_for_test()
         create.return_value = tb_task
@@ -169,7 +169,7 @@ def test_celery_global_tags(celery_session_app, celery_session_worker):
     with (
         mock.patch("taskbadger.sdk.task_create.sync_detailed") as create,
         mock.patch("taskbadger.celery.update_task_safe"),
-        mock.patch("taskbadger.celery.get_task"),
+        mock.patch("taskbadger.sdk.get_task"),
     ):
         tb_task = task_for_test()
         create.return_value = Response(
