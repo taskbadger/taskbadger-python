@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from taskbadger._integrations import BaseSystemIntegration
-from taskbadger.procrastinate import _instrument_task, _patch_app_task
+from taskbadger.procrastinate import _instrument_task, _patch_app_task, _patch_job_manager
 
 
 class ProcrastinateSystemIntegration(BaseSystemIntegration):
@@ -41,6 +41,7 @@ class ProcrastinateSystemIntegration(BaseSystemIntegration):
         for task in list(app.tasks.values()):
             _instrument_task(task, system=self)
         _patch_app_task(app, system=self)
+        _patch_job_manager(app, system=self)
 
     def track_task(self, task_name):
         # Never auto-track Procrastinate's built-in housekeeping tasks
