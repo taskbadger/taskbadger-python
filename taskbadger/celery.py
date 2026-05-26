@@ -12,12 +12,13 @@ from celery.signals import (
 )
 from kombu import serialization
 
+from . import sdk
 from ._integrations import TERMINAL_STATES, TaskCache
 from ._integrations import safe_get_task as _shared_safe_get_task
 from .internal.models import StatusEnum
 from .mug import Badger
 from .safe_sdk import create_task_safe, update_task_safe
-from .sdk import DefaultMergeStrategy, get_task
+from .sdk import DefaultMergeStrategy
 
 KWARG_PREFIX = "taskbadger_"
 TB_KWARGS_ARG = f"{KWARG_PREFIX}kwargs"
@@ -91,7 +92,7 @@ class Task(celery.Task):
         tb_task_id = info.get(TB_TASK_ID) if isinstance(info, dict) else None
         setattr(result, TB_TASK_ID, tb_task_id)
 
-        _get_task = functools.partial(get_task, tb_task_id) if tb_task_id else lambda: None
+        _get_task = functools.partial(sdk.get_task, tb_task_id) if tb_task_id else lambda: None
         setattr(result, "get_taskbadger_task", _get_task)
 
         return result
@@ -328,7 +329,7 @@ def exit_session(signal_sender):
 
 
 def safe_get_task(task_id: str):
-    return _shared_safe_get_task(_task_cache, task_id, get_task)
+    return _shared_safe_get_task(_task_cache, task_id)
 
 
 def _get_taskbadger_task_id(request):

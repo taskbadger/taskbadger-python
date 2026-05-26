@@ -43,7 +43,7 @@ def test_celery_task(celery_session_app, celery_session_worker):
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe") as update,
-        mock.patch("taskbadger.celery.get_task") as get_task,
+        mock.patch("taskbadger.sdk.get_task") as get_task,
     ):
         tb_task = task_for_test()
         create.return_value = tb_task
@@ -71,7 +71,7 @@ def test_celery_task_with_args(celery_session_app, celery_session_worker):
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe"),
-        mock.patch("taskbadger.celery.get_task"),
+        mock.patch("taskbadger.sdk.get_task"),
     ):
         create.return_value = task_for_test()
 
@@ -100,7 +100,7 @@ def test_celery_task_with_kwargs(celery_session_app, celery_session_worker):
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe"),
-        mock.patch("taskbadger.celery.get_task"),
+        mock.patch("taskbadger.sdk.get_task"),
     ):
         create.return_value = task_for_test()
 
@@ -129,7 +129,7 @@ def test_celery_record_args(celery_session_app, celery_session_worker):
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe"),
-        mock.patch("taskbadger.celery.get_task"),
+        mock.patch("taskbadger.sdk.get_task"),
     ):
         create.return_value = task_for_test()
 
@@ -162,7 +162,7 @@ def test_celery_record_task_kwargs(celery_session_app, celery_session_worker):
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe"),
-        mock.patch("taskbadger.celery.get_task"),
+        mock.patch("taskbadger.sdk.get_task"),
     ):
         create.return_value = task_for_test()
 
@@ -206,7 +206,7 @@ def test_celery_record_task_args_custom_serialization(celery_session_app, celery
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe"),
-        mock.patch("taskbadger.celery.get_task"),
+        mock.patch("taskbadger.sdk.get_task"),
     ):
         create.return_value = task_for_test()
 
@@ -240,7 +240,7 @@ def test_celery_task_with_args_in_decorator(celery_session_app, celery_session_w
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe"),
-        mock.patch("taskbadger.celery.get_task"),
+        mock.patch("taskbadger.sdk.get_task"),
     ):
         create.return_value = task_for_test()
 
@@ -272,7 +272,7 @@ def test_celery_task_retry(celery_session_app, celery_session_worker):
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe") as update,
-        mock.patch("taskbadger.celery.get_task") as get_task,
+        mock.patch("taskbadger.sdk.get_task") as get_task,
     ):
         create.return_value = task_for_test()
         get_task.return_value = task_for_test()
@@ -292,7 +292,7 @@ def test_celery_task_retry(celery_session_app, celery_session_worker):
 def test_celery_task_badger_not_configured(celery_session_app, celery_session_worker):
     @celery_session_app.task(bind=True, base=Task)
     def add_no_tb(self, a, b):
-        with mock.patch("taskbadger.celery.get_task") as get_task:
+        with mock.patch("taskbadger.sdk.get_task") as get_task:
             assert self.taskbadger_task_id is None
             assert Badger.current.session().client is None
             get_task.assert_not_called()
@@ -323,7 +323,7 @@ def test_celery_task_badger_not_configured(celery_session_app, celery_session_wo
 def test_task_direct_call(celery_session_app, celery_session_worker):
     @celery_session_app.task(bind=True, base=Task)
     def add_direct(self, a, b):
-        with mock.patch("taskbadger.celery.get_task") as get_task:
+        with mock.patch("taskbadger.sdk.get_task") as get_task:
             assert self.taskbadger_task_id is None
             assert Badger.current.session().client is None
             get_task.assert_not_called()
@@ -351,7 +351,7 @@ def test_task_shared_task(celery_session_worker):
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe") as update,
-        mock.patch("taskbadger.celery.get_task"),
+        mock.patch("taskbadger.sdk.get_task"),
     ):
         create.return_value = task_for_test()
 
@@ -378,7 +378,7 @@ def test_task_signature(celery_session_worker):
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe") as update,
-        mock.patch("taskbadger.celery.get_task") as get_task,
+        mock.patch("taskbadger.sdk.get_task") as get_task,
     ):
         create.return_value = task_for_test()
 
@@ -410,7 +410,7 @@ def test_task_map(celery_session_worker):
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe") as update,
-        mock.patch("taskbadger.celery.get_task"),
+        mock.patch("taskbadger.sdk.get_task"),
     ):
         tb_task = task_for_test()
         create.return_value = tb_task
@@ -443,7 +443,7 @@ def test_task_starmap(celery_session_worker):
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe") as update,
-        mock.patch("taskbadger.celery.get_task"),
+        mock.patch("taskbadger.sdk.get_task"),
     ):
         tb_task = task_for_test()
         create.return_value = tb_task
@@ -476,7 +476,7 @@ def test_task_chunks(celery_session_worker):
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe") as update,
-        mock.patch("taskbadger.celery.get_task"),
+        mock.patch("taskbadger.sdk.get_task"),
     ):
         tb_task = task_for_test()
         create.return_value = tb_task
@@ -506,7 +506,7 @@ def test_celery_task_already_in_terminal_state(celery_session_worker):
     with (
         mock.patch("taskbadger.celery.create_task_safe") as create,
         mock.patch("taskbadger.celery.update_task_safe") as update,
-        mock.patch("taskbadger.celery.get_task") as get_task,
+        mock.patch("taskbadger.sdk.get_task") as get_task,
     ):
         create.return_value = task_for_test()
 

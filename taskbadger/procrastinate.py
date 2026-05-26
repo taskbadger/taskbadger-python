@@ -22,7 +22,7 @@ from ._integrations import safe_get_task as _shared_safe_get_task
 from .internal.models import StatusEnum
 from .mug import Badger
 from .safe_sdk import create_task_safe, update_task_safe
-from .sdk import DefaultMergeStrategy, get_task
+from .sdk import DefaultMergeStrategy
 
 log = logging.getLogger("taskbadger")
 
@@ -141,7 +141,7 @@ _task_cache = TaskCache()
 
 
 def _safe_get_task(task_id):
-    return _shared_safe_get_task(_task_cache, task_id, get_task)
+    return _shared_safe_get_task(_task_cache, task_id)
 
 
 def _wrap_defer(task):

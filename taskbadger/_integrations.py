@@ -2,11 +2,9 @@
 (Celery, Procrastinate). Not part of the public API.
 
 Each integration creates its own module-level ``TaskCache`` instance and
-defines a thin ``safe_get_task`` wrapper that reads ``get_task`` from the
-integration module's own globals (so existing test mocks on
-``taskbadger.celery.get_task`` / ``taskbadger.procrastinate.get_task`` keep
-working). ``BaseSystemIntegration`` provides the common ctor/include-exclude
-shape; subclasses override ``track_task`` if they need to filter additional
+defines a thin ``safe_get_task`` wrapper around the shared one defined here.
+``BaseSystemIntegration`` provides the common ctor/include-exclude shape;
+subclasses override ``track_task`` if they need to filter additional
 task names (e.g. Procrastinate built-ins).
 """
 
@@ -15,8 +13,8 @@ from __future__ import annotations
 import collections
 import logging
 import re
-from collections.abc import Callable
 
+from . import sdk
 from .internal.models import StatusEnum
 from .systems import System
 
@@ -53,21 +51,16 @@ class TaskCache:
         self.cache.pop(key, None)
 
 
-def safe_get_task(cache: TaskCache, task_id: str, get_task_fn: Callable):
+def safe_get_task(cache: TaskCache, task_id: str):
     """Cache-aware ``get_task``: returns the cached entry if present, otherwise
-    fetches via ``get_task_fn`` and caches the result. Errors are logged and
+    fetches via the SDK ``get_task`` and caches the result. Errors are logged and
     swallowed (returns ``None``). ``None`` results are not cached.
-
-    ``get_task_fn`` is passed in (rather than imported here) so callers can
-    use their own module-level ``get_task`` reference — this keeps existing
-    test patches on ``taskbadger.celery.get_task`` / ``taskbadger.procrastinate.get_task``
-    intercepting the fetch.
     """
     cached = cache.get(task_id)
     if cached is not None:
         return cached
     try:
-        task = get_task_fn(task_id)
+        task = sdk.get_task(task_id)
     except Exception as e:
         log.warning("Error fetching task '%s': %s", task_id, e)
         return None

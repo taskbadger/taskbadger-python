@@ -44,7 +44,7 @@ def test_worker_updates_task_sync(app):
 
     with (
         mock.patch("taskbadger.procrastinate.update_task_safe") as update,
-        mock.patch("taskbadger.procrastinate.get_task") as get,
+        mock.patch("taskbadger.sdk.get_task") as get,
     ):
         get.return_value = task_for_test(status=StatusEnum.PROCESSING)
         add.func(a=2, b=3, **{TB_TASK_ID_KWARG: "tb-123"})
@@ -65,7 +65,7 @@ def test_worker_updates_task_async(app):
 
     with (
         mock.patch("taskbadger.procrastinate.update_task_safe") as update,
-        mock.patch("taskbadger.procrastinate.get_task") as get,
+        mock.patch("taskbadger.sdk.get_task") as get,
     ):
         get.return_value = task_for_test(status=StatusEnum.PROCESSING)
         result = asyncio.run(add_async.func(a=2, b=3, **{TB_TASK_ID_KWARG: "tb-456"}))
@@ -85,7 +85,7 @@ def test_worker_marks_error(app):
 
     with (
         mock.patch("taskbadger.procrastinate.update_task_safe") as update,
-        mock.patch("taskbadger.procrastinate.get_task") as get,
+        mock.patch("taskbadger.sdk.get_task") as get,
     ):
         get.return_value = task_for_test(status=StatusEnum.PROCESSING, data={"x": 1})
         update.return_value = task_for_test(status=StatusEnum.PROCESSING, data={"x": 1})
@@ -179,7 +179,7 @@ def test_end_to_end_via_worker(app):
     with (
         mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create,
         mock.patch("taskbadger.procrastinate.update_task_safe") as update,
-        mock.patch("taskbadger.procrastinate.get_task") as get,
+        mock.patch("taskbadger.sdk.get_task") as get,
     ):
         get.return_value = task_for_test(id=tb.id, status=StatusEnum.PROCESSING)
         add6.defer(a=2, b=3)
@@ -270,7 +270,7 @@ def test_current_task_inside_body(app):
     with (
         mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb),
         mock.patch("taskbadger.procrastinate.update_task_safe", return_value=tb),
-        mock.patch("taskbadger.procrastinate.get_task", return_value=tb),
+        mock.patch("taskbadger.sdk.get_task", return_value=tb),
     ):
         capture.defer()
         app.run_worker(wait=False, install_signal_handlers=False, listen_notify=False)
@@ -296,7 +296,7 @@ def test_user_set_terminal_state_not_overwritten(app):
     with (
         mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb_pending),
         mock.patch("taskbadger.procrastinate.update_task_safe") as update,
-        mock.patch("taskbadger.procrastinate.get_task", return_value=tb_done),
+        mock.patch("taskbadger.sdk.get_task", return_value=tb_done),
     ):
         self_complete.defer()
         app.run_worker(wait=False, install_signal_handlers=False, listen_notify=False)
@@ -340,7 +340,7 @@ def test_pass_context_forwards_context(app):
     with (
         mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb),
         mock.patch("taskbadger.procrastinate.update_task_safe"),
-        mock.patch("taskbadger.procrastinate.get_task", return_value=tb),
+        mock.patch("taskbadger.sdk.get_task", return_value=tb),
     ):
         ctx_task.defer(a=42)
         app.run_worker(wait=False, install_signal_handlers=False, listen_notify=False)
