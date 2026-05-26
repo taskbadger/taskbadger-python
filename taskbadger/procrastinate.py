@@ -160,17 +160,22 @@ def _wrap_defer(task):
     task.defer_async = defer_async
 
 
-def _maybe_create_pending(task, kwargs):
-    """Decide whether to track this defer, and if so create the TaskBadger
-    task and inject its id into ``kwargs``. Always returns the kwargs dict."""
+def _create_pending_task(task, task_kwargs):
+    """Create a PENDING TaskBadger task for ``task`` if it should be tracked.
+
+    Returns the created TaskBadger task, or ``None`` if Badger isn't
+    configured, the task isn't tracked (neither manual nor auto), or the
+    create call failed. ``task_kwargs`` is used only for the
+    ``record_task_args`` data capture.
+    """
     if not Badger.is_configured():
-        return kwargs
+        return None
 
     system = getattr(task, "_taskbadger_system", None)
     manual = getattr(task, _MANUAL_ATTR, False)
     auto = bool(system) and system.track_task(task.name)
     if not manual and not auto:
-        return kwargs
+        return None
 
     opts = dict(getattr(task, _OPTS_ATTR, {}) or {})
     name = opts.pop("name", None) or task.name
@@ -185,12 +190,18 @@ def _maybe_create_pending(task, kwargs):
     if record_args is None:
         record_args = bool(system) and system.record_task_args
     if record_args:
-        data["procrastinate_task_kwargs"] = _serialize_kwargs(kwargs)
+        data["procrastinate_task_kwargs"] = _serialize_kwargs(task_kwargs)
 
     if data:
         create_kwargs["data"] = data
 
-    tb_task = create_task_safe(name, **create_kwargs)
+    return create_task_safe(name, **create_kwargs)
+
+
+def _maybe_create_pending(task, kwargs):
+    """Decide whether to track this defer, and if so create the TaskBadger
+    task and inject its id into ``kwargs``. Always returns the kwargs dict."""
+    tb_task = _create_pending_task(task, kwargs)
     if tb_task is None:
         return kwargs
 
@@ -260,6 +271,37 @@ def current_task():
     if tb_id is None:
         return None
     return safe_get_task(tb_id)
+
+
+def _patch_job_manager(app, system):
+    """Patch ``app.job_manager.defer_periodic_job`` so periodic tasks are tracked.
+
+    Procrastinate's ``PeriodicDeferrer`` enqueues jobs by calling
+    ``job_manager.defer_periodic_job(job=..., ...)`` directly, bypassing
+    ``task.defer``/``defer_async``. Without this hook, ``@app.periodic`` tasks
+    would never get a PENDING TaskBadger task created at enqueue time.
+
+    Idempotent: a second call updates the system reference but doesn't
+    re-wrap.
+    """
+    jm = app.job_manager
+    if not getattr(jm, "_taskbadger_original_defer_periodic_job", None):
+        original = jm.defer_periodic_job
+        jm._taskbadger_original_defer_periodic_job = original
+
+        @functools.wraps(original)
+        async def patched(*, job, periodic_id, defer_timestamp):
+            task = app.tasks.get(job.task_name)
+            if task is not None:
+                tb_task = _create_pending_task(task, job.task_kwargs)
+                if tb_task is not None:
+                    new_kwargs = {**job.task_kwargs, TB_TASK_ID_KWARG: tb_task.id}
+                    job = job.evolve(task_kwargs=new_kwargs)
+            return await jm._taskbadger_original_defer_periodic_job(
+                job=job, periodic_id=periodic_id, defer_timestamp=defer_timestamp
+            )
+
+        jm.defer_periodic_job = patched
 
 
 def _patch_app_task(app, system):
