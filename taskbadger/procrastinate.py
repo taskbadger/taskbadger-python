@@ -11,13 +11,14 @@ Public API:
 
 from __future__ import annotations
 
-import collections
 import functools
 import inspect
 import json
 import logging
 from contextvars import ContextVar
 
+from ._integrations import TERMINAL_STATES, TaskCache
+from ._integrations import safe_get_task as _shared_safe_get_task
 from .internal.models import StatusEnum
 from .mug import Badger
 from .safe_sdk import create_task_safe, update_task_safe
@@ -29,13 +30,6 @@ log = logging.getLogger("taskbadger")
 # task_kwargs from the deferring process to the worker. Stripped before the
 # user function is called.
 TB_TASK_ID_KWARG = "__taskbadger_task_id__"
-
-TERMINAL_STATES = {
-    StatusEnum.SUCCESS,
-    StatusEnum.ERROR,
-    StatusEnum.CANCELLED,
-    StatusEnum.STALE,
-}
 
 # Sentinel attribute names set on a Procrastinate Task object once it has been
 # instrumented. Used to make instrumentation idempotent.
@@ -143,37 +137,11 @@ def _update_status(tb_id, status, exception=None):
         _task_cache.set(tb_id, updated)
 
 
-class _Cache:
-    def __init__(self, maxsize=128):
-        self.cache = collections.OrderedDict()
-        self.maxsize = maxsize
-
-    def set(self, key, value):
-        self.cache[key] = value
-        if len(self.cache) > self.maxsize:
-            self.cache.popitem(last=False)
-
-    def get(self, key):
-        return self.cache.get(key)
-
-    def unset(self, key):
-        self.cache.pop(key, None)
-
-
-_task_cache = _Cache()
+_task_cache = TaskCache()
 
 
 def _safe_get_task(task_id):
-    cached = _task_cache.get(task_id)
-    if cached is not None:
-        return cached
-    try:
-        task = get_task(task_id)
-    except Exception as e:
-        log.warning("Error fetching task '%s': %s", task_id, e)
-        return None
-    _task_cache.set(task_id, task)
-    return task
+    return _shared_safe_get_task(_task_cache, task_id, get_task)
 
 
 def _wrap_defer(task):

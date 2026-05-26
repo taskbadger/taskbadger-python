@@ -1,9 +1,7 @@
-import re
-
-from taskbadger.systems import System
+from taskbadger._integrations import BaseSystemIntegration
 
 
-class CelerySystemIntegration(System):
+class CelerySystemIntegration(BaseSystemIntegration):
     identifier = "celery"
 
     def __init__(self, auto_track_tasks=True, includes=None, excludes=None, record_task_args=False):
@@ -18,29 +16,13 @@ class CelerySystemIntegration(System):
                 the full task name or a regular expression. Exclusions take precedence over inclusions.
             record_task_args: Record the arguments passed to each task.
         """
-        self.auto_track_tasks = auto_track_tasks
-        self.includes = includes
-        self.excludes = excludes
-        self.record_task_args = record_task_args
+        super().__init__(
+            auto_track_tasks=auto_track_tasks,
+            includes=includes,
+            excludes=excludes,
+            record_task_args=record_task_args,
+        )
 
         if auto_track_tasks:
             # Importing this here ensures that the Celery signal handlers are registered
-            import taskbadger.celery  # noqa
-
-    def track_task(self, task_name):
-        if not self.auto_track_tasks:
-            return False
-
-        if self.excludes:
-            for exclude in self.excludes:
-                if re.fullmatch(exclude, task_name):
-                    return False
-
-        if self.includes:
-            for include in self.includes:
-                if re.fullmatch(include, task_name):
-                    break
-            else:
-                return False
-
-        return True
+            import taskbadger.celery  # noqa: F401

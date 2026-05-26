@@ -1,4 +1,3 @@
-import collections
 import functools
 import json
 import logging
@@ -13,6 +12,8 @@ from celery.signals import (
 )
 from kombu import serialization
 
+from ._integrations import TERMINAL_STATES, TaskCache
+from ._integrations import safe_get_task as _shared_safe_get_task
 from .internal.models import StatusEnum
 from .mug import Badger
 from .safe_sdk import create_task_safe, update_task_safe
@@ -23,54 +24,9 @@ TB_KWARGS_ARG = f"{KWARG_PREFIX}kwargs"
 IGNORE_ARGS = {TB_KWARGS_ARG, f"{KWARG_PREFIX}task", f"{KWARG_PREFIX}task_id", f"{KWARG_PREFIX}record_task_args"}
 TB_TASK_ID = f"{KWARG_PREFIX}task_id"
 
-TERMINAL_STATES = {
-    StatusEnum.SUCCESS,
-    StatusEnum.ERROR,
-    StatusEnum.CANCELLED,
-    StatusEnum.STALE,
-}
-
 log = logging.getLogger("taskbadger")
 
-
-class Cache:
-    def __init__(self, maxsize=128):
-        self.cache = collections.OrderedDict()
-        self.maxsize = maxsize
-
-    def set(self, key, value):
-        self.cache[key] = value
-
-    def unset(self, key):
-        self.cache.pop(key, None)
-
-    def get(self, key):
-        return self.cache.get(key)
-
-    def prune(self):
-        if len(self.cache) > self.maxsize:
-            self.cache.popitem(last=False)
-
-
-def cached(cache_none=True, maxsize=128):
-    cache = Cache(maxsize=maxsize)
-
-    def _wrapper(func):
-        @functools.wraps(func)
-        def _inner(*args, **kwargs):
-            key = args + tuple(sorted(kwargs.items()))
-            if key in cache.cache:
-                return cache.get(key)
-
-            result = func(*args, **kwargs)
-            if result is not None or cache_none:
-                cache.set(key, result)
-            return result
-
-        _inner.cache = cache
-        return _inner
-
-    return _wrapper
+_task_cache = TaskCache()
 
 
 class Task(celery.Task):
@@ -292,7 +248,7 @@ def _maybe_create_task(signal_sender):
     if task:
         # Store the task ID in the request so _update_task can find it
         signal_sender.request.update({TB_TASK_ID: task.id})
-        safe_get_task.cache.set((task.id,), task)
+        _task_cache.set(task.id, task)
 
 
 @task_prerun.connect
@@ -344,7 +300,7 @@ def _update_task(signal_sender, status, einfo=None):
         data = DefaultMergeStrategy().merge(task.data, {"exception": str(einfo)})
     task = update_task_safe(task.id, status=status, data=data)
     if task:
-        safe_get_task.cache.set((task_id,), task)
+        _task_cache.set(task_id, task)
 
 
 def enter_session():
@@ -364,20 +320,15 @@ def exit_session(signal_sender):
     if not task_id or not Badger.is_configured():
         return
 
-    safe_get_task.cache.unset((task_id,))
-    safe_get_task.cache.prune()
+    _task_cache.unset(task_id)
 
     session = Badger.current.session()
     if session.client:
         session.__exit__()
 
 
-@cached(cache_none=False)
 def safe_get_task(task_id: str):
-    try:
-        return get_task(task_id)
-    except Exception as e:
-        log.warning("Error fetching task '%s': %s", task_id, e)
+    return _shared_safe_get_task(_task_cache, task_id, get_task)
 
 
 def _get_taskbadger_task_id(request):
