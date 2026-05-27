@@ -1,5 +1,6 @@
 from http import HTTPStatus
-from typing import Any, Optional, Union
+from typing import Any, cast
+from urllib.parse import quote
 from uuid import UUID
 
 import httpx
@@ -16,7 +17,7 @@ def _get_kwargs(
     project_slug: str,
     *,
     body: TaskRequest,
-    x_taskbadger_monitor: Union[Unset, UUID] = UNSET,
+    x_taskbadger_monitor: UUID | Unset = UNSET,
 ) -> dict[str, Any]:
     headers: dict[str, Any] = {}
     if not isinstance(x_taskbadger_monitor, Unset):
@@ -24,7 +25,10 @@ def _get_kwargs(
 
     _kwargs: dict[str, Any] = {
         "method": "post",
-        "url": f"/api/{organization_slug}/{project_slug}/tasks/",
+        "url": "/api/{organization_slug}/{project_slug}/tasks/".format(
+            organization_slug=quote(str(organization_slug), safe=""),
+            project_slug=quote(str(project_slug), safe=""),
+        ),
     }
 
     _kwargs["json"] = body.to_dict()
@@ -35,7 +39,7 @@ def _get_kwargs(
     return _kwargs
 
 
-def _parse_response(*, client: Union[AuthenticatedClient, Client], response: httpx.Response) -> Optional[Task]:
+def _parse_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> Task | None:
     if response.status_code == 201:
         response_201 = Task.from_dict(response.json())
 
@@ -47,7 +51,7 @@ def _parse_response(*, client: Union[AuthenticatedClient, Client], response: htt
         return None
 
 
-def _build_response(*, client: Union[AuthenticatedClient, Client], response: httpx.Response) -> Response[Task]:
+def _build_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> Response[Task]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -62,7 +66,7 @@ def sync_detailed(
     *,
     client: AuthenticatedClient,
     body: TaskRequest,
-    x_taskbadger_monitor: Union[Unset, UUID] = UNSET,
+    x_taskbadger_monitor: UUID | Unset = UNSET,
 ) -> Response[Task]:
     """Create Task
 
@@ -71,7 +75,7 @@ def sync_detailed(
     Args:
         organization_slug (str):
         project_slug (str):
-        x_taskbadger_monitor (Union[Unset, UUID]):
+        x_taskbadger_monitor (UUID | Unset):
         body (TaskRequest):
 
     Raises:
@@ -102,8 +106,8 @@ def sync(
     *,
     client: AuthenticatedClient,
     body: TaskRequest,
-    x_taskbadger_monitor: Union[Unset, UUID] = UNSET,
-) -> Optional[Task]:
+    x_taskbadger_monitor: UUID | Unset = UNSET,
+) -> Task | None:
     """Create Task
 
      Create a task
@@ -111,7 +115,7 @@ def sync(
     Args:
         organization_slug (str):
         project_slug (str):
-        x_taskbadger_monitor (Union[Unset, UUID]):
+        x_taskbadger_monitor (UUID | Unset):
         body (TaskRequest):
 
     Raises:
@@ -137,7 +141,7 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient,
     body: TaskRequest,
-    x_taskbadger_monitor: Union[Unset, UUID] = UNSET,
+    x_taskbadger_monitor: UUID | Unset = UNSET,
 ) -> Response[Task]:
     """Create Task
 
@@ -146,7 +150,7 @@ async def asyncio_detailed(
     Args:
         organization_slug (str):
         project_slug (str):
-        x_taskbadger_monitor (Union[Unset, UUID]):
+        x_taskbadger_monitor (UUID | Unset):
         body (TaskRequest):
 
     Raises:
@@ -175,8 +179,8 @@ async def asyncio(
     *,
     client: AuthenticatedClient,
     body: TaskRequest,
-    x_taskbadger_monitor: Union[Unset, UUID] = UNSET,
-) -> Optional[Task]:
+    x_taskbadger_monitor: UUID | Unset = UNSET,
+) -> Task | None:
     """Create Task
 
      Create a task
@@ -184,7 +188,7 @@ async def asyncio(
     Args:
         organization_slug (str):
         project_slug (str):
-        x_taskbadger_monitor (Union[Unset, UUID]):
+        x_taskbadger_monitor (UUID | Unset):
         body (TaskRequest):
 
     Raises:

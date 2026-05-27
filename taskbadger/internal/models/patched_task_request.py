@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import datetime
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, Generator, TextIO, TypeVar, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -20,8 +22,8 @@ T = TypeVar("T", bound="PatchedTaskRequest")
 class PatchedTaskRequest:
     """
     Attributes:
-        name (Union[Unset, str]): Name of the task
-        status (Union[Unset, StatusEnum]): * `pending` - pending
+        name (str | Unset): Name of the task
+        status (StatusEnum | Unset): * `pending` - pending
             * `pre_processing` - pre_processing
             * `processing` - processing
             * `post_processing` - post_processing
@@ -29,44 +31,45 @@ class PatchedTaskRequest:
             * `error` - error
             * `cancelled` - cancelled
             * `stale` - stale Default: StatusEnum.PENDING.
-        value (Union[None, Unset, int]): Current progress value.
-        value_max (Union[Unset, int]): Maximum value of the task. Defaults to 100.
-        data (Union[Unset, Any]): Custom metadata
-        start_time (Union[None, Unset, datetime.datetime]): Datetime when the status is set to a running state. Can be
-            set via the API.
-        end_time (Union[None, Unset, datetime.datetime]): Datetime when status is set to a terminal value.Can be set via
-            the API.
-        time_to_start (Union[None, Unset, str]): Duration between task creation and when status first changes from
-            pending. (seconds)
-        max_runtime (Union[None, Unset, int]): Maximum duration the task can be running for before being considered
-            failed. (seconds)
-        stale_timeout (Union[None, Unset, int]): Maximum time to allow between task updates before considering the task
+        value (int | None | Unset): Current progress value.
+        value_max (int | Unset): Maximum value of the task. Defaults to 100.
+        data (Any | Unset): Custom metadata
+        start_time (datetime.datetime | None | Unset): Datetime when the status is set to a running state. Can be set
+            via the API.
+        end_time (datetime.datetime | None | Unset): Datetime when status is set to a terminal value.Can be set via the
+            API.
+        time_to_start (None | str | Unset): Duration between task creation and when status first changes from pending.
+            (seconds)
+        max_runtime (int | None | Unset): Maximum duration the task can be running for before being considered failed.
+            (seconds)
+        stale_timeout (int | None | Unset): Maximum time to allow between task updates before considering the task
             stale. (seconds)
-        tags (Union[Unset, PatchedTaskRequestTags]): Tags for the task represented as a mapping from 'namespace' to
-            'value'.
+        tags (PatchedTaskRequestTags | Unset): Tags for the task represented as a mapping from 'namespace' to 'value'.
     """
 
-    name: Union[Unset, str] = UNSET
-    status: Union[Unset, StatusEnum] = StatusEnum.PENDING
-    value: Union[None, Unset, int] = UNSET
-    value_max: Union[Unset, int] = UNSET
-    data: Union[Unset, Any] = UNSET
-    start_time: Union[None, Unset, datetime.datetime] = UNSET
-    end_time: Union[None, Unset, datetime.datetime] = UNSET
-    time_to_start: Union[None, Unset, str] = UNSET
-    max_runtime: Union[None, Unset, int] = UNSET
-    stale_timeout: Union[None, Unset, int] = UNSET
-    tags: Union[Unset, "PatchedTaskRequestTags"] = UNSET
+    name: str | Unset = UNSET
+    status: StatusEnum | Unset = StatusEnum.PENDING
+    value: int | None | Unset = UNSET
+    value_max: int | Unset = UNSET
+    data: Any | Unset = UNSET
+    start_time: datetime.datetime | None | Unset = UNSET
+    end_time: datetime.datetime | None | Unset = UNSET
+    time_to_start: None | str | Unset = UNSET
+    max_runtime: int | None | Unset = UNSET
+    stale_timeout: int | None | Unset = UNSET
+    tags: PatchedTaskRequestTags | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        from ..models.patched_task_request_tags import PatchedTaskRequestTags
+
         name = self.name
 
-        status: Union[Unset, str] = UNSET
+        status: str | Unset = UNSET
         if not isinstance(self.status, Unset):
             status = self.status.value
 
-        value: Union[None, Unset, int]
+        value: int | None | Unset
         if isinstance(self.value, Unset):
             value = UNSET
         else:
@@ -76,7 +79,7 @@ class PatchedTaskRequest:
 
         data = self.data
 
-        start_time: Union[None, Unset, str]
+        start_time: None | str | Unset
         if isinstance(self.start_time, Unset):
             start_time = UNSET
         elif isinstance(self.start_time, datetime.datetime):
@@ -84,7 +87,7 @@ class PatchedTaskRequest:
         else:
             start_time = self.start_time
 
-        end_time: Union[None, Unset, str]
+        end_time: None | str | Unset
         if isinstance(self.end_time, Unset):
             end_time = UNSET
         elif isinstance(self.end_time, datetime.datetime):
@@ -92,25 +95,25 @@ class PatchedTaskRequest:
         else:
             end_time = self.end_time
 
-        time_to_start: Union[None, Unset, str]
+        time_to_start: None | str | Unset
         if isinstance(self.time_to_start, Unset):
             time_to_start = UNSET
         else:
             time_to_start = self.time_to_start
 
-        max_runtime: Union[None, Unset, int]
+        max_runtime: int | None | Unset
         if isinstance(self.max_runtime, Unset):
             max_runtime = UNSET
         else:
             max_runtime = self.max_runtime
 
-        stale_timeout: Union[None, Unset, int]
+        stale_timeout: int | None | Unset
         if isinstance(self.stale_timeout, Unset):
             stale_timeout = UNSET
         else:
             stale_timeout = self.stale_timeout
 
-        tags: Union[Unset, dict[str, Any]] = UNSET
+        tags: dict[str, Any] | Unset = UNSET
         if not isinstance(self.tags, Unset):
             tags = self.tags.to_dict()
 
@@ -150,18 +153,18 @@ class PatchedTaskRequest:
         name = d.pop("name", UNSET)
 
         _status = d.pop("status", UNSET)
-        status: Union[Unset, StatusEnum]
+        status: StatusEnum | Unset
         if isinstance(_status, Unset):
             status = UNSET
         else:
             status = StatusEnum(_status)
 
-        def _parse_value(data: object) -> Union[None, Unset, int]:
+        def _parse_value(data: object) -> int | None | Unset:
             if data is None:
                 return data
             if isinstance(data, Unset):
                 return data
-            return cast(Union[None, Unset, int], data)
+            return cast(int | None | Unset, data)
 
         value = _parse_value(d.pop("value", UNSET))
 
@@ -169,7 +172,7 @@ class PatchedTaskRequest:
 
         data = d.pop("data", UNSET)
 
-        def _parse_start_time(data: object) -> Union[None, Unset, datetime.datetime]:
+        def _parse_start_time(data: object) -> datetime.datetime | None | Unset:
             if data is None:
                 return data
             if isinstance(data, Unset):
@@ -180,13 +183,13 @@ class PatchedTaskRequest:
                 start_time_type_0 = isoparse(data)
 
                 return start_time_type_0
-            except:  # noqa: E722
+            except (TypeError, ValueError, AttributeError, KeyError):
                 pass
-            return cast(Union[None, Unset, datetime.datetime], data)
+            return cast(datetime.datetime | None | Unset, data)
 
         start_time = _parse_start_time(d.pop("start_time", UNSET))
 
-        def _parse_end_time(data: object) -> Union[None, Unset, datetime.datetime]:
+        def _parse_end_time(data: object) -> datetime.datetime | None | Unset:
             if data is None:
                 return data
             if isinstance(data, Unset):
@@ -197,41 +200,41 @@ class PatchedTaskRequest:
                 end_time_type_0 = isoparse(data)
 
                 return end_time_type_0
-            except:  # noqa: E722
+            except (TypeError, ValueError, AttributeError, KeyError):
                 pass
-            return cast(Union[None, Unset, datetime.datetime], data)
+            return cast(datetime.datetime | None | Unset, data)
 
         end_time = _parse_end_time(d.pop("end_time", UNSET))
 
-        def _parse_time_to_start(data: object) -> Union[None, Unset, str]:
+        def _parse_time_to_start(data: object) -> None | str | Unset:
             if data is None:
                 return data
             if isinstance(data, Unset):
                 return data
-            return cast(Union[None, Unset, str], data)
+            return cast(None | str | Unset, data)
 
         time_to_start = _parse_time_to_start(d.pop("time_to_start", UNSET))
 
-        def _parse_max_runtime(data: object) -> Union[None, Unset, int]:
+        def _parse_max_runtime(data: object) -> int | None | Unset:
             if data is None:
                 return data
             if isinstance(data, Unset):
                 return data
-            return cast(Union[None, Unset, int], data)
+            return cast(int | None | Unset, data)
 
         max_runtime = _parse_max_runtime(d.pop("max_runtime", UNSET))
 
-        def _parse_stale_timeout(data: object) -> Union[None, Unset, int]:
+        def _parse_stale_timeout(data: object) -> int | None | Unset:
             if data is None:
                 return data
             if isinstance(data, Unset):
                 return data
-            return cast(Union[None, Unset, int], data)
+            return cast(int | None | Unset, data)
 
         stale_timeout = _parse_stale_timeout(d.pop("stale_timeout", UNSET))
 
         _tags = d.pop("tags", UNSET)
-        tags: Union[Unset, PatchedTaskRequestTags]
+        tags: PatchedTaskRequestTags | Unset
         if isinstance(_tags, Unset):
             tags = UNSET
         else:

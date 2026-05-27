@@ -1,5 +1,6 @@
 from http import HTTPStatus
-from typing import Any, Optional, Union
+from typing import Any, cast
+from urllib.parse import quote
 from uuid import UUID
 
 import httpx
@@ -8,7 +9,7 @@ from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.task import Task
 from ...models.task_request import TaskRequest
-from ...types import Response
+from ...types import UNSET, Response
 
 
 def _get_kwargs(
@@ -22,7 +23,11 @@ def _get_kwargs(
 
     _kwargs: dict[str, Any] = {
         "method": "put",
-        "url": f"/api/{organization_slug}/{project_slug}/tasks/{id}/",
+        "url": "/api/{organization_slug}/{project_slug}/tasks/{id}/".format(
+            organization_slug=quote(str(organization_slug), safe=""),
+            project_slug=quote(str(project_slug), safe=""),
+            id=quote(str(id), safe=""),
+        ),
     }
 
     _kwargs["json"] = body.to_dict()
@@ -33,7 +38,7 @@ def _get_kwargs(
     return _kwargs
 
 
-def _parse_response(*, client: Union[AuthenticatedClient, Client], response: httpx.Response) -> Optional[Task]:
+def _parse_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> Task | None:
     if response.status_code == 200:
         response_200 = Task.from_dict(response.json())
 
@@ -45,7 +50,7 @@ def _parse_response(*, client: Union[AuthenticatedClient, Client], response: htt
         return None
 
 
-def _build_response(*, client: Union[AuthenticatedClient, Client], response: httpx.Response) -> Response[Task]:
+def _build_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> Response[Task]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -101,7 +106,7 @@ def sync(
     *,
     client: AuthenticatedClient,
     body: TaskRequest,
-) -> Optional[Task]:
+) -> Task | None:
     """Update Task
 
      Update a task
@@ -174,7 +179,7 @@ async def asyncio(
     *,
     client: AuthenticatedClient,
     body: TaskRequest,
-) -> Optional[Task]:
+) -> Task | None:
     """Update Task
 
      Update a task
