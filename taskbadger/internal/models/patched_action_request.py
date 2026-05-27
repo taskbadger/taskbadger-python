@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from collections.abc import Mapping
-from typing import Any, TypeVar, Union
+from typing import TYPE_CHECKING, Any, BinaryIO, Generator, TextIO, TypeVar
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -13,14 +15,14 @@ T = TypeVar("T", bound="PatchedActionRequest")
 class PatchedActionRequest:
     """
     Attributes:
-        trigger (Union[Unset, str]):
-        integration (Union[Unset, str]):
-        config (Union[Unset, Any]):
+        trigger (str | Unset):
+        integration (str | Unset):
+        config (Any | Unset):
     """
 
-    trigger: Union[Unset, str] = UNSET
-    integration: Union[Unset, str] = UNSET
-    config: Union[Unset, Any] = UNSET
+    trigger: str | Unset = UNSET
+    integration: str | Unset = UNSET
+    config: Any | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:

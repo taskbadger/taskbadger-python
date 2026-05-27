@@ -1,12 +1,13 @@
 from http import HTTPStatus
-from typing import Any, Optional, Union
+from typing import Any, cast
+from urllib.parse import quote
 
 import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.action import Action
-from ...types import Response
+from ...types import UNSET, Response
 
 
 def _get_kwargs(
@@ -14,17 +15,20 @@ def _get_kwargs(
     project_slug: str,
     task_id: str,
 ) -> dict[str, Any]:
+
     _kwargs: dict[str, Any] = {
         "method": "get",
-        "url": f"/api/{organization_slug}/{project_slug}/tasks/{task_id}/actions/",
+        "url": "/api/{organization_slug}/{project_slug}/tasks/{task_id}/actions/".format(
+            organization_slug=quote(str(organization_slug), safe=""),
+            project_slug=quote(str(project_slug), safe=""),
+            task_id=quote(str(task_id), safe=""),
+        ),
     }
 
     return _kwargs
 
 
-def _parse_response(
-    *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[list["Action"]]:
+def _parse_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> list[Action] | None:
     if response.status_code == 200:
         response_200 = []
         _response_200 = response.json()
@@ -41,9 +45,7 @@ def _parse_response(
         return None
 
 
-def _build_response(
-    *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[list["Action"]]:
+def _build_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> Response[list[Action]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -58,7 +60,7 @@ def sync_detailed(
     task_id: str,
     *,
     client: AuthenticatedClient,
-) -> Response[list["Action"]]:
+) -> Response[list[Action]]:
     """List Actions
 
      List actions for task
@@ -73,7 +75,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[list['Action']]
+        Response[list[Action]]
     """
 
     kwargs = _get_kwargs(
@@ -95,7 +97,7 @@ def sync(
     task_id: str,
     *,
     client: AuthenticatedClient,
-) -> Optional[list["Action"]]:
+) -> list[Action] | None:
     """List Actions
 
      List actions for task
@@ -110,7 +112,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        list['Action']
+        list[Action]
     """
 
     return sync_detailed(
@@ -127,7 +129,7 @@ async def asyncio_detailed(
     task_id: str,
     *,
     client: AuthenticatedClient,
-) -> Response[list["Action"]]:
+) -> Response[list[Action]]:
     """List Actions
 
      List actions for task
@@ -142,7 +144,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[list['Action']]
+        Response[list[Action]]
     """
 
     kwargs = _get_kwargs(
@@ -162,7 +164,7 @@ async def asyncio(
     task_id: str,
     *,
     client: AuthenticatedClient,
-) -> Optional[list["Action"]]:
+) -> list[Action] | None:
     """List Actions
 
      List actions for task
@@ -177,7 +179,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        list['Action']
+        list[Action]
     """
 
     return (

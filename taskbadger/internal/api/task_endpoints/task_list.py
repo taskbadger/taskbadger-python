@@ -1,5 +1,6 @@
 from http import HTTPStatus
-from typing import Any, Optional, Union
+from typing import Any, cast
+from urllib.parse import quote
 
 import httpx
 
@@ -13,9 +14,10 @@ def _get_kwargs(
     organization_slug: str,
     project_slug: str,
     *,
-    cursor: Union[Unset, str] = UNSET,
-    page_size: Union[Unset, int] = UNSET,
+    cursor: str | Unset = UNSET,
+    page_size: int | Unset = UNSET,
 ) -> dict[str, Any]:
+
     params: dict[str, Any] = {}
 
     params["cursor"] = cursor
@@ -26,16 +28,17 @@ def _get_kwargs(
 
     _kwargs: dict[str, Any] = {
         "method": "get",
-        "url": f"/api/{organization_slug}/{project_slug}/tasks/",
+        "url": "/api/{organization_slug}/{project_slug}/tasks/".format(
+            organization_slug=quote(str(organization_slug), safe=""),
+            project_slug=quote(str(project_slug), safe=""),
+        ),
         "params": params,
     }
 
     return _kwargs
 
 
-def _parse_response(
-    *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[PaginatedTaskList]:
+def _parse_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> PaginatedTaskList | None:
     if response.status_code == 200:
         response_200 = PaginatedTaskList.from_dict(response.json())
 
@@ -47,9 +50,7 @@ def _parse_response(
         return None
 
 
-def _build_response(
-    *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[PaginatedTaskList]:
+def _build_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> Response[PaginatedTaskList]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -63,8 +64,8 @@ def sync_detailed(
     project_slug: str,
     *,
     client: AuthenticatedClient,
-    cursor: Union[Unset, str] = UNSET,
-    page_size: Union[Unset, int] = UNSET,
+    cursor: str | Unset = UNSET,
+    page_size: int | Unset = UNSET,
 ) -> Response[PaginatedTaskList]:
     """List Tasks
 
@@ -73,8 +74,8 @@ def sync_detailed(
     Args:
         organization_slug (str):
         project_slug (str):
-        cursor (Union[Unset, str]):
-        page_size (Union[Unset, int]):
+        cursor (str | Unset):
+        page_size (int | Unset):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -103,9 +104,9 @@ def sync(
     project_slug: str,
     *,
     client: AuthenticatedClient,
-    cursor: Union[Unset, str] = UNSET,
-    page_size: Union[Unset, int] = UNSET,
-) -> Optional[PaginatedTaskList]:
+    cursor: str | Unset = UNSET,
+    page_size: int | Unset = UNSET,
+) -> PaginatedTaskList | None:
     """List Tasks
 
      List all tasks
@@ -113,8 +114,8 @@ def sync(
     Args:
         organization_slug (str):
         project_slug (str):
-        cursor (Union[Unset, str]):
-        page_size (Union[Unset, int]):
+        cursor (str | Unset):
+        page_size (int | Unset):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -138,8 +139,8 @@ async def asyncio_detailed(
     project_slug: str,
     *,
     client: AuthenticatedClient,
-    cursor: Union[Unset, str] = UNSET,
-    page_size: Union[Unset, int] = UNSET,
+    cursor: str | Unset = UNSET,
+    page_size: int | Unset = UNSET,
 ) -> Response[PaginatedTaskList]:
     """List Tasks
 
@@ -148,8 +149,8 @@ async def asyncio_detailed(
     Args:
         organization_slug (str):
         project_slug (str):
-        cursor (Union[Unset, str]):
-        page_size (Union[Unset, int]):
+        cursor (str | Unset):
+        page_size (int | Unset):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -176,9 +177,9 @@ async def asyncio(
     project_slug: str,
     *,
     client: AuthenticatedClient,
-    cursor: Union[Unset, str] = UNSET,
-    page_size: Union[Unset, int] = UNSET,
-) -> Optional[PaginatedTaskList]:
+    cursor: str | Unset = UNSET,
+    page_size: int | Unset = UNSET,
+) -> PaginatedTaskList | None:
     """List Tasks
 
      List all tasks
@@ -186,8 +187,8 @@ async def asyncio(
     Args:
         organization_slug (str):
         project_slug (str):
-        cursor (Union[Unset, str]):
-        page_size (Union[Unset, int]):
+        cursor (str | Unset):
+        page_size (int | Unset):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

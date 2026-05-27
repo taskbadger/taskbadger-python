@@ -1,5 +1,6 @@
 from http import HTTPStatus
-from typing import Any, Optional, Union
+from typing import Any, cast
+from urllib.parse import quote
 from uuid import UUID
 
 import httpx
@@ -7,7 +8,7 @@ import httpx
 from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.action import Action
-from ...types import Response
+from ...types import UNSET, Response
 
 
 def _get_kwargs(
@@ -16,15 +17,21 @@ def _get_kwargs(
     task_id: str,
     id: UUID,
 ) -> dict[str, Any]:
+
     _kwargs: dict[str, Any] = {
         "method": "get",
-        "url": f"/api/{organization_slug}/{project_slug}/tasks/{task_id}/actions/{id}/",
+        "url": "/api/{organization_slug}/{project_slug}/tasks/{task_id}/actions/{id}/".format(
+            organization_slug=quote(str(organization_slug), safe=""),
+            project_slug=quote(str(project_slug), safe=""),
+            task_id=quote(str(task_id), safe=""),
+            id=quote(str(id), safe=""),
+        ),
     }
 
     return _kwargs
 
 
-def _parse_response(*, client: Union[AuthenticatedClient, Client], response: httpx.Response) -> Optional[Action]:
+def _parse_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> Action | None:
     if response.status_code == 200:
         response_200 = Action.from_dict(response.json())
 
@@ -36,7 +43,7 @@ def _parse_response(*, client: Union[AuthenticatedClient, Client], response: htt
         return None
 
 
-def _build_response(*, client: Union[AuthenticatedClient, Client], response: httpx.Response) -> Response[Action]:
+def _build_response(*, client: AuthenticatedClient | Client, response: httpx.Response) -> Response[Action]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -92,7 +99,7 @@ def sync(
     id: UUID,
     *,
     client: AuthenticatedClient,
-) -> Optional[Action]:
+) -> Action | None:
     """Get Action
 
      Fetch an action
@@ -165,7 +172,7 @@ async def asyncio(
     id: UUID,
     *,
     client: AuthenticatedClient,
-) -> Optional[Action]:
+) -> Action | None:
     """Get Action
 
      Fetch an action
