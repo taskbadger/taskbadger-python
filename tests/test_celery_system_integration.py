@@ -122,6 +122,7 @@ def test_celery_record_task_args(celery_session_app, celery_session_worker):
         "tests.test_celery_system_integration.add_normal",
         status=StatusEnum.PENDING,
         data={"celery_task_args": [2, 2], "celery_task_kwargs": {}},
+        queue="celery",
     )
     assert get_task.call_count == 1
     assert update.call_count == 2
@@ -153,7 +154,7 @@ def test_celery_record_task_args_local_override(celery_session_app, celery_sessi
         assert result.get(timeout=10, propagate=True) == 4
 
     create.assert_called_once_with(
-        "tests.test_celery_system_integration.add_normal_with_override", status=StatusEnum.PENDING
+        "tests.test_celery_system_integration.add_normal_with_override", status=StatusEnum.PENDING, queue="celery"
     )
 
 
@@ -187,6 +188,7 @@ def test_celery_global_tags(celery_session_app, celery_session_worker):
         name="tests.test_celery_system_integration.add_with_tags",
         status=StatusEnum.PENDING,
         tags=TaskRequestTags.from_dict({"tag1": "value1", "tag2": "override"}),
+        queue="celery",
     )
     create.assert_called_with(
         client=mock.ANY,

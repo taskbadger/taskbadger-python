@@ -59,6 +59,7 @@ def create(
     ),
     status: StatusEnum = typer.Option(StatusEnum.PROCESSING, help="The initial status of the task."),
     value_max: int = typer.Option(100, help="The maximum value for the task."),
+    queue: str = typer.Option(None, show_default=False, help="The name of the queue the task is from."),
     metadata: list[str] = typer.Option(
         None,
         show_default=False,
@@ -96,6 +97,7 @@ def create(
             actions=actions,
             monitor_id=monitor_id,
             tags=tags,
+            queue=queue,
         )
     except Exception as e:
         err_console.print(f"Error creating task: {e}")
@@ -121,6 +123,7 @@ def update(
     status: StatusEnum = typer.Option(StatusEnum.PROCESSING, help="The status of the task."),
     value: int = typer.Option(None, show_default=False, help="The current task value (progress)."),
     value_max: int = typer.Option(None, show_default=False, help="The maximum value for the task."),
+    queue: str = typer.Option(None, show_default=False, help="The name of the queue the task is from."),
     metadata: list[str] = typer.Option(
         None,
         show_default=False,
@@ -159,6 +162,7 @@ def update(
             data=metadata,
             actions=actions,
             tags=tags,
+            queue=queue,
         )
     except Exception as e:
         err_console.print(f"Error creating task: {e}")

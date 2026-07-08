@@ -98,7 +98,7 @@ def test_celery_task_with_args(celery_session_app, celery_session_worker):
         assert result.get(timeout=10, propagate=True) == 4
 
     create.assert_called_once_with(
-        "new_name", value_max=10, data={"foo": "bar"}, tags={"bar": "baz"}, status=StatusEnum.PENDING
+        "new_name", value_max=10, data={"foo": "bar"}, tags={"bar": "baz"}, status=StatusEnum.PENDING, queue="celery"
     )
 
 
@@ -128,7 +128,7 @@ def test_celery_task_with_kwargs(celery_session_app, celery_session_worker):
         )
         assert result.get(timeout=10, propagate=True) == 4
 
-    create.assert_called_once_with("new_name", value_max=10, actions=actions, status=StatusEnum.PENDING)
+    create.assert_called_once_with("new_name", value_max=10, actions=actions, status=StatusEnum.PENDING, queue="celery")
 
 
 @pytest.mark.usefixtures("_bind_settings")
@@ -161,6 +161,7 @@ def test_celery_record_args(celery_session_app, celery_session_worker):
         value_max=10,
         data={"foo": "bar", "celery_task_args": [2, 2], "celery_task_kwargs": {}},
         status=StatusEnum.PENDING,
+        queue="celery",
     )
 
 
@@ -198,6 +199,7 @@ def test_celery_record_task_kwargs(celery_session_app, celery_session_worker):
         data={"celery_task_args": [2, 2], "celery_task_kwargs": {"c": 3}},
         actions=actions,
         status=StatusEnum.PENDING,
+        queue="celery",
     )
 
 
@@ -234,6 +236,7 @@ def test_celery_record_task_args_custom_serialization(celery_session_app, celery
         "tests.test_celery.add_task_custom_serialization",
         data={"celery_task_args": [{"__type__": "A", "__value__": [2, 2]}], "celery_task_kwargs": {}},
         status=StatusEnum.PENDING,
+        queue="celery",
     )
 
 
@@ -261,7 +264,28 @@ def test_celery_task_with_args_in_decorator(celery_session_app, celery_session_w
         result = add_with_task_args_in_decorator.delay(2, 2)
         assert result.get(timeout=10, propagate=True) == 4
 
-    create.assert_called_once_with(mock.ANY, status=StatusEnum.PENDING, monitor_id="123", value_max=10)
+    create.assert_called_once_with(mock.ANY, status=StatusEnum.PENDING, monitor_id="123", value_max=10, queue="celery")
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_task_custom_queue(celery_session_app, celery_session_worker):
+    @celery_session_app.task(bind=True, base=Task)
+    def add_custom_queue(self, a, b):
+        return a + b
+
+    celery_session_worker.reload()
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe"),
+        mock.patch("taskbadger.sdk.get_task"),
+    ):
+        create.return_value = task_for_test()
+        # The task is routed to a queue the session worker doesn't consume, so we
+        # only assert on the create call made synchronously during publish.
+        add_custom_queue.apply_async((2, 2), queue="high_priority")
+
+    assert create.call_args.kwargs["queue"] == "high_priority"
 
 
 @pytest.mark.usefixtures("_bind_settings")

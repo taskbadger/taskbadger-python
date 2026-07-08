@@ -690,6 +690,10 @@ components:
           minLength: 1
           description: Name of the task
           maxLength: 255
+        queue:
+          type: string
+          description: Queue the task is from
+          maxLength: 255
         status:
           allOf:
           - $ref: '#/components/schemas/StatusEnum'
@@ -786,6 +790,10 @@ components:
           type: string
           description: Name of the task
           maxLength: 255
+        queue:
+          type: string
+          description: Queue the task is from
+          maxLength: 255
         status:
           allOf:
           - $ref: '#/components/schemas/StatusEnum'
@@ -880,6 +888,10 @@ components:
           type: string
           minLength: 1
           description: Name of the task
+          maxLength: 255
+        queue:
+          type: string
+          description: Queue the task is from
           maxLength: 255
         status:
           allOf:

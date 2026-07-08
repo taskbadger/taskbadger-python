@@ -122,6 +122,7 @@ class Task(celery.Task):
 
 @before_task_publish.connect
 def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
+    routing_key = kwargs.get("routing_key")
     headers = headers if "task" in headers else body
     header_kwargs = headers.pop(TB_KWARGS_ARG, {})  # always remove TB headers
     if sender.startswith("celery.") or not Badger.is_configured():
@@ -144,6 +145,8 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
     # get kwargs from the task headers (set via apply_async)
     kwargs.update(header_kwargs)
     kwargs["status"] = StatusEnum.PENDING
+    if routing_key and "queue" not in kwargs:
+        kwargs["queue"] = routing_key
     name = kwargs.pop("name", headers["task"])
 
     global_record_task_args = celery_system and celery_system.record_task_args
@@ -242,7 +245,9 @@ def _maybe_create_task(signal_sender):
 
     enter_session()
 
-    task = create_task_safe(task_name, status=StatusEnum.PENDING, data=data)
+    delivery_info = getattr(signal_sender.request, "delivery_info", None) or {}
+    queue = delivery_info.get("routing_key")
+    task = create_task_safe(task_name, status=StatusEnum.PENDING, data=data, queue=queue)
     if task:
         # Store the task ID in the request so _update_task can find it
         signal_sender.request.update({TB_TASK_ID: task.id})

@@ -120,12 +120,27 @@ def test_defer_creates_pending_task_and_injects_id(app):
 
     create.assert_called_once()
     assert create.call_args.args == ("add3",)
-    assert create.call_args.kwargs == {"status": StatusEnum.PENDING}
+    assert create.call_args.kwargs == {"status": StatusEnum.PENDING, "queue": "default"}
 
     # The injected id should appear in the Procrastinate job's task kwargs.
     jobs = list(app.connector.jobs.values())
     assert len(jobs) == 1
     assert jobs[0]["args"][TB_TASK_ID_KWARG] == tb.id
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_defer_sets_queue(app):
+    @app.task(name="add_queued", queue="high_priority")
+    def add_queued(a, b):
+        return a + b
+
+    _instrument_task(add_queued, system=None, manual=True)
+
+    tb = task_for_test()
+    with mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create:
+        add_queued.defer(a=1, b=2)
+
+    assert create.call_args.kwargs["queue"] == "high_priority"
 
 
 def test_defer_no_taskbadger_when_unconfigured(app):
@@ -218,6 +233,7 @@ def test_track_parameterized(app):
         "value_max": 10,
         "tags": {"env": "test"},
         "data": {"k": "v"},
+        "queue": "default",
     }
 
 
