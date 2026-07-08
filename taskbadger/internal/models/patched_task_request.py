@@ -23,6 +23,7 @@ class PatchedTaskRequest:
     """
     Attributes:
         name (str | Unset): Name of the task
+        queue (str | Unset): Queue the task is from
         status (StatusEnum | Unset): * `pending` - pending
             * `pre_processing` - pre_processing
             * `processing` - processing
@@ -48,6 +49,7 @@ class PatchedTaskRequest:
     """
 
     name: str | Unset = UNSET
+    queue: str | Unset = UNSET
     status: StatusEnum | Unset = StatusEnum.PENDING
     value: int | None | Unset = UNSET
     value_max: int | Unset = UNSET
@@ -64,6 +66,8 @@ class PatchedTaskRequest:
         from ..models.patched_task_request_tags import PatchedTaskRequestTags
 
         name = self.name
+
+        queue = self.queue
 
         status: str | Unset = UNSET
         if not isinstance(self.status, Unset):
@@ -122,6 +126,8 @@ class PatchedTaskRequest:
         field_dict.update({})
         if name is not UNSET:
             field_dict["name"] = name
+        if queue is not UNSET:
+            field_dict["queue"] = queue
         if status is not UNSET:
             field_dict["status"] = status
         if value is not UNSET:
@@ -151,6 +157,8 @@ class PatchedTaskRequest:
 
         d = dict(src_dict)
         name = d.pop("name", UNSET)
+
+        queue = d.pop("queue", UNSET)
 
         _status = d.pop("status", UNSET)
         status: StatusEnum | Unset
@@ -242,6 +250,7 @@ class PatchedTaskRequest:
 
         patched_task_request = cls(
             name=name,
+            queue=queue,
             status=status,
             value=value,
             value_max=value_max,

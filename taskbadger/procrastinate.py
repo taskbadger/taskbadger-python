@@ -160,13 +160,14 @@ def _wrap_defer(task):
     task.defer_async = defer_async
 
 
-def _create_pending_task(task, task_kwargs):
+def _create_pending_task(task, task_kwargs, queue=None):
     """Create a PENDING TaskBadger task for ``task`` if it should be tracked.
 
     Returns the created TaskBadger task, or ``None`` if Badger isn't
     configured, the task isn't tracked (neither manual nor auto), or the
     create call failed. ``task_kwargs`` is used only for the
-    ``record_task_args`` data capture.
+    ``record_task_args`` data capture. ``queue`` overrides the queue name
+    recorded on the TaskBadger task (defaults to the task's own queue).
     """
     if not Badger.is_configured():
         return None
@@ -180,6 +181,9 @@ def _create_pending_task(task, task_kwargs):
     opts = dict(getattr(task, _OPTS_ATTR, {}) or {})
     name = opts.pop("name", None) or task.name
     create_kwargs = {"status": StatusEnum.PENDING}
+    queue = queue or getattr(task, "queue", None)
+    if queue is not None:
+        create_kwargs["queue"] = queue
     for key in ("value_max", "tags"):
         if key in opts and opts[key] is not None:
             create_kwargs[key] = opts[key]
@@ -293,7 +297,7 @@ def _patch_job_manager(app, system):
         async def patched(*, job, periodic_id, defer_timestamp):
             task = app.tasks.get(job.task_name)
             if task is not None:
-                tb_task = _create_pending_task(task, job.task_kwargs)
+                tb_task = _create_pending_task(task, job.task_kwargs, queue=job.queue)
                 if tb_task is not None:
                     new_kwargs = {**job.task_kwargs, TB_TASK_ID_KWARG: tb_task.id}
                     job = job.evolve(task_kwargs=new_kwargs)

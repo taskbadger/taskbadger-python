@@ -23,6 +23,7 @@ class TaskRequest:
     """
     Attributes:
         name (str): Name of the task
+        queue (str | Unset): Queue the task is from
         status (StatusEnum | Unset): * `pending` - pending
             * `pre_processing` - pre_processing
             * `processing` - processing
@@ -48,6 +49,7 @@ class TaskRequest:
     """
 
     name: str
+    queue: str | Unset = UNSET
     status: StatusEnum | Unset = StatusEnum.PENDING
     value: int | None | Unset = UNSET
     value_max: int | Unset = UNSET
@@ -64,6 +66,8 @@ class TaskRequest:
         from ..models.task_request_tags import TaskRequestTags
 
         name = self.name
+
+        queue = self.queue
 
         status: str | Unset = UNSET
         if not isinstance(self.status, Unset):
@@ -124,6 +128,8 @@ class TaskRequest:
                 "name": name,
             }
         )
+        if queue is not UNSET:
+            field_dict["queue"] = queue
         if status is not UNSET:
             field_dict["status"] = status
         if value is not UNSET:
@@ -153,6 +159,8 @@ class TaskRequest:
 
         d = dict(src_dict)
         name = d.pop("name")
+
+        queue = d.pop("queue", UNSET)
 
         _status = d.pop("status", UNSET)
         status: StatusEnum | Unset
@@ -244,6 +252,7 @@ class TaskRequest:
 
         task_request = cls(
             name=name,
+            queue=queue,
             status=status,
             value=value,
             value_max=value_max,

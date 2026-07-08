@@ -151,6 +151,7 @@ def create_task(
     actions: list[Action] = None,
     monitor_id: str = None,
     tags: dict[str, str] = None,
+    queue: str = None,
 ) -> "Task":
     """Create a Task.
 
@@ -165,6 +166,7 @@ def create_task(
         actions: Task actions.
         monitor_id: ID of the monitor to associate this task with.
         tags: Dictionary of namespace -> value tags.
+        queue: Name of the queue the task is from.
 
     Returns:
         Task: The created Task object.
@@ -173,6 +175,8 @@ def create_task(
         "name": name,
         "status": status,
     }
+    if queue is not None:
+        task_dict["queue"] = queue
     if value is not None:
         task_dict["value"] = value
     if value_max is not None:
@@ -216,6 +220,7 @@ def update_task(
     stale_timeout: int = None,
     actions: list[Action] = None,
     tags: dict[str, str] = None,
+    queue: str = None,
 ) -> "Task":
     """Update a task.
     Requires only the task ID and fields to update.
@@ -231,6 +236,7 @@ def update_task(
         stale_timeout: Maximum allowed time between updates (seconds).
         actions: Task actions.
         tags: Dictionary of namespace -> value tags.
+        queue: Name of the queue the task is from.
 
     Returns:
         Task: The updated Task object.
@@ -242,6 +248,7 @@ def update_task(
     data = _none_to_unset(data)
     max_runtime = _none_to_unset(max_runtime)
     stale_timeout = _none_to_unset(stale_timeout)
+    queue = _none_to_unset(queue)
 
     data = data or UNSET
     body = PatchedTaskRequest(
@@ -252,6 +259,7 @@ def update_task(
         data=data,
         max_runtime=max_runtime,
         stale_timeout=stale_timeout,
+        queue=queue,
     )
     if actions:
         body.additional_properties = {"actions": [a.to_dict() for a in actions]}
@@ -314,6 +322,7 @@ class Task:
         actions: list[Action] = None,
         monitor_id: str = None,
         tags: dict[str, str] = None,
+        queue: str = None,
     ) -> "Task":
         """Create a new task
 
@@ -330,6 +339,7 @@ class Task:
             actions=actions,
             monitor_id=monitor_id,
             tags=tags,
+            queue=queue,
         )
 
     def __init__(self, task):
@@ -414,6 +424,7 @@ class Task:
         stale_timeout: int = None,
         actions: list[Action] = None,
         tags: dict[str, str] = None,
+        queue: str = None,
         data_merge_strategy: Any = None,
     ):
         """Generic update method used to update any of the task fields.
@@ -441,6 +452,7 @@ class Task:
             stale_timeout=stale_timeout,
             actions=actions,
             tags=tags,
+            queue=queue,
         )
         self._task = task._task
 
