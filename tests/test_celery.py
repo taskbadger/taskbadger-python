@@ -9,6 +9,7 @@ Celery runner thread will not have the configuration set.
 """
 
 import logging
+import time
 from unittest import mock
 
 import celery
@@ -19,6 +20,18 @@ from taskbadger import Action, EmailIntegration, StatusEnum
 from taskbadger.celery import Task
 from taskbadger.mug import Badger
 from tests.utils import task_for_test
+
+
+def _wait_for_call_count(mock_obj, expected, timeout=10.0):
+    """Wait until ``mock_obj`` has been called ``expected`` times.
+
+    The worker's ``task_success`` signal fires asynchronously, so the final
+    status update can lag behind ``result.get()`` returning. Poll for it while
+    the mock patch is still active to avoid a race with the ``with`` block exit.
+    """
+    deadline = time.monotonic() + timeout
+    while mock_obj.call_count < expected and time.monotonic() < deadline:
+        time.sleep(0.01)
 
 
 @pytest.fixture(autouse=True)
@@ -52,6 +65,7 @@ def test_celery_task(celery_session_app, celery_session_worker):
         assert result.taskbadger_task_id == tb_task.id
         assert result.get_taskbadger_task() is not None
         assert result.get(timeout=10, propagate=True) == 4
+        _wait_for_call_count(update, 2)
 
     create.assert_called_once()
     assert get_task.call_count == 2
@@ -416,6 +430,7 @@ def test_task_map(celery_session_worker):
         create.return_value = tb_task
         result = map_canvas.delay()
         assert result.get(timeout=10, propagate=True) == [0, 2, 4, 6, 8]
+        _wait_for_call_count(update, 2)
 
     # Map operation should create one TaskBadger task
     assert create.call_count == 1
@@ -449,6 +464,7 @@ def test_task_starmap(celery_session_worker):
         create.return_value = tb_task
         result = starmap_canvas.delay()
         assert result.get(timeout=10, propagate=True) == [3, 7, 11]
+        _wait_for_call_count(update, 2)
 
     # Starmap operation should create one TaskBadger task
     assert create.call_count == 1
@@ -482,6 +498,7 @@ def test_task_chunks(celery_session_worker):
         create.return_value = tb_task
         result = chunks_canvas.delay()
         assert result.get(timeout=10, propagate=True) == [[0, 2], [4, 6], [8, 10]]
+        _wait_for_call_count(update, 6)
 
     # Each chunk should create a TaskBadger task (3 chunks of 2)
     assert create.call_count == 3
