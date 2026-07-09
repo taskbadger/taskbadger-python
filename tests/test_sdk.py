@@ -312,6 +312,20 @@ def test_add_actions(settings, patched_update):
     )
 
 
+def test_actions_deprecated(settings, patched_create, patched_update):
+    api_task = task_for_test()
+    patched_create.return_value = Response(HTTPStatus.OK, b"", {}, api_task)
+    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, api_task)
+
+    action = Action("success", integration=EmailIntegration(to="me@example.com"))
+
+    with pytest.warns(DeprecationWarning, match="Per-task actions are deprecated"):
+        task = Task.create(name="task name", actions=[action])
+
+    with pytest.warns(DeprecationWarning, match="Per-task actions are deprecated"):
+        task.add_actions([action])
+
+
 def test_action_validation():
     WebhookIntegration(id="webhook:123")
     with pytest.raises(TaskbadgerException):

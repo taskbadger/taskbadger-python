@@ -163,7 +163,7 @@ def create_task(
         data: Custom task data.
         max_runtime: Maximum expected runtime (seconds).
         stale_timeout: Maximum allowed time between updates (seconds).
-        actions: Task actions.
+        actions: Task actions. **Deprecated:** use project-level actions instead.
         monitor_id: ID of the monitor to associate this task with.
         tags: Dictionary of namespace -> value tags.
         queue: Name of the queue the task is from.
@@ -190,6 +190,7 @@ def create_task(
         data = data or {}
         task_dict["data"] = {**scope.context, **data}
     if actions:
+        _warn_actions_deprecated()
         task_dict["actions"] = [a.to_dict() for a in actions]
     if scope.tags or tags:
         tags = tags or {}
@@ -234,7 +235,7 @@ def update_task(
         data: Custom task data.
         max_runtime: Maximum expected runtime (seconds).
         stale_timeout: Maximum allowed time between updates (seconds).
-        actions: Task actions.
+        actions: Task actions. **Deprecated:** use project-level actions instead.
         tags: Dictionary of namespace -> value tags.
         queue: Name of the queue the task is from.
 
@@ -262,6 +263,7 @@ def update_task(
         queue=queue,
     )
     if actions:
+        _warn_actions_deprecated()
         body.additional_properties = {"actions": [a.to_dict() for a in actions]}
     if tags:
         body.tags = PatchedTaskRequestTags.from_dict(tags)
@@ -279,6 +281,16 @@ def list_tasks(page_size: int = None, cursor: str = None):
         response = task_list.sync_detailed(client=client, **kwargs)
     _check_response(response)
     return response.parsed
+
+
+_ACTIONS_DEPRECATED_MESSAGE = (
+    "Per-task actions are deprecated in favor of project-level actions and will be "
+    "removed in a future release. See https://docs.taskbadger.net/integrations/."
+)
+
+
+def _warn_actions_deprecated():
+    warnings.warn(_ACTIONS_DEPRECATED_MESSAGE, DeprecationWarning, stacklevel=3)
 
 
 def _make_args(**kwargs):
@@ -457,7 +469,11 @@ class Task:
         self._task = task._task
 
     def add_actions(self, actions: list[Action]):
-        """Add actions to the task."""
+        """Add actions to the task.
+
+        **Deprecated:** per-task actions are deprecated in favor of project-level
+        actions and will be removed in a future release.
+        """
         self.update(actions=actions)
 
     def tag(self, tags: dict[str, str]):
