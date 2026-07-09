@@ -17,7 +17,7 @@ def run(
         "-a",
         metavar="<trigger integration config>",
         show_default=False,
-        help="Action definition e.g. 'success,error email to:me@email.com'",
+        help="[Deprecated] Action definition e.g. 'success,error email to:me@email.com'",
     ),
     tag: list[str] = typer.Option(
         None,
