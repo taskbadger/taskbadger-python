@@ -285,7 +285,7 @@ def list_tasks(page_size: int = None, cursor: str = None):
 
 _ACTIONS_DEPRECATED_MESSAGE = (
     "Per-task actions are deprecated in favor of project-level actions and will be "
-    "removed in a future release. See https://docs.taskbadger.net/integrations/."
+    "removed in a future release. See https://docs.taskbadger.net/actions/."
 )
 
 
