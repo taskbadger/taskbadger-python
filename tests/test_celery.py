@@ -316,6 +316,7 @@ def test_celery_task_retry(celery_session_app, celery_session_worker):
         get_task.return_value = task_for_test()
         result = add_retry.delay(2, 2)
         assert result.get(timeout=10, propagate=True) == 4
+        _wait_for_call_count(update, 4)
 
     assert create.call_count == 2
     assert update.call_args_list == [
@@ -422,6 +423,7 @@ def test_task_signature(celery_session_worker):
 
         result = chain.delay()
         assert result.get(timeout=10, propagate=True) == 16
+        _wait_for_call_count(update, 6)
 
     assert create.call_count == 3
     assert get_task.call_count == 3
