@@ -24,6 +24,8 @@ class TaskRequest:
     Attributes:
         name (str): Name of the task
         queue (str | Unset): Queue the task is from
+        external_id (str | Unset): Identifier from the originating system (e.g. Celery task ID) for correlating with
+            logs
         status (StatusEnum | Unset): * `pending` - pending
             * `pre_processing` - pre_processing
             * `processing` - processing
@@ -50,6 +52,7 @@ class TaskRequest:
 
     name: str
     queue: str | Unset = UNSET
+    external_id: str | Unset = UNSET
     status: StatusEnum | Unset = StatusEnum.PENDING
     value: int | None | Unset = UNSET
     value_max: int | Unset = UNSET
@@ -68,6 +71,8 @@ class TaskRequest:
         name = self.name
 
         queue = self.queue
+
+        external_id = self.external_id
 
         status: str | Unset = UNSET
         if not isinstance(self.status, Unset):
@@ -130,6 +135,8 @@ class TaskRequest:
         )
         if queue is not UNSET:
             field_dict["queue"] = queue
+        if external_id is not UNSET:
+            field_dict["external_id"] = external_id
         if status is not UNSET:
             field_dict["status"] = status
         if value is not UNSET:
@@ -161,6 +168,8 @@ class TaskRequest:
         name = d.pop("name")
 
         queue = d.pop("queue", UNSET)
+
+        external_id = d.pop("external_id", UNSET)
 
         _status = d.pop("status", UNSET)
         status: StatusEnum | Unset
@@ -253,6 +262,7 @@ class TaskRequest:
         task_request = cls(
             name=name,
             queue=queue,
+            external_id=external_id,
             status=status,
             value=value,
             value_max=value_max,
