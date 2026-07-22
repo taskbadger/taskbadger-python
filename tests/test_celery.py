@@ -98,7 +98,13 @@ def test_celery_task_with_args(celery_session_app, celery_session_worker):
         assert result.get(timeout=10, propagate=True) == 4
 
     create.assert_called_once_with(
-        "new_name", value_max=10, data={"foo": "bar"}, tags={"bar": "baz"}, status=StatusEnum.PENDING, queue="celery"
+        "new_name",
+        value_max=10,
+        data={"foo": "bar"},
+        tags={"bar": "baz"},
+        status=StatusEnum.PENDING,
+        queue="celery",
+        external_id=mock.ANY,
     )
 
 
@@ -128,7 +134,9 @@ def test_celery_task_with_kwargs(celery_session_app, celery_session_worker):
         )
         assert result.get(timeout=10, propagate=True) == 4
 
-    create.assert_called_once_with("new_name", value_max=10, actions=actions, status=StatusEnum.PENDING, queue="celery")
+    create.assert_called_once_with(
+        "new_name", value_max=10, actions=actions, status=StatusEnum.PENDING, queue="celery", external_id=mock.ANY
+    )
 
 
 @pytest.mark.usefixtures("_bind_settings")
@@ -162,6 +170,7 @@ def test_celery_record_args(celery_session_app, celery_session_worker):
         data={"foo": "bar", "celery_task_args": [2, 2], "celery_task_kwargs": {}},
         status=StatusEnum.PENDING,
         queue="celery",
+        external_id=mock.ANY,
     )
 
 
@@ -200,6 +209,7 @@ def test_celery_record_task_kwargs(celery_session_app, celery_session_worker):
         actions=actions,
         status=StatusEnum.PENDING,
         queue="celery",
+        external_id=mock.ANY,
     )
 
 
@@ -237,6 +247,7 @@ def test_celery_record_task_args_custom_serialization(celery_session_app, celery
         data={"celery_task_args": [{"__type__": "A", "__value__": [2, 2]}], "celery_task_kwargs": {}},
         status=StatusEnum.PENDING,
         queue="celery",
+        external_id=mock.ANY,
     )
 
 
@@ -264,7 +275,9 @@ def test_celery_task_with_args_in_decorator(celery_session_app, celery_session_w
         result = add_with_task_args_in_decorator.delay(2, 2)
         assert result.get(timeout=10, propagate=True) == 4
 
-    create.assert_called_once_with(mock.ANY, status=StatusEnum.PENDING, monitor_id="123", value_max=10, queue="celery")
+    create.assert_called_once_with(
+        mock.ANY, status=StatusEnum.PENDING, monitor_id="123", value_max=10, queue="celery", external_id=mock.ANY
+    )
 
 
 @pytest.mark.usefixtures("_bind_settings")
@@ -286,6 +299,49 @@ def test_celery_task_custom_queue(celery_session_app, celery_session_worker):
         add_custom_queue.apply_async((2, 2), queue="high_priority")
 
     assert create.call_args.kwargs["queue"] == "high_priority"
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_records_task_id_as_external_id(celery_session_app, celery_session_worker):
+    @celery_session_app.task(bind=True, base=Task)
+    def add_external_id(self, a, b):
+        return a + b
+
+    celery_session_worker.reload()
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe"),
+        mock.patch("taskbadger.sdk.get_task"),
+    ):
+        create.return_value = task_for_test()
+        result = add_external_id.apply_async((2, 2), queue="high_priority")
+
+    assert create.call_args.kwargs["external_id"] == result.id
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_external_id_not_cached_across_invocations(celery_session_app, celery_session_worker):
+    # Tasks defined with taskbadger_kwargs share a class-level dict; external_id
+    # must not leak from one publish to the next.
+    @celery_session_app.task(bind=True, base=Task, taskbadger_kwargs={"value_max": 10})
+    def add_repeat(self, a, b):
+        return a + b
+
+    celery_session_worker.reload()
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe"),
+        mock.patch("taskbadger.sdk.get_task"),
+    ):
+        create.return_value = task_for_test()
+        result1 = add_repeat.apply_async((2, 2), queue="high_priority")
+        result2 = add_repeat.apply_async((3, 3), queue="high_priority")
+
+    external_ids = [c.kwargs["external_id"] for c in create.call_args_list]
+    assert external_ids == [result1.id, result2.id]
+    assert result1.id != result2.id
 
 
 @pytest.mark.usefixtures("_bind_settings")

@@ -115,7 +115,10 @@ def test_defer_creates_pending_task_and_injects_id(app):
     _instrument_task(add3, system=None, manual=True)
 
     tb = task_for_test()
-    with mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create:
+    with (
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create,
+        mock.patch("taskbadger.procrastinate.update_task_safe"),
+    ):
         add3.defer(a=1, b=2)
 
     create.assert_called_once()
@@ -137,7 +140,10 @@ def test_defer_sets_queue(app):
     _instrument_task(add_queued, system=None, manual=True)
 
     tb = task_for_test()
-    with mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create:
+    with (
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create,
+        mock.patch("taskbadger.procrastinate.update_task_safe"),
+    ):
         add_queued.defer(a=1, b=2)
 
     assert create.call_args.kwargs["queue"] == "high_priority"
@@ -168,11 +174,67 @@ def test_defer_async_injects_id(app):
     _instrument_task(add5, system=None, manual=True)
 
     tb = task_for_test()
-    with mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb):
+    with (
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb),
+        mock.patch("taskbadger.procrastinate.update_task_safe"),
+    ):
         asyncio.run(add5.defer_async(a=1, b=2))
 
     jobs = list(app.connector.jobs.values())
     assert jobs[0]["args"][TB_TASK_ID_KWARG] == tb.id
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_defer_records_job_id_as_external_id(app):
+    @app.task(name="add_ext")
+    def add_ext(a, b):
+        return a + b
+
+    _instrument_task(add_ext, system=None, manual=True)
+
+    tb = task_for_test()
+    with (
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb),
+        mock.patch("taskbadger.procrastinate.update_task_safe") as update,
+    ):
+        job_id = add_ext.defer(a=1, b=2)
+
+    update.assert_called_once_with(tb.id, external_id=str(job_id))
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_defer_async_records_job_id_as_external_id(app):
+    @app.task(name="add_ext_async")
+    async def add_ext_async(a, b):
+        return a + b
+
+    _instrument_task(add_ext_async, system=None, manual=True)
+
+    tb = task_for_test()
+    with (
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb),
+        mock.patch("taskbadger.procrastinate.update_task_safe") as update,
+    ):
+        job_id = asyncio.run(add_ext_async.defer_async(a=1, b=2))
+
+    update.assert_called_once_with(tb.id, external_id=str(job_id))
+
+
+def test_defer_no_external_id_when_untracked(app):
+    @app.task(name="add_untracked")
+    def add_untracked(a, b):
+        return a + b
+
+    _instrument_task(add_untracked, system=None, manual=True)
+
+    # Badger is not configured, so no pending task is created and nothing to update.
+    with (
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=None),
+        mock.patch("taskbadger.procrastinate.update_task_safe") as update,
+    ):
+        add_untracked.defer(a=1, b=2)
+
+    update.assert_not_called()
 
 
 @pytest.mark.usefixtures("_bind_settings")
@@ -194,7 +256,7 @@ def test_end_to_end_via_worker(app):
         app.run_worker(wait=False, install_signal_handlers=False, listen_notify=False)
 
     create.assert_called_once()
-    statuses = [c.kwargs["status"] for c in update.call_args_list]
+    statuses = [c.kwargs["status"] for c in update.call_args_list if "status" in c.kwargs]
     assert statuses == [StatusEnum.PROCESSING, StatusEnum.SUCCESS]
 
 
@@ -206,7 +268,10 @@ def test_track_bare_form(app):
         return a
 
     tb = task_for_test()
-    with mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb):
+    with (
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb),
+        mock.patch("taskbadger.procrastinate.update_task_safe"),
+    ):
         bare.defer(a=1)
 
     assert getattr(bare, "_taskbadger_manual") is True
@@ -223,7 +288,10 @@ def test_track_parameterized(app):
         return a
 
     tb = task_for_test()
-    with mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create:
+    with (
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create,
+        mock.patch("taskbadger.procrastinate.update_task_safe"),
+    ):
         raw.defer(a=1)
 
     create.assert_called_once()
@@ -248,7 +316,10 @@ def test_track_idempotent(app):
     # Two @track applications must not double-wrap; defer once still creates one
     # PENDING task and injects one id.
     tb = task_for_test()
-    with mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create:
+    with (
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create,
+        mock.patch("taskbadger.procrastinate.update_task_safe"),
+    ):
         dup.defer(a=1)
     assert create.call_count == 1
     jobs = list(app.connector.jobs.values())
@@ -312,7 +383,7 @@ def test_user_set_terminal_state_not_overwritten(app):
 
     # The wrapper's post-call SUCCESS update is skipped because the cached
     # task is already SUCCESS. PROCESSING update is still allowed (early path).
-    statuses = [c.kwargs["status"] for c in update.call_args_list]
+    statuses = [c.kwargs["status"] for c in update.call_args_list if "status" in c.kwargs]
     assert StatusEnum.PROCESSING in statuses
     # Last attempted SUCCESS call should be suppressed
     assert statuses.count(StatusEnum.SUCCESS) == 0
@@ -326,7 +397,10 @@ def test_record_task_args_stores_kwargs(app):
         return a + b
 
     tb = task_for_test()
-    with mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create:
+    with (
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create,
+        mock.patch("taskbadger.procrastinate.update_task_safe"),
+    ):
         recorder.defer(a=5, b=6)
 
     assert create.call_args.kwargs["data"] == {

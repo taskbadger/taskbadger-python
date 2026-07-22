@@ -137,7 +137,9 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
     ctask = celery.current_app.tasks.get(sender)
 
     # get kwargs from the task class (set via decorator)
-    kwargs = getattr(ctask, TB_KWARGS_ARG, {})
+    # copy: the raw attr is shared across invocations, and we mutate per-publish
+    # values (external_id, status, name) into it below
+    kwargs = dict(getattr(ctask, TB_KWARGS_ARG, {}))
     for attr in dir(ctask):
         if attr.startswith(KWARG_PREFIX) and attr not in IGNORE_ARGS:
             kwargs[attr.removeprefix(KWARG_PREFIX)] = getattr(ctask, attr)
@@ -147,6 +149,7 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
     kwargs["status"] = StatusEnum.PENDING
     if routing_key and "queue" not in kwargs:
         kwargs["queue"] = routing_key
+    kwargs.setdefault("external_id", headers["id"])
     name = kwargs.pop("name", headers["task"])
 
     global_record_task_args = celery_system and celery_system.record_task_args
@@ -247,7 +250,8 @@ def _maybe_create_task(signal_sender):
 
     delivery_info = getattr(signal_sender.request, "delivery_info", None) or {}
     queue = delivery_info.get("routing_key")
-    task = create_task_safe(task_name, status=StatusEnum.PENDING, data=data, queue=queue)
+    external_id = signal_sender.request.id
+    task = create_task_safe(task_name, status=StatusEnum.PENDING, data=data, queue=queue, external_id=external_id)
     if task:
         # Store the task ID in the request so _update_task can find it
         signal_sender.request.update({TB_TASK_ID: task.id})
