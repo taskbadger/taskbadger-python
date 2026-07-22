@@ -152,6 +152,7 @@ def create_task(
     monitor_id: str = None,
     tags: dict[str, str] = None,
     queue: str = None,
+    external_id: str = None,
 ) -> "Task":
     """Create a Task.
 
@@ -167,6 +168,7 @@ def create_task(
         monitor_id: ID of the monitor to associate this task with.
         tags: Dictionary of namespace -> value tags.
         queue: Name of the queue the task is from.
+        external_id: Identifier from the originating system (e.g. Celery task ID) for correlating with logs.
 
     Returns:
         Task: The created Task object.
@@ -177,6 +179,8 @@ def create_task(
     }
     if queue is not None:
         task_dict["queue"] = queue
+    if external_id is not None:
+        task_dict["external_id"] = external_id
     if value is not None:
         task_dict["value"] = value
     if value_max is not None:
@@ -222,6 +226,7 @@ def update_task(
     actions: list[Action] = None,
     tags: dict[str, str] = None,
     queue: str = None,
+    external_id: str = None,
 ) -> "Task":
     """Update a task.
     Requires only the task ID and fields to update.
@@ -238,6 +243,7 @@ def update_task(
         actions: Task actions. **Deprecated:** use project-level actions instead.
         tags: Dictionary of namespace -> value tags.
         queue: Name of the queue the task is from.
+        external_id: Identifier from the originating system (e.g. Celery task ID) for correlating with logs.
 
     Returns:
         Task: The updated Task object.
@@ -250,6 +256,7 @@ def update_task(
     max_runtime = _none_to_unset(max_runtime)
     stale_timeout = _none_to_unset(stale_timeout)
     queue = _none_to_unset(queue)
+    external_id = _none_to_unset(external_id)
 
     data = data or UNSET
     body = PatchedTaskRequest(
@@ -261,6 +268,7 @@ def update_task(
         max_runtime=max_runtime,
         stale_timeout=stale_timeout,
         queue=queue,
+        external_id=external_id,
     )
     if actions:
         _warn_actions_deprecated()
@@ -335,6 +343,7 @@ class Task:
         monitor_id: str = None,
         tags: dict[str, str] = None,
         queue: str = None,
+        external_id: str = None,
     ) -> "Task":
         """Create a new task
 
@@ -352,6 +361,7 @@ class Task:
             monitor_id=monitor_id,
             tags=tags,
             queue=queue,
+            external_id=external_id,
         )
 
     def __init__(self, task):
@@ -437,6 +447,7 @@ class Task:
         actions: list[Action] = None,
         tags: dict[str, str] = None,
         queue: str = None,
+        external_id: str = None,
         data_merge_strategy: Any = None,
     ):
         """Generic update method used to update any of the task fields.
@@ -465,6 +476,7 @@ class Task:
             actions=actions,
             tags=tags,
             queue=queue,
+            external_id=external_id,
         )
         self._task = task._task
 

@@ -694,6 +694,11 @@ components:
           type: string
           description: Queue the task is from
           maxLength: 255
+        external_id:
+          type: string
+          description: Identifier from the originating system (e.g. Celery task ID)
+            for correlating with logs
+          maxLength: 255
         status:
           allOf:
           - $ref: '#/components/schemas/StatusEnum'
@@ -794,6 +799,11 @@ components:
           type: string
           description: Queue the task is from
           maxLength: 255
+        external_id:
+          type: string
+          description: Identifier from the originating system (e.g. Celery task ID)
+            for correlating with logs
+          maxLength: 255
         status:
           allOf:
           - $ref: '#/components/schemas/StatusEnum'
@@ -892,6 +902,11 @@ components:
         queue:
           type: string
           description: Queue the task is from
+          maxLength: 255
+        external_id:
+          type: string
+          description: Identifier from the originating system (e.g. Celery task ID)
+            for correlating with logs
           maxLength: 255
         status:
           allOf:
