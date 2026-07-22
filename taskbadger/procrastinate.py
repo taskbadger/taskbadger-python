@@ -149,12 +149,16 @@ def _wrap_defer(task):
     @functools.wraps(original_defer)
     def defer(**kwargs):
         kwargs = _maybe_create_pending(task, kwargs)
-        return original_defer(**kwargs)
+        job_id = original_defer(**kwargs)
+        _record_external_id(kwargs, job_id)
+        return job_id
 
     @functools.wraps(original_defer_async)
     async def defer_async(**kwargs):
         kwargs = _maybe_create_pending(task, kwargs)
-        return await original_defer_async(**kwargs)
+        job_id = await original_defer_async(**kwargs)
+        _record_external_id(kwargs, job_id)
+        return job_id
 
     task.defer = defer
     task.defer_async = defer_async
@@ -212,6 +216,18 @@ def _maybe_create_pending(task, kwargs):
     new_kwargs = dict(kwargs)
     new_kwargs[TB_TASK_ID_KWARG] = tb_task.id
     return new_kwargs
+
+
+def _record_external_id(kwargs, job_id):
+    """Record the Procrastinate job id as the TaskBadger task's ``external_id``.
+
+    ``defer`` only returns the DB-assigned job id once the job is enqueued, so this
+    runs as a follow-up update after both ids are known. No-op if the defer wasn't
+    tracked (no injected id) or no job id came back."""
+    tb_id = kwargs.get(TB_TASK_ID_KWARG)
+    if tb_id is None or job_id is None:
+        return
+    update_task_safe(tb_id, external_id=str(job_id))
 
 
 def _serialize_kwargs(kwargs):
@@ -296,14 +312,19 @@ def _patch_job_manager(app, system):
         @functools.wraps(original)
         async def patched(*, job, periodic_id, defer_timestamp):
             task = app.tasks.get(job.task_name)
+            tb_id = None
             if task is not None:
                 tb_task = _create_pending_task(task, job.task_kwargs, queue=job.queue)
                 if tb_task is not None:
                     new_kwargs = {**job.task_kwargs, TB_TASK_ID_KWARG: tb_task.id}
                     job = job.evolve(task_kwargs=new_kwargs)
-            return await jm._taskbadger_original_defer_periodic_job(
+                    tb_id = tb_task.id
+            job_id = await jm._taskbadger_original_defer_periodic_job(
                 job=job, periodic_id=periodic_id, defer_timestamp=defer_timestamp
             )
+            if tb_id is not None and job_id is not None:
+                update_task_safe(tb_id, external_id=str(job_id))
+            return job_id
 
         jm.defer_periodic_job = patched
 

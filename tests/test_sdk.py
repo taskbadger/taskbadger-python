@@ -140,6 +140,31 @@ def test_update_queue(settings, patched_update):
     _verify_update(settings, patched_update, queue="high_priority")
 
 
+def test_create_with_external_id(settings, patched_create):
+    api_task = task_for_test()
+    patched_create.return_value = Response(HTTPStatus.OK, b"", {}, api_task)
+
+    Task.create(name="task name", external_id="celery-abc-123")
+
+    request = TaskRequest(name="task name", status=StatusEnum.PENDING, external_id="celery-abc-123")
+    patched_create.assert_called_with(
+        client=mock.ANY,
+        organization_slug="org",
+        project_slug="project",
+        body=request,
+    )
+
+
+def test_update_external_id(settings, patched_update):
+    api_task = task_for_test()
+    task = Task(api_task)
+
+    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, api_task)
+    task.update(external_id="celery-abc-123")
+
+    _verify_update(settings, patched_update, external_id="celery-abc-123")
+
+
 def test_before_create_update_task(settings, patched_create):
     def before_create(task):
         tags = task.setdefault("tags", {})
