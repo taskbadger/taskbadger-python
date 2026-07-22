@@ -22,6 +22,8 @@ T = TypeVar("T", bound="PatchedTaskRequest")
 class PatchedTaskRequest:
     """
     Attributes:
+        id (str | Unset): Task ID. May be set on creation to a UUID or shortened UUID; it must be unique and is
+            immutable thereafter. If omitted, an ID is generated.
         name (str | Unset): Name of the task
         queue (str | Unset): Queue the task is from
         status (StatusEnum | Unset): * `pending` - pending
@@ -48,6 +50,7 @@ class PatchedTaskRequest:
         tags (PatchedTaskRequestTags | Unset): Tags for the task represented as a mapping from 'namespace' to 'value'.
     """
 
+    id: str | Unset = UNSET
     name: str | Unset = UNSET
     queue: str | Unset = UNSET
     status: StatusEnum | Unset = StatusEnum.PENDING
@@ -64,6 +67,8 @@ class PatchedTaskRequest:
 
     def to_dict(self) -> dict[str, Any]:
         from ..models.patched_task_request_tags import PatchedTaskRequestTags
+
+        id = self.id
 
         name = self.name
 
@@ -124,6 +129,8 @@ class PatchedTaskRequest:
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
+        if id is not UNSET:
+            field_dict["id"] = id
         if name is not UNSET:
             field_dict["name"] = name
         if queue is not UNSET:
@@ -156,6 +163,8 @@ class PatchedTaskRequest:
         from ..models.patched_task_request_tags import PatchedTaskRequestTags
 
         d = dict(src_dict)
+        id = d.pop("id", UNSET)
+
         name = d.pop("name", UNSET)
 
         queue = d.pop("queue", UNSET)
@@ -249,6 +258,7 @@ class PatchedTaskRequest:
             tags = PatchedTaskRequestTags.from_dict(_tags)
 
         patched_task_request = cls(
+            id=id,
             name=name,
             queue=queue,
             status=status,

@@ -23,6 +23,8 @@ class TaskRequest:
     """
     Attributes:
         name (str): Name of the task
+        id (str | Unset): Task ID. May be set on creation to a UUID or shortened UUID; it must be unique and is
+            immutable thereafter. If omitted, an ID is generated.
         queue (str | Unset): Queue the task is from
         status (StatusEnum | Unset): * `pending` - pending
             * `pre_processing` - pre_processing
@@ -49,6 +51,7 @@ class TaskRequest:
     """
 
     name: str
+    id: str | Unset = UNSET
     queue: str | Unset = UNSET
     status: StatusEnum | Unset = StatusEnum.PENDING
     value: int | None | Unset = UNSET
@@ -66,6 +69,8 @@ class TaskRequest:
         from ..models.task_request_tags import TaskRequestTags
 
         name = self.name
+
+        id = self.id
 
         queue = self.queue
 
@@ -128,6 +133,8 @@ class TaskRequest:
                 "name": name,
             }
         )
+        if id is not UNSET:
+            field_dict["id"] = id
         if queue is not UNSET:
             field_dict["queue"] = queue
         if status is not UNSET:
@@ -159,6 +166,8 @@ class TaskRequest:
 
         d = dict(src_dict)
         name = d.pop("name")
+
+        id = d.pop("id", UNSET)
 
         queue = d.pop("queue", UNSET)
 
@@ -252,6 +261,7 @@ class TaskRequest:
 
         task_request = cls(
             name=name,
+            id=id,
             queue=queue,
             status=status,
             value=value,

@@ -685,6 +685,11 @@ components:
     PatchedTaskRequest:
       type: object
       properties:
+        id:
+          type: string
+          minLength: 1
+          description: Task ID. May be set on creation to a UUID or shortened UUID;
+            it must be unique and is immutable thereafter. If omitted, an ID is generated.
         name:
           type: string
           minLength: 1
@@ -778,8 +783,8 @@ components:
       properties:
         id:
           type: string
-          readOnly: true
-          description: Task ID
+          description: Task ID. May be set on creation to a UUID or shortened UUID;
+            it must be unique and is immutable thereafter. If omitted, an ID is generated.
         organization:
           type: string
           readOnly: true
@@ -873,7 +878,6 @@ components:
             to 'value'.
       required:
       - created
-      - id
       - name
       - organization
       - project
@@ -884,6 +888,11 @@ components:
     TaskRequest:
       type: object
       properties:
+        id:
+          type: string
+          minLength: 1
+          description: Task ID. May be set on creation to a UUID or shortened UUID;
+            it must be unique and is immutable thereafter. If omitted, an ID is generated.
         name:
           type: string
           minLength: 1

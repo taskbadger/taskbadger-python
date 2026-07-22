@@ -22,7 +22,6 @@ T = TypeVar("T", bound="Task")
 class Task:
     """
     Attributes:
-        id (str): Task ID
         organization (str):
         project (str):
         name (str): Name of the task
@@ -31,6 +30,8 @@ class Task:
         updated (datetime.datetime):
         url (str):
         public_url (str):
+        id (str | Unset): Task ID. May be set on creation to a UUID or shortened UUID; it must be unique and is
+            immutable thereafter. If omitted, an ID is generated.
         queue (str | Unset): Queue the task is from
         status (StatusEnum | Unset): * `pending` - pending
             * `pre_processing` - pre_processing
@@ -56,7 +57,6 @@ class Task:
         tags (TaskTags | Unset): Tags for the task represented as a mapping from 'namespace' to 'value'.
     """
 
-    id: str
     organization: str
     project: str
     name: str
@@ -65,6 +65,7 @@ class Task:
     updated: datetime.datetime
     url: str
     public_url: str
+    id: str | Unset = UNSET
     queue: str | Unset = UNSET
     status: StatusEnum | Unset = StatusEnum.PENDING
     value: int | None | Unset = UNSET
@@ -80,8 +81,6 @@ class Task:
 
     def to_dict(self) -> dict[str, Any]:
         from ..models.task_tags import TaskTags
-
-        id = self.id
 
         organization = self.organization
 
@@ -99,6 +98,8 @@ class Task:
         url = self.url
 
         public_url = self.public_url
+
+        id = self.id
 
         queue = self.queue
 
@@ -158,7 +159,6 @@ class Task:
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
-                "id": id,
                 "organization": organization,
                 "project": project,
                 "name": name,
@@ -169,6 +169,8 @@ class Task:
                 "public_url": public_url,
             }
         )
+        if id is not UNSET:
+            field_dict["id"] = id
         if queue is not UNSET:
             field_dict["queue"] = queue
         if status is not UNSET:
@@ -199,8 +201,6 @@ class Task:
         from ..models.task_tags import TaskTags
 
         d = dict(src_dict)
-        id = d.pop("id")
-
         organization = d.pop("organization")
 
         project = d.pop("project")
@@ -221,6 +221,8 @@ class Task:
         url = d.pop("url")
 
         public_url = d.pop("public_url")
+
+        id = d.pop("id", UNSET)
 
         queue = d.pop("queue", UNSET)
 
@@ -313,7 +315,6 @@ class Task:
             tags = TaskTags.from_dict(_tags)
 
         task = cls(
-            id=id,
             organization=organization,
             project=project,
             name=name,
@@ -322,6 +323,7 @@ class Task:
             updated=updated,
             url=url,
             public_url=public_url,
+            id=id,
             queue=queue,
             status=status,
             value=value,

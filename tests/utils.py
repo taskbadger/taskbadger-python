@@ -15,9 +15,9 @@ def task_for_test(**kwargs):
     kwargs["created"] = datetime.datetime.now(datetime.timezone.utc)
     kwargs["updated"] = datetime.datetime.now(datetime.timezone.utc)
     return TaskInternal(
-        task_id,
         "org",
         "project",
         "task_name",
+        id=task_id,
         **kwargs,
     )

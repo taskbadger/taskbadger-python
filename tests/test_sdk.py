@@ -114,6 +114,22 @@ def test_create_with_queue(settings, patched_create):
     )
 
 
+def test_create_with_task_id(settings, patched_create):
+    api_task = task_for_test()
+    patched_create.return_value = Response(HTTPStatus.OK, b"", {}, api_task)
+
+    task_id = "b3f8c1e2-1234-4a5b-8c9d-0e1f2a3b4c5d"
+    Task.create(name="task name", task_id=task_id)
+
+    request = TaskRequest(name="task name", status=StatusEnum.PENDING, id=task_id)
+    patched_create.assert_called_with(
+        client=mock.ANY,
+        organization_slug="org",
+        project_slug="project",
+        body=request,
+    )
+
+
 def test_update_queue(settings, patched_update):
     api_task = task_for_test()
     task = Task(api_task)
