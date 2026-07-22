@@ -1176,7 +1176,7 @@ wheels = [
 
 [[package]]
 name = "taskbadger"
-version = "2.1.0a2"
+version = "2.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "attrs" },
