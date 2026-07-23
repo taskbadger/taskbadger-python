@@ -21,7 +21,7 @@ from ._integrations import TERMINAL_STATES, safe_get_task, task_cache
 from .internal.models import StatusEnum
 from .mug import Badger
 from .safe_sdk import create_task_safe, update_task_safe
-from .sdk import DefaultMergeStrategy
+from .sdk import DefaultMergeStrategy, generate_task_id
 
 log = logging.getLogger("taskbadger")
 
@@ -164,7 +164,7 @@ def _wrap_defer(task):
     task.defer_async = defer_async
 
 
-def _create_pending_task(task, task_kwargs, queue=None):
+def _create_pending_task(task, task_kwargs, queue=None, task_id=None):
     """Create a PENDING TaskBadger task for ``task`` if it should be tracked.
 
     Returns the created TaskBadger task, or ``None`` if Badger isn't
@@ -172,6 +172,7 @@ def _create_pending_task(task, task_kwargs, queue=None):
     create call failed. ``task_kwargs`` is used only for the
     ``record_task_args`` data capture. ``queue`` overrides the queue name
     recorded on the TaskBadger task (defaults to the task's own queue).
+    ``task_id`` assigns the task's id (see ``_maybe_create_pending``).
     """
     if not Badger.is_configured():
         return None
@@ -203,18 +204,22 @@ def _create_pending_task(task, task_kwargs, queue=None):
     if data:
         create_kwargs["data"] = data
 
-    return create_task_safe(name, **create_kwargs)
+    return create_task_safe(name, task_id=task_id, **create_kwargs)
 
 
 def _maybe_create_pending(task, kwargs):
     """Decide whether to track this defer, and if so create the TaskBadger
-    task and inject its id into ``kwargs``. Always returns the kwargs dict."""
-    tb_task = _create_pending_task(task, kwargs)
+    task and inject its id into ``kwargs``. Always returns the kwargs dict.
+
+    The id is generated up front so it's known before the task exists, letting us
+    inject it without depending on the create response."""
+    tb_id = generate_task_id()
+    tb_task = _create_pending_task(task, kwargs, task_id=tb_id)
     if tb_task is None:
         return kwargs
 
     new_kwargs = dict(kwargs)
-    new_kwargs[TB_TASK_ID_KWARG] = tb_task.id
+    new_kwargs[TB_TASK_ID_KWARG] = tb_id
     return new_kwargs
 
 
@@ -314,11 +319,12 @@ def _patch_job_manager(app, system):
             task = app.tasks.get(job.task_name)
             tb_id = None
             if task is not None:
-                tb_task = _create_pending_task(task, job.task_kwargs, queue=job.queue)
+                candidate_id = generate_task_id()
+                tb_task = _create_pending_task(task, job.task_kwargs, queue=job.queue, task_id=candidate_id)
                 if tb_task is not None:
-                    new_kwargs = {**job.task_kwargs, TB_TASK_ID_KWARG: tb_task.id}
+                    new_kwargs = {**job.task_kwargs, TB_TASK_ID_KWARG: candidate_id}
                     job = job.evolve(task_kwargs=new_kwargs)
-                    tb_id = tb_task.id
+                    tb_id = candidate_id
             job_id = await jm._taskbadger_original_defer_periodic_job(
                 job=job, periodic_id=periodic_id, defer_timestamp=defer_timestamp
             )

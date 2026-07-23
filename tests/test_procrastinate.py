@@ -123,12 +123,13 @@ def test_defer_creates_pending_task_and_injects_id(app):
 
     create.assert_called_once()
     assert create.call_args.args == ("add3",)
-    assert create.call_args.kwargs == {"status": StatusEnum.PENDING, "queue": "default"}
+    task_id = create.call_args.kwargs["task_id"]
+    assert create.call_args.kwargs == {"status": StatusEnum.PENDING, "queue": "default", "task_id": task_id}
 
-    # The injected id should appear in the Procrastinate job's task kwargs.
+    # The generated id is passed to create and injected into the Procrastinate job's task kwargs.
     jobs = list(app.connector.jobs.values())
     assert len(jobs) == 1
-    assert jobs[0]["args"][TB_TASK_ID_KWARG] == tb.id
+    assert jobs[0]["args"][TB_TASK_ID_KWARG] == task_id
 
 
 @pytest.mark.usefixtures("_bind_settings")
@@ -175,13 +176,13 @@ def test_defer_async_injects_id(app):
 
     tb = task_for_test()
     with (
-        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb),
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create,
         mock.patch("taskbadger.procrastinate.update_task_safe"),
     ):
         asyncio.run(add5.defer_async(a=1, b=2))
 
     jobs = list(app.connector.jobs.values())
-    assert jobs[0]["args"][TB_TASK_ID_KWARG] == tb.id
+    assert jobs[0]["args"][TB_TASK_ID_KWARG] == create.call_args.kwargs["task_id"]
 
 
 @pytest.mark.usefixtures("_bind_settings")
@@ -194,12 +195,12 @@ def test_defer_records_job_id_as_external_id(app):
 
     tb = task_for_test()
     with (
-        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb),
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create,
         mock.patch("taskbadger.procrastinate.update_task_safe") as update,
     ):
         job_id = add_ext.defer(a=1, b=2)
 
-    update.assert_called_once_with(tb.id, external_id=str(job_id))
+    update.assert_called_once_with(create.call_args.kwargs["task_id"], external_id=str(job_id))
 
 
 @pytest.mark.usefixtures("_bind_settings")
@@ -212,12 +213,12 @@ def test_defer_async_records_job_id_as_external_id(app):
 
     tb = task_for_test()
     with (
-        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb),
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create,
         mock.patch("taskbadger.procrastinate.update_task_safe") as update,
     ):
         job_id = asyncio.run(add_ext_async.defer_async(a=1, b=2))
 
-    update.assert_called_once_with(tb.id, external_id=str(job_id))
+    update.assert_called_once_with(create.call_args.kwargs["task_id"], external_id=str(job_id))
 
 
 def test_defer_no_external_id_when_untracked(app):
@@ -269,7 +270,7 @@ def test_track_bare_form(app):
 
     tb = task_for_test()
     with (
-        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb),
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=tb) as create,
         mock.patch("taskbadger.procrastinate.update_task_safe"),
     ):
         bare.defer(a=1)
@@ -277,7 +278,7 @@ def test_track_bare_form(app):
     assert getattr(bare, "_taskbadger_manual") is True
     # Inspect the actual Procrastinate job - jobs is a dict keyed by int, kwargs under "args"
     jobs = list(app.connector.jobs.values())
-    assert jobs[0]["args"][TB_TASK_ID_KWARG] == tb.id
+    assert jobs[0]["args"][TB_TASK_ID_KWARG] == create.call_args.kwargs["task_id"]
 
 
 @pytest.mark.usefixtures("_bind_settings")
@@ -296,12 +297,14 @@ def test_track_parameterized(app):
 
     create.assert_called_once()
     assert create.call_args.args == ("custom",)
+    task_id = create.call_args.kwargs["task_id"]
     assert create.call_args.kwargs == {
         "status": StatusEnum.PENDING,
         "value_max": 10,
         "tags": {"env": "test"},
         "data": {"k": "v"},
         "queue": "default",
+        "task_id": task_id,
     }
 
 

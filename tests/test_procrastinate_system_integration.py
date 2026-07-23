@@ -65,7 +65,7 @@ def test_auto_track_creates_pending(app):
     create.assert_called_once()
     # InMemoryConnector.jobs is a dict keyed by int; kwargs under "args"
     jobs = list(app.connector.jobs.values())
-    assert jobs[0]["args"][TB_TASK_ID_KWARG] == tb.id
+    assert jobs[0]["args"][TB_TASK_ID_KWARG] == create.call_args.kwargs["task_id"]
 
 
 @pytest.mark.usefixtures("_bind_settings")
@@ -121,7 +121,7 @@ def test_periodic_defer_creates_pending(app):
 
     create.assert_called_once()
     jobs_stored = list(app.connector.jobs.values())
-    assert jobs_stored[0]["args"][TB_TASK_ID_KWARG] == tb.id
+    assert jobs_stored[0]["args"][TB_TASK_ID_KWARG] == create.call_args.kwargs["task_id"]
 
 
 @pytest.mark.usefixtures("_bind_settings")
