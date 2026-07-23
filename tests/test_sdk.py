@@ -1,4 +1,5 @@
 import datetime
+import uuid
 import warnings
 from http import HTTPStatus
 from unittest import mock
@@ -13,7 +14,7 @@ from taskbadger.internal.models import (
 )
 from taskbadger.internal.types import UNSET, Response
 from taskbadger.mug import Badger
-from taskbadger.sdk import Task, init
+from taskbadger.sdk import Task, _shorten_uuid, generate_task_id, init
 from tests.utils import task_for_test
 
 
@@ -128,6 +129,17 @@ def test_create_with_task_id(settings, patched_create):
         project_slug="project",
         body=request,
     )
+
+
+def test_generate_task_id():
+    # Matches the server's shorten_uuid: 4-char hex prefix + Flickr Base58 body.
+    assert _shorten_uuid(uuid.UUID("b3f8c1e2-1234-4a5b-8c9d-0e1f2a3b4c5d")) == "b3f8odYrrReCZKKtXeK82DnyfZ"
+
+    task_id = generate_task_id()
+    assert task_id[:4] == task_id[:4].lower()
+    assert all(c in "0123456789abcdef" for c in task_id[:4])
+    assert all(c in "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ" for c in task_id[4:])
+    assert generate_task_id() != generate_task_id()
 
 
 def test_update_queue(settings, patched_update):

@@ -3,7 +3,7 @@ from .integrations import Action, EmailIntegration, WebhookIntegration
 from .internal.models import StatusEnum
 from .mug import Badger, Session
 from .safe_sdk import create_task_safe, update_task_safe
-from .sdk import DefaultMergeStrategy, Task, create_task, get_task, init, update_task
+from .sdk import DefaultMergeStrategy, Task, create_task, generate_task_id, get_task, init, update_task
 
 __all__ = [
     "track",
@@ -18,6 +18,7 @@ __all__ = [
     "DefaultMergeStrategy",
     "Task",
     "create_task",
+    "generate_task_id",
     "get_task",
     "init",
     "update_task",

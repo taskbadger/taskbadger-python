@@ -2,6 +2,7 @@ import base64
 import datetime
 import logging
 import os
+import uuid
 import warnings
 from typing import Any
 
@@ -138,6 +139,33 @@ def get_task(task_id: str) -> "Task":
     with Session() as client:
         task = task_get.sync(client=client, **_make_args(id=task_id))
     return Task(task)
+
+
+# Flickr Base58 alphabet, mirroring the server's short-ID encoding.
+_SHORT_ID_ALPHABET = "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ"
+
+
+def generate_task_id() -> str:
+    """Generate a task ID.
+
+    Returns an ID in the same canonical short form the server assigns. Pass it to
+    ``create_task(task_id=...)`` when you need the task's ID before creating the task,
+    e.g. to correlate a queued job with its task.
+    """
+    return _shorten_uuid(uuid.uuid4())
+
+
+def _shorten_uuid(value: uuid.UUID) -> str:
+    """Encode a UUID into the server's canonical short-ID form: a 4-character hex prefix
+    followed by the Flickr Base58 encoding of the UUID."""
+    base = len(_SHORT_ID_ALPHABET)
+    number = value.int
+    chars = []
+    while number > 0:
+        number, remainder = divmod(number, base)
+        chars.append(_SHORT_ID_ALPHABET[remainder])
+    body = "".join(reversed(chars)) or _SHORT_ID_ALPHABET[0]
+    return f"{value.hex[:4]}{body}"
 
 
 def create_task(
