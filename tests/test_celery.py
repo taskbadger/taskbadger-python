@@ -17,7 +17,7 @@ import pytest
 from kombu.utils.json import register_type
 
 from taskbadger import Action, EmailIntegration, StatusEnum
-from taskbadger.celery import Task
+from taskbadger.celery import Task, task_publish_handler
 from taskbadger.mug import Badger
 from tests.utils import task_for_test
 
@@ -278,6 +278,23 @@ def test_celery_task_with_args_in_decorator(celery_session_app, celery_session_w
     create.assert_called_once_with(
         mock.ANY, status=StatusEnum.PENDING, monitor_id="123", value_max=10, queue="celery", external_id=mock.ANY
     )
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_publish_handler_task_not_registered_locally():
+    """before_task_publish can fire in a process that never imported the task
+    being sent (e.g. a producer-only service), so `celery.current_app.tasks.get`
+    returns None. The handler should still create the TaskBadger task without
+    blowing up trying to call `.update_state()` on the missing task class."""
+
+    with mock.patch("taskbadger.celery.create_task_safe") as create:
+        create.return_value = task_for_test()
+
+        headers = {"id": "abc123", "task": "unregistered.task", "taskbadger_track": True}
+        task_publish_handler(sender="unregistered.task", headers=headers, body=[[], {}, {}])
+
+    create.assert_called_once()
+    assert headers["taskbadger_task_id"] == create.return_value.id
 
 
 @pytest.mark.usefixtures("_bind_settings")

@@ -170,7 +170,8 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
     if task:
         meta = {TB_TASK_ID: task.id}
         headers.update(meta)
-        ctask.update_state(task_id=headers["id"], state="PENDING", meta=meta)
+        if ctask:
+            ctask.update_state(task_id=headers["id"], state="PENDING", meta=meta)
 
 
 def _maybe_create_task(signal_sender):
