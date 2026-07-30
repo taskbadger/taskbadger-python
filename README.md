@@ -98,3 +98,30 @@ taskbadger.init(
 - **`task.configure(...).defer(...)` is not tracked.** Procrastinate's `configure()` returns a separate `JobDeferrer` whose methods bypass our wrapper. Use `task.defer(...)` directly for tracked deferrals. Tasks deferred via `configure().defer()` will run normally but will not appear in TaskBadger.
 - **`task.batch_defer*` is not tracked.** Same reason as `configure().defer()`.
 - **Tasks added via `app.add_tasks_from(blueprint)` after `ProcrastinateSystemIntegration` is constructed are not auto-instrumented.** Construct the integration after all blueprints are registered, or apply `@track` to those tasks explicitly.
+
+### Keeping long-running tasks fresh
+
+A task with a `stale_timeout` is marked `stale` by Task Badger if it goes too long without an
+update. Set `heartbeat_interval` (seconds) to have the SDK ping the task for you while it runs,
+rather than updating it from the task body.
+
+For Procrastinate, on the task or on `ProcrastinateSystemIntegration(...)`:
+
+```python
+@track(heartbeat_interval=60)
+@app.task
+async def slow_job():
+    ...
+```
+
+For Celery, on `CelerySystemIntegration(...)`, on the task, or per call with
+`slow_job.apply_async(taskbadger_heartbeat_interval=60)`:
+
+```python
+@app.task(base=taskbadger.Task, taskbadger_heartbeat_interval=60)
+def slow_job():
+    ...
+```
+
+Unless `stale_timeout` is given explicitly it is set to twice the interval. All running tasks are
+pinged from a single background thread, started the first time a task with a heartbeat runs.
