@@ -81,7 +81,14 @@ class Heartbeat:
 
     def _run(self) -> None:
         while True:
-            self._wake.wait(self._beat())
+            try:
+                timeout = self._beat()
+            except Exception:
+                # Never let the thread die: every registered task would then go
+                # stale with nothing to restart the pings.
+                log.exception("heartbeat beat failed")
+                timeout = 1.0
+            self._wake.wait(timeout)
             self._wake.clear()
 
     def _beat(self) -> float | None:

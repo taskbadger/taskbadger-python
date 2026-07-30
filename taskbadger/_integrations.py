@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import collections
 import logging
+import math
 import re
 
 from . import sdk
@@ -131,7 +132,9 @@ def resolve_heartbeat_options(heartbeat_interval, stale_timeout, system):
         heartbeat_interval = None
 
     if stale_timeout is None and heartbeat_interval:
-        stale_timeout = int(heartbeat_interval * STALE_TIMEOUT_FACTOR)
+        # `stale_timeout` is whole seconds, so round up: a sub-second interval
+        # must not produce a timeout of 0.
+        stale_timeout = max(1, math.ceil(heartbeat_interval * STALE_TIMEOUT_FACTOR))
 
     return heartbeat_interval, stale_timeout
 
