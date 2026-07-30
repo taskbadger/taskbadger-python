@@ -320,11 +320,8 @@ def enter_session():
 
 
 def exit_session(signal_sender):
-    headers = signal_sender.request.headers
-    if not headers:
-        return
-
-    task_id = headers.get(TB_TASK_ID)
+    # not `request.headers`: eager tasks carry the ID on the request itself
+    task_id = _get_taskbadger_task_id(signal_sender.request)
     if not task_id or not Badger.is_configured():
         return
 
