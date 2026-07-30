@@ -150,6 +150,30 @@ def test_system_integration_heartbeat(app, heartbeat):
     heartbeat.stop.assert_called_once_with("tb-5")
 
 
+@pytest.mark.usefixtures("_bind_settings")
+def test_system_integration_heartbeat_for_tracked_task(app, heartbeat):
+    """A ``@track``ed task still inherits the system's options when the
+    integration is constructed after the task was registered."""
+
+    @track()
+    @app.task(name="tracked_auto_heartbeat")
+    def tracked_auto_heartbeat(a):
+        return a
+
+    ProcrastinateSystemIntegration(app=app, heartbeat_interval=45)
+
+    with (
+        mock.patch("taskbadger.procrastinate.create_task_safe", return_value=task_for_test(id="tb-6")) as create,
+        mock.patch("taskbadger.procrastinate.update_task_safe"),
+        mock.patch("taskbadger.sdk.get_task", return_value=task_for_test(status=StatusEnum.PROCESSING)),
+    ):
+        tracked_auto_heartbeat.defer(a=1)
+        tracked_auto_heartbeat.func(a=1, **{TB_TASK_ID_KWARG: "tb-6"})
+
+    assert create.call_args.kwargs["stale_timeout"] == 90
+    heartbeat.start.assert_called_once_with("tb-6", 45)
+
+
 def test_track_rejects_bad_interval(app):
     with pytest.raises(ConfigurationError):
         track(heartbeat_interval=0)

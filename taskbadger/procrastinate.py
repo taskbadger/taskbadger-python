@@ -42,6 +42,7 @@ TB_TASK_ID_KWARG = "__taskbadger_task_id__"
 _INSTRUMENTED_ATTR = "_taskbadger_instrumented"
 _MANUAL_ATTR = "_taskbadger_manual"
 _OPTS_ATTR = "_taskbadger_opts"
+_SYSTEM_ATTR = "_taskbadger_system"
 
 _current_tb_task_id: ContextVar[str | None] = ContextVar("_current_tb_task_id", default=None)
 
@@ -61,6 +62,12 @@ def _instrument_task(task, system=None, manual=False, opts=None):
 
     if manual:
         setattr(task, _MANUAL_ATTR, True)
+
+    # Set before the idempotency check: a task already instrumented by ``@track``
+    # when the system integration is constructed still has to inherit the
+    # system's options (heartbeat_interval, stale_timeout, record_task_args).
+    if system is not None or not hasattr(task, _SYSTEM_ATTR):
+        setattr(task, _SYSTEM_ATTR, system)
 
     if getattr(task, _INSTRUMENTED_ATTR, False):
         return
@@ -116,7 +123,6 @@ def _instrument_task(task, system=None, manual=False, opts=None):
     _wrap_defer(task)
     task.func = wrapped
     setattr(task, _INSTRUMENTED_ATTR, True)
-    setattr(task, "_taskbadger_system", system)
 
 
 def _update_status(tb_id, status, exception=None):
@@ -150,7 +156,7 @@ def _update_status(tb_id, status, exception=None):
 def _heartbeat_interval(task):
     """Seconds between pings while ``task`` runs, or ``None`` for no heartbeat."""
     opts = getattr(task, _OPTS_ATTR, {}) or {}
-    system = getattr(task, "_taskbadger_system", None)
+    system = getattr(task, _SYSTEM_ATTR, None)
     interval, _ = resolve_heartbeat_options(opts.get("heartbeat_interval"), None, system)
     return interval
 
@@ -195,7 +201,7 @@ def _create_pending_task(task, task_kwargs, queue=None):
     if not Badger.is_configured():
         return None
 
-    system = getattr(task, "_taskbadger_system", None)
+    system = getattr(task, _SYSTEM_ATTR, None)
     manual = getattr(task, _MANUAL_ATTR, False)
     auto = bool(system) and system.track_task(task.name)
     if not manual and not auto:
