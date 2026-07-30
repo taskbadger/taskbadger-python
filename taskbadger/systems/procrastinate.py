@@ -16,6 +16,8 @@ class ProcrastinateSystemIntegration(BaseSystemIntegration):
         includes=None,
         excludes=None,
         record_task_args=False,
+        heartbeat_interval=None,
+        stale_timeout=None,
     ):
         """
         Args:
@@ -29,12 +31,21 @@ class ProcrastinateSystemIntegration(BaseSystemIntegration):
                 ``includes``. Exclusions take precedence.
             record_task_args: Record the task's defer kwargs into the
                 TaskBadger task's ``data`` under ``procrastinate_task_kwargs``.
+            heartbeat_interval: Seconds between automatic pings while a task is
+                running. This keeps long-running tasks from being marked stale
+                without having to update them from the task body. Unless
+                ``stale_timeout`` is also given it will be set to twice this value.
+            stale_timeout: Maximum allowed time between task updates (seconds)
+                before the task is considered stale. Set on the task when it is
+                created.
         """
         super().__init__(
             auto_track_tasks=auto_track_tasks,
             includes=includes,
             excludes=excludes,
             record_task_args=record_task_args,
+            heartbeat_interval=heartbeat_interval,
+            stale_timeout=stale_timeout,
         )
         self.app = app
 
