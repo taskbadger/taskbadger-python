@@ -1,7 +1,16 @@
 import pytest
 
+from taskbadger._heartbeat import heartbeat
 from taskbadger._integrations import task_cache
 from taskbadger.mug import Badger, Settings
+
+
+@pytest.fixture(autouse=True)
+def _clear_heartbeats():
+    """Make sure no test leaves a task registered with the heartbeat thread."""
+    heartbeat.stop_all()
+    yield
+    heartbeat.stop_all()
 
 
 @pytest.fixture(autouse=True)
