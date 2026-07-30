@@ -27,6 +27,9 @@ IGNORE_ARGS = {TB_KWARGS_ARG, f"{KWARG_PREFIX}task", f"{KWARG_PREFIX}task_id", f
 TB_TASK_ID = f"{KWARG_PREFIX}task_id"
 TB_HEARTBEAT_INTERVAL = f"{KWARG_PREFIX}heartbeat_interval"
 TB_STALE_TIMEOUT = f"{KWARG_PREFIX}stale_timeout"
+# Marks a request whose signal handlers opened the Task Badger session, so that
+# only they close it again.
+TB_OWNS_SESSION = f"{KWARG_PREFIX}owns_session"
 
 log = logging.getLogger("taskbadger")
 
@@ -268,15 +271,18 @@ def _maybe_create_task(signal_sender):
     if not manual_track and not auto_track:
         return
 
-    enter_session()
+    enter_session(signal_sender)
 
     delivery_info = getattr(signal_sender.request, "delivery_info", None) or {}
     queue = delivery_info.get("routing_key")
     external_id = signal_sender.request.id
     create_kwargs = {"status": StatusEnum.PENDING, "data": data, "queue": queue, "external_id": external_id}
+    # `before_task_publish` never ran for these, so per-call options are still
+    # sitting in the headers rather than resolved into the message.
+    header_kwargs = headers.get(TB_KWARGS_ARG) or {}
     heartbeat_interval, stale_timeout = resolve_heartbeat_options(
-        getattr(signal_sender, TB_HEARTBEAT_INTERVAL, None),
-        getattr(signal_sender, TB_STALE_TIMEOUT, None),
+        header_kwargs.get("heartbeat_interval", getattr(signal_sender, TB_HEARTBEAT_INTERVAL, None)),
+        header_kwargs.get("stale_timeout", getattr(signal_sender, TB_STALE_TIMEOUT, None)),
         celery_system,
     )
     if stale_timeout is not None:
@@ -341,7 +347,7 @@ def _update_task(signal_sender, status, einfo=None):
         # ignore tasks that have already been set to a terminal state (probably in the task body)
         return
 
-    enter_session()
+    enter_session(signal_sender)
 
     data = None
     if einfo:
@@ -370,21 +376,31 @@ def _start_heartbeat(signal_sender):
     heartbeat.start(task_id, interval)
 
 
-def enter_session():
+def enter_session(signal_sender):
     if not Badger.is_configured():
         return
     session = Badger.current.session()
-    if not session.client:
-        session.__enter__()
+    if session.client:
+        # Already open, e.g. an eager task running inside the caller's
+        # `taskbadger.Session()`. Not ours, so don't close it either.
+        return
+    session.__enter__()
+    signal_sender.request.update({TB_OWNS_SESSION: True})
 
 
 def exit_session(signal_sender):
+    request = signal_sender.request
     # not `request.headers`: eager tasks carry the ID on the request itself
-    task_id = _get_taskbadger_task_id(signal_sender.request)
+    # (the task id is checked first so that untracked tasks never touch `Badger`)
+    task_id = _get_taskbadger_task_id(request)
     if not task_id or not Badger.is_configured():
         return
 
     task_cache.unset(task_id)
+
+    if not request.get(TB_OWNS_SESSION):
+        return
+    request.update({TB_OWNS_SESSION: False})
 
     session = Badger.current.session()
     if session.client:

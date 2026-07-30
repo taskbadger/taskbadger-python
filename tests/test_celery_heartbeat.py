@@ -9,6 +9,7 @@ from unittest import mock
 
 import pytest
 
+import taskbadger
 from taskbadger import StatusEnum
 from taskbadger.celery import Task
 from taskbadger.mug import Badger, Settings
@@ -152,6 +153,58 @@ def test_heartbeat_for_eager_task(celery_session_app, heartbeat):
     assert create.call_args.kwargs["stale_timeout"] == 10
     heartbeat.start.assert_called_once_with(tb_task.id, 5)
     heartbeat.stop.assert_called_once_with(tb_task.id)
+
+
+@pytest.mark.usefixtures("_bind_settings_with_heartbeat")
+def test_heartbeat_for_eager_task_from_apply_async(celery_session_app, heartbeat):
+    """``before_task_publish`` doesn't run for eager tasks, so the per-call
+    options have to be read back out of the headers."""
+
+    @celery_session_app.task(base=Task)
+    def add_eager_options(a, b):
+        return a + b
+
+    celery_session_app.conf.task_always_eager = True
+    try:
+        with (
+            mock.patch("taskbadger.celery.create_task_safe") as create,
+            mock.patch("taskbadger.celery.update_task_safe"),
+            mock.patch("taskbadger.sdk.get_task"),
+        ):
+            tb_task = task_for_test()
+            create.return_value = tb_task
+            result = add_eager_options.apply_async((2, 2), taskbadger_heartbeat_interval=3)
+            assert result.get(timeout=10, propagate=True) == 4
+    finally:
+        celery_session_app.conf.task_always_eager = False
+
+    assert create.call_args.kwargs["stale_timeout"] == 6
+    heartbeat.start.assert_called_once_with(tb_task.id, 3)
+
+
+@pytest.mark.usefixtures("_bind_settings_with_heartbeat")
+def test_eager_task_leaves_an_open_session_alone(celery_session_app, heartbeat):
+    """An eager task must not close a session opened by its caller."""
+
+    @celery_session_app.task(base=Task)
+    def add_in_session(a, b):
+        return a + b
+
+    celery_session_app.conf.task_always_eager = True
+    try:
+        with (
+            mock.patch("taskbadger.celery.create_task_safe", return_value=task_for_test()),
+            mock.patch("taskbadger.celery.update_task_safe", return_value=task_for_test()),
+            mock.patch("taskbadger.sdk.get_task"),
+            mock.patch("taskbadger.mug.AuthenticatedClient"),
+        ):
+            with taskbadger.Session():
+                session = Badger.current.session()
+                assert add_in_session.delay(2, 2).get(timeout=10, propagate=True) == 4
+                assert session.client is not None, "the caller's session was closed by the task"
+            assert session.client is None
+    finally:
+        celery_session_app.conf.task_always_eager = False
 
 
 @pytest.mark.usefixtures("_bind_settings")
