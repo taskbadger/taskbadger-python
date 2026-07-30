@@ -8,9 +8,11 @@ These tests are excluded from the default pytest run via ``norecursedirs`` in
 pyproject.toml.
 """
 
+import datetime
 import logging
 import os
 import random
+import time
 
 import procrastinate
 import psycopg
@@ -25,6 +27,10 @@ PROCRASTINATE_DSN = os.environ.get(
     "PROCRASTINATE_DSN",
     "postgresql://postgres:postgres@localhost:5432/procrastinate",
 )
+
+HEARTBEAT_INTERVAL = 1
+# long enough for the heartbeat to fire while the task is still running
+SLOW_TASK_DURATION = 3
 
 
 @pytest.fixture(autouse=True)
@@ -100,6 +106,38 @@ def test_track_decorator(app):
     assert fetched.status == StatusEnum.SUCCESS
     assert fetched.value == 100
     assert fetched.data == {"result": a + b}
+
+
+def test_heartbeat(app):
+    """The worker pings the task while it runs, so it doesn't go stale."""
+
+    @track(heartbeat_interval=HEARTBEAT_INTERVAL)
+    @app.task(name="slow", queue="taskbadger_int_hb")
+    def slow():
+        # `run_worker` blocks the test, so sample the task's `updated` time from
+        # inside the body. Fetched directly to bypass the integration's cache.
+        tb_id = current_task().id
+        before = taskbadger.get_task(tb_id).updated
+        time.sleep(SLOW_TASK_DURATION)
+        after = taskbadger.get_task(tb_id).updated
+        current_task().update(data={"before": before.isoformat(), "after": after.isoformat()})
+
+    job_id = slow.defer()
+    app.run_worker(
+        queues=["taskbadger_int_hb"],
+        wait=False,
+        install_signal_handlers=False,
+        listen_notify=False,
+    )
+
+    args = _fetch_job_args(job_id)
+    fetched = taskbadger.get_task(args["__taskbadger_task_id__"])
+
+    assert fetched.status == StatusEnum.SUCCESS
+    assert fetched.stale_timeout == HEARTBEAT_INTERVAL * 2
+    before = datetime.datetime.fromisoformat(fetched.data["before"])
+    after = datetime.datetime.fromisoformat(fetched.data["after"])
+    assert after > before, "task was not pinged while it was running"
 
 
 def test_auto_track_via_system(app):

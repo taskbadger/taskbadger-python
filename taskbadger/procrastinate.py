@@ -17,7 +17,14 @@ import json
 import logging
 from contextvars import ContextVar
 
-from ._integrations import TERMINAL_STATES, safe_get_task, task_cache
+from ._heartbeat import heartbeat
+from ._integrations import (
+    TERMINAL_STATES,
+    resolve_heartbeat_options,
+    safe_get_task,
+    task_cache,
+    validate_interval,
+)
 from .internal.models import StatusEnum
 from .mug import Badger
 from .safe_sdk import create_task_safe, update_task_safe
@@ -35,6 +42,7 @@ TB_TASK_ID_KWARG = "__taskbadger_task_id__"
 _INSTRUMENTED_ATTR = "_taskbadger_instrumented"
 _MANUAL_ATTR = "_taskbadger_manual"
 _OPTS_ATTR = "_taskbadger_opts"
+_SYSTEM_ATTR = "_taskbadger_system"
 
 _current_tb_task_id: ContextVar[str | None] = ContextVar("_current_tb_task_id", default=None)
 
@@ -55,6 +63,12 @@ def _instrument_task(task, system=None, manual=False, opts=None):
     if manual:
         setattr(task, _MANUAL_ATTR, True)
 
+    # Set before the idempotency check: a task already instrumented by ``@track``
+    # when the system integration is constructed still has to inherit the
+    # system's options (heartbeat_interval, stale_timeout, record_task_args).
+    if system is not None or not hasattr(task, _SYSTEM_ATTR):
+        setattr(task, _SYSTEM_ATTR, system)
+
     if getattr(task, _INSTRUMENTED_ATTR, False):
         return
 
@@ -73,6 +87,7 @@ def _instrument_task(task, system=None, manual=False, opts=None):
             token = _current_tb_task_id.set(tb_id)
             try:
                 _update_status(tb_id, StatusEnum.PROCESSING)
+                heartbeat.start(tb_id, _heartbeat_interval(task))
                 try:
                     result = await original_func(*args, **kwargs)
                 except Exception as exc:
@@ -81,6 +96,7 @@ def _instrument_task(task, system=None, manual=False, opts=None):
                 _update_status(tb_id, StatusEnum.SUCCESS)
                 return result
             finally:
+                heartbeat.stop(tb_id)
                 _current_tb_task_id.reset(token)
     else:
 
@@ -92,6 +108,7 @@ def _instrument_task(task, system=None, manual=False, opts=None):
             token = _current_tb_task_id.set(tb_id)
             try:
                 _update_status(tb_id, StatusEnum.PROCESSING)
+                heartbeat.start(tb_id, _heartbeat_interval(task))
                 try:
                     result = original_func(*args, **kwargs)
                 except Exception as exc:
@@ -100,12 +117,12 @@ def _instrument_task(task, system=None, manual=False, opts=None):
                 _update_status(tb_id, StatusEnum.SUCCESS)
                 return result
             finally:
+                heartbeat.stop(tb_id)
                 _current_tb_task_id.reset(token)
 
     _wrap_defer(task)
     task.func = wrapped
     setattr(task, _INSTRUMENTED_ATTR, True)
-    setattr(task, "_taskbadger_system", system)
 
 
 def _update_status(tb_id, status, exception=None):
@@ -134,6 +151,14 @@ def _update_status(tb_id, status, exception=None):
 
     if updated is not None:
         task_cache.set(tb_id, updated)
+
+
+def _heartbeat_interval(task):
+    """Seconds between pings while ``task`` runs, or ``None`` for no heartbeat."""
+    opts = getattr(task, _OPTS_ATTR, {}) or {}
+    system = getattr(task, _SYSTEM_ATTR, None)
+    interval, _ = resolve_heartbeat_options(opts.get("heartbeat_interval"), None, system)
+    return interval
 
 
 def _wrap_defer(task):
@@ -176,7 +201,7 @@ def _create_pending_task(task, task_kwargs, queue=None):
     if not Badger.is_configured():
         return None
 
-    system = getattr(task, "_taskbadger_system", None)
+    system = getattr(task, _SYSTEM_ATTR, None)
     manual = getattr(task, _MANUAL_ATTR, False)
     auto = bool(system) and system.track_task(task.name)
     if not manual and not auto:
@@ -191,6 +216,10 @@ def _create_pending_task(task, task_kwargs, queue=None):
     for key in ("value_max", "tags"):
         if key in opts and opts[key] is not None:
             create_kwargs[key] = opts[key]
+
+    _, stale_timeout = resolve_heartbeat_options(opts.get("heartbeat_interval"), opts.get("stale_timeout"), system)
+    if stale_timeout is not None:
+        create_kwargs["stale_timeout"] = stale_timeout
 
     data = dict(opts.get("data") or {})
 
@@ -243,7 +272,7 @@ def _serialize_kwargs(kwargs):
         return {}
 
 
-_TRACK_OPT_KEYS = ("name", "value_max", "tags", "data", "record_task_args")
+_TRACK_OPT_KEYS = ("name", "value_max", "tags", "data", "record_task_args", "heartbeat_interval", "stale_timeout")
 
 
 def track(original_task=None, **opts):
@@ -267,10 +296,18 @@ def track(original_task=None, **opts):
         record_task_args: If True, serialize the Procrastinate job kwargs and
             store them under ``data["procrastinate_task_kwargs"]``. Defaults to
             ``None`` meaning "inherit from system integration if any, else False".
+        heartbeat_interval: Seconds between automatic pings while the task is
+            running. This keeps long-running tasks from being marked stale
+            without having to update them from the task body. Unless
+            ``stale_timeout`` is also given it will be set to twice this value.
+        stale_timeout: Maximum allowed time between task updates (seconds)
+            before the task is considered stale.
     """
     unknown = set(opts) - set(_TRACK_OPT_KEYS)
     if unknown:
         raise TypeError(f"track() got unexpected keyword arguments: {sorted(unknown)}")
+
+    validate_interval(opts.get("heartbeat_interval"))
 
     def wrap(task):
         _instrument_task(task, system=None, manual=True, opts=opts)
