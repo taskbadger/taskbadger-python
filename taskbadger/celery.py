@@ -6,6 +6,7 @@ import celery
 from celery.signals import (
     before_task_publish,
     task_failure,
+    task_postrun,
     task_prerun,
     task_retry,
     task_success,
@@ -13,7 +14,8 @@ from celery.signals import (
 from kombu import serialization
 
 from . import sdk
-from ._integrations import TERMINAL_STATES, safe_get_task, task_cache
+from ._heartbeat import heartbeat
+from ._integrations import TERMINAL_STATES, resolve_heartbeat_options, safe_get_task, task_cache
 from .internal.models import StatusEnum
 from .mug import Badger
 from .safe_sdk import create_task_safe, update_task_safe
@@ -23,6 +25,8 @@ KWARG_PREFIX = "taskbadger_"
 TB_KWARGS_ARG = f"{KWARG_PREFIX}kwargs"
 IGNORE_ARGS = {TB_KWARGS_ARG, f"{KWARG_PREFIX}task", f"{KWARG_PREFIX}task_id", f"{KWARG_PREFIX}record_task_args"}
 TB_TASK_ID = f"{KWARG_PREFIX}task_id"
+TB_HEARTBEAT_INTERVAL = f"{KWARG_PREFIX}heartbeat_interval"
+TB_STALE_TIMEOUT = f"{KWARG_PREFIX}stale_timeout"
 
 log = logging.getLogger("taskbadger")
 
@@ -39,6 +43,12 @@ class Task(celery.Task):
 
     No tracking is done for tasks that ar executed synchronously either via `.appy()` or
     if Celery is configured to run tasks eagerly.
+
+    Task Badger options may be set as `taskbadger_`-prefixed arguments on the task or on
+    `apply_async`. `taskbadger_heartbeat_interval` is treated specially: rather than being
+    set on the task it makes the worker ping the task every N seconds while it runs, which
+    keeps tasks with a `stale_timeout` from going stale. Unless `taskbadger_stale_timeout`
+    is also given it is set to twice the interval.
 
     Access to the task is provided via the `taskbadger_task` property of the Celery task.
     The task ID may also be accessed via the `taskbadger_task_id` property. These may
@@ -152,6 +162,14 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
     kwargs.setdefault("external_id", headers["id"])
     name = kwargs.pop("name", headers["task"])
 
+    # `heartbeat_interval` isn't a task field; it tells the worker how often to
+    # ping while the task runs and may set a `stale_timeout` for it to protect.
+    heartbeat_interval, stale_timeout = resolve_heartbeat_options(
+        kwargs.pop("heartbeat_interval", None), kwargs.pop("stale_timeout", None), celery_system
+    )
+    if stale_timeout is not None:
+        kwargs["stale_timeout"] = stale_timeout
+
     global_record_task_args = celery_system and celery_system.record_task_args
     if headers.get("taskbadger_record_task_args", global_record_task_args):
         data = {
@@ -170,6 +188,9 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
     if task:
         meta = {TB_TASK_ID: task.id}
         headers.update(meta)
+        if heartbeat_interval:
+            # Carried on the message so per-call intervals reach the worker.
+            headers[TB_HEARTBEAT_INTERVAL] = heartbeat_interval
         if ctask:
             ctask.update_state(task_id=headers["id"], state="PENDING", meta=meta)
 
@@ -252,10 +273,20 @@ def _maybe_create_task(signal_sender):
     delivery_info = getattr(signal_sender.request, "delivery_info", None) or {}
     queue = delivery_info.get("routing_key")
     external_id = signal_sender.request.id
-    task = create_task_safe(task_name, status=StatusEnum.PENDING, data=data, queue=queue, external_id=external_id)
+    create_kwargs = {"status": StatusEnum.PENDING, "data": data, "queue": queue, "external_id": external_id}
+    heartbeat_interval, stale_timeout = resolve_heartbeat_options(
+        getattr(signal_sender, TB_HEARTBEAT_INTERVAL, None),
+        getattr(signal_sender, TB_STALE_TIMEOUT, None),
+        celery_system,
+    )
+    if stale_timeout is not None:
+        create_kwargs["stale_timeout"] = stale_timeout
+    task = create_task_safe(task_name, **create_kwargs)
     if task:
         # Store the task ID in the request so _update_task can find it
         signal_sender.request.update({TB_TASK_ID: task.id})
+        if heartbeat_interval:
+            signal_sender.request.update({TB_HEARTBEAT_INTERVAL: heartbeat_interval})
         task_cache.set(task.id, task)
 
 
@@ -263,6 +294,15 @@ def _maybe_create_task(signal_sender):
 def task_prerun_handler(sender=None, **kwargs):
     _maybe_create_task(sender)
     _update_task(sender, StatusEnum.PROCESSING)
+    _start_heartbeat(sender)
+
+
+@task_postrun.connect
+def task_postrun_handler(sender=None, **kwargs):
+    # postrun always fires, unlike the success/failure/retry signals.
+    task_id = _get_taskbadger_task_id(sender.request)
+    if task_id:
+        heartbeat.stop(task_id)
 
 
 @task_success.connect
@@ -309,6 +349,25 @@ def _update_task(signal_sender, status, einfo=None):
     task = update_task_safe(task.id, status=status, data=data)
     if task:
         task_cache.set(task_id, task)
+
+
+def _start_heartbeat(signal_sender):
+    """Ping the task periodically for the duration of the run so that tasks
+    with a ``stale_timeout`` don't go stale while they're still working.
+
+    The interval is resolved wherever the task was created — at publish time
+    for most tasks, in ``_maybe_create_task`` for the rest — so that it always
+    matches the ``stale_timeout`` the task was created with.
+    """
+    request = signal_sender.request
+    task_id = _get_taskbadger_task_id(request)
+    if not task_id:
+        return
+
+    interval = request.get(TB_HEARTBEAT_INTERVAL)
+    if interval is None and request.headers:
+        interval = request.headers.get(TB_HEARTBEAT_INTERVAL)
+    heartbeat.start(task_id, interval)
 
 
 def enter_session():
