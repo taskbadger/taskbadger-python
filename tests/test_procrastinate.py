@@ -7,6 +7,8 @@ import pytest
 from procrastinate import testing
 
 from taskbadger import StatusEnum
+from taskbadger.context_providers import ContextProvider
+from taskbadger.mug import Badger
 from taskbadger.procrastinate import TB_TASK_ID_KWARG, _instrument_task, current_task, track
 from tests.utils import task_for_test
 
@@ -89,6 +91,35 @@ def test_worker_marks_error(app):
     assert statuses == [StatusEnum.PROCESSING, StatusEnum.ERROR]
     err_call = update.call_args_list[-1]
     assert err_call.kwargs["data"] == {"x": 1, "exception": "nope"}
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_worker_marks_error_consults_context_provider(app):
+    class FakeProvider(ContextProvider):
+        identifier = "fake"
+
+        def capture_error_context(self, exception, snapshot=None):
+            return {"detail": str(exception)}
+
+    Badger.current.settings.context_providers = [FakeProvider()]
+
+    @app.task(name="boom_with_provider")
+    def boom():
+        raise ValueError("nope")
+
+    _instrument_task(boom, system=None, manual=True)
+
+    with (
+        mock.patch("taskbadger.procrastinate.update_task_safe") as update,
+        mock.patch("taskbadger.sdk.get_task") as get,
+    ):
+        get.return_value = task_for_test(status=StatusEnum.PROCESSING)
+        update.return_value = task_for_test(status=StatusEnum.PROCESSING)
+        with pytest.raises(ValueError, match="nope"):
+            boom.func(**{TB_TASK_ID_KWARG: "tb-provider"})
+
+    err_call = update.call_args_list[-1]
+    assert err_call.kwargs["data"] == {"exception": "nope", "fake": {"detail": "nope"}}
 
 
 @pytest.mark.usefixtures("_bind_settings")

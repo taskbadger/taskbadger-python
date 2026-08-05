@@ -1,6 +1,7 @@
 from unittest import mock
 
 from taskbadger import track
+from taskbadger.context_providers import ContextProvider
 from taskbadger.mug import Badger, Settings
 
 
@@ -50,6 +51,32 @@ def test_track_decorator_error(update, create):
     assert update.call_count == 1
     assert update.call_args.kwargs["status"] == "error"
     assert update.call_args.kwargs["data"]["exception"] == "test"
+
+
+@mock.patch("taskbadger.decorators.create_task_safe")
+@mock.patch("taskbadger.decorators._update_safe")
+def test_track_decorator_error_consults_context_provider(update, create):
+    class FakeProvider(ContextProvider):
+        identifier = "fake"
+
+        def capture_error_context(self, exception, snapshot=None):
+            return {"detail": str(exception)}
+
+    Badger.current.bind(Settings("https://taskbadger.net", "token", "org", "proj", context_providers=[FakeProvider()]))
+    try:
+
+        @track
+        def test(arg):
+            raise Exception("test")
+
+        try:
+            test("test")
+        except Exception:
+            pass
+    finally:
+        Badger.current.bind(None)
+
+    assert update.call_args.kwargs["data"] == {"exception": "test", "fake": {"detail": "test"}}
 
 
 @mock.patch("taskbadger.decorators._update_safe")
