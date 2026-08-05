@@ -1,6 +1,7 @@
 import logging
 from functools import wraps
 
+from ._error_context import capture_error_data, reset_error_context, start_error_context
 from .mug import Session
 from .safe_sdk import create_task_safe
 from .sdk import StatusEnum
@@ -52,16 +53,19 @@ def track(
                 monitor_id=monitor_id,
                 **task_kwargs,
             )
+            token = start_error_context()
             try:
                 result = func(*args, **kwargs)
             except Exception as e:
                 _update_task(
                     task,
                     status=StatusEnum.ERROR,
-                    data={"exception": str(e)},
+                    data=capture_error_data(e),
                     data_merge_strategy="default",
                 )
                 raise
+            finally:
+                reset_error_context(token)
 
             _update_task(task, status=StatusEnum.SUCCESS)
             return result

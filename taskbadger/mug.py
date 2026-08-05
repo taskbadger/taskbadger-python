@@ -4,6 +4,7 @@ from contextlib import ContextDecorator
 from contextvars import ContextVar
 from copy import deepcopy
 
+from taskbadger.context_providers import ContextProvider
 from taskbadger.internal import AuthenticatedClient
 from taskbadger.systems import System
 
@@ -21,6 +22,7 @@ class Settings:
     project_slug: str
     systems: dict[str, System] = dataclasses.field(default_factory=dict)
     before_create: Callback = None
+    context_providers: list[ContextProvider] = dataclasses.field(default_factory=list)
 
     def get_client(self):
         return AuthenticatedClient(self.base_url, self.token)

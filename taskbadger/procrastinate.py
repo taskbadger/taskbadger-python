@@ -17,6 +17,7 @@ import json
 import logging
 from contextvars import ContextVar
 
+from ._error_context import capture_error_data, reset_error_context, start_error_context
 from ._heartbeat import heartbeat
 from ._integrations import (
     TERMINAL_STATES,
@@ -88,11 +89,14 @@ def _instrument_task(task, system=None, manual=False, opts=None):
             try:
                 _update_status(tb_id, StatusEnum.PROCESSING)
                 heartbeat.start(tb_id, _heartbeat_interval(task))
+                ctx_token = start_error_context()
                 try:
                     result = await original_func(*args, **kwargs)
                 except Exception as exc:
                     _update_status(tb_id, StatusEnum.ERROR, exception=exc)
                     raise
+                finally:
+                    reset_error_context(ctx_token)
                 _update_status(tb_id, StatusEnum.SUCCESS)
                 return result
             finally:
@@ -109,11 +113,14 @@ def _instrument_task(task, system=None, manual=False, opts=None):
             try:
                 _update_status(tb_id, StatusEnum.PROCESSING)
                 heartbeat.start(tb_id, _heartbeat_interval(task))
+                ctx_token = start_error_context()
                 try:
                     result = original_func(*args, **kwargs)
                 except Exception as exc:
                     _update_status(tb_id, StatusEnum.ERROR, exception=exc)
                     raise
+                finally:
+                    reset_error_context(ctx_token)
                 _update_status(tb_id, StatusEnum.SUCCESS)
                 return result
             finally:
@@ -141,7 +148,7 @@ def _update_status(tb_id, status, exception=None):
         data = None
         if exception is not None and current is not None:
             base = dict(current.data) if current.data else None
-            data = DefaultMergeStrategy().merge(base, {"exception": str(exception)})
+            data = DefaultMergeStrategy().merge(base, capture_error_data(exception))
         if data is not None:
             updated = update_task_safe(tb_id, status=status, data=data)
         else:

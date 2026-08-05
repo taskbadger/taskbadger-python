@@ -14,6 +14,7 @@ from celery.signals import (
 from kombu import serialization
 
 from . import sdk
+from ._error_context import capture_error_data, reset_error_context, start_error_context
 from ._heartbeat import heartbeat
 from ._integrations import TERMINAL_STATES, resolve_heartbeat_options, safe_get_task, task_cache
 from .internal.models import StatusEnum
@@ -30,6 +31,9 @@ TB_STALE_TIMEOUT = f"{KWARG_PREFIX}stale_timeout"
 # Marks a request whose signal handlers opened the Task Badger session, so that
 # only they close it again.
 TB_OWNS_SESSION = f"{KWARG_PREFIX}owns_session"
+# Token returned by start_error_context(), stashed on the request so
+# task_postrun_handler can restore the previous context (see comment there).
+TB_ERROR_CTX_TOKEN = f"{KWARG_PREFIX}error_ctx_token"
 
 log = logging.getLogger("taskbadger")
 
@@ -301,6 +305,16 @@ def task_prerun_handler(sender=None, **kwargs):
     _maybe_create_task(sender)
     _update_task(sender, StatusEnum.PROCESSING)
     _start_heartbeat(sender)
+    if _get_taskbadger_task_id(sender.request):
+        # Snapshotted here (same thread as the task body and the failure/retry
+        # signals below) so context providers can tell a fresh capture from a
+        # stale one if the task errors. The token is restored in
+        # task_postrun_handler rather than discarded: a task synchronously
+        # invoking another tracked task in its body (eager mode, `.apply()`,
+        # canvas primitives) would otherwise leave this task's context
+        # clobbered by the inner task's snapshot for the rest of its run.
+        token = start_error_context()
+        sender.request.update({TB_ERROR_CTX_TOKEN: token})
 
 
 @task_postrun.connect
@@ -309,6 +323,9 @@ def task_postrun_handler(sender=None, **kwargs):
     task_id = _get_taskbadger_task_id(sender.request)
     if task_id:
         heartbeat.stop(task_id)
+    token = sender.request.get(TB_ERROR_CTX_TOKEN)
+    if token is not None:
+        reset_error_context(token)
 
 
 @task_success.connect
@@ -351,7 +368,10 @@ def _update_task(signal_sender, status, einfo=None):
 
     data = None
     if einfo:
-        data = DefaultMergeStrategy().merge(task.data, {"exception": str(einfo)})
+        # `einfo.exception` wraps the real exception (see billiard.einfo.ExceptionWithTraceback);
+        # unwrap it so context providers (e.g. Sentry) see the original exception.
+        exc = getattr(einfo.exception, "exc", einfo.exception)
+        data = DefaultMergeStrategy().merge(task.data, capture_error_data(exc, message=str(einfo)))
     task = update_task_safe(task.id, status=status, data=data)
     if task:
         task_cache.set(task_id, task)

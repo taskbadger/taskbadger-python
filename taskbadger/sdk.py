@@ -5,6 +5,8 @@ import os
 import warnings
 from typing import Any
 
+from taskbadger._error_context import capture_error_data
+from taskbadger.context_providers import ContextProvider
 from taskbadger.exceptions import (
     ConfigurationError,
     MissingConfiguration,
@@ -63,6 +65,7 @@ def init(
     systems: list[System] = None,
     tags: dict[str, str] = None,
     before_create: Callback = None,
+    context_providers: list[ContextProvider] = None,
 ):
     """Initialize Task Badger client.
 
@@ -73,9 +76,13 @@ def init(
     For legacy API keys, *organization_slug* and *project_slug* are
     required and a deprecation warning is emitted.
 
+    Arguments:
+        context_providers: Providers consulted when a tracked task errors, to attach extra
+            context (e.g. a Sentry issue link) to the task's `data`. See `taskbadger.context_providers`.
+
     Call this function once per thread.
     """
-    _init(_TB_HOST, organization_slug, project_slug, token, systems, tags, before_create)
+    _init(_TB_HOST, organization_slug, project_slug, token, systems, tags, before_create, context_providers)
 
 
 def _init(
@@ -86,6 +93,7 @@ def _init(
     systems: list[System] = None,
     tags: dict[str, str] = None,
     before_create: Callback = None,
+    context_providers: list[ContextProvider] = None,
 ):
     host = host or os.environ.get("TASKBADGER_HOST", "https://taskbadger.net")
     organization_slug = organization_slug or os.environ.get("TASKBADGER_ORG")
@@ -118,6 +126,7 @@ def _init(
             project_slug,
             systems={system.identifier: system for system in systems},
             before_create=before_create,
+            context_providers=context_providers or [],
         )
         Badger.current.bind(settings, tags)
     else:
@@ -387,8 +396,19 @@ class Task:
         """Update the task status to `success` and set the value."""
         self.update(status=StatusEnum.SUCCESS, value=value)
 
-    def error(self, value: int = None, data: dict = None):
-        """Update the task status to `error` and set the value and data."""
+    def error(self, value: int = None, data: dict = None, exception: BaseException = None):
+        """Update the task status to `error` and set the value and data.
+
+        If `exception` is given, it's passed to any configured context providers
+        (e.g. Sentry, see [taskbadger.context_providers][]) and the result merged into `data`.
+        Called on its own (outside `@track` or the Celery/Procrastinate integrations), providers
+        have no baseline to compare against, so e.g. `SentryContextProvider` will report whatever
+        `sentry_sdk.last_event_id()` currently is.
+        """
+        if exception is not None:
+            error_data = capture_error_data(exception)
+            error_data.update(data or {})
+            data = error_data
         self.update(status=StatusEnum.ERROR, value=value, data=data)
 
     def canceled(self):
