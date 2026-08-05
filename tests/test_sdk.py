@@ -6,6 +6,7 @@ from unittest import mock
 import pytest
 
 from taskbadger import Action, EmailIntegration, StatusEnum, WebhookIntegration, create_task
+from taskbadger.context_providers import ContextProvider
 from taskbadger.exceptions import TaskbadgerException
 from taskbadger.internal.models import (
     PatchedTaskRequest,
@@ -205,6 +206,63 @@ def test_update_data(settings, patched_update):
 
     # expected request
     _verify_update(settings, patched_update, data={"a": 1})
+
+
+def test_error_with_exception(settings, patched_update):
+    api_task = task_for_test()
+    task = Task(api_task)
+
+    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, api_task)
+    task.error(exception=ValueError("boom"))
+
+    _verify_update(settings, patched_update, status=StatusEnum.ERROR, data={"exception": "boom"})
+
+
+def test_error_with_exception_consults_context_provider(settings, patched_update):
+    class FakeProvider(ContextProvider):
+        identifier = "fake"
+
+        def capture_error_context(self, exception, snapshot=None):
+            return {"detail": str(exception)}
+
+    settings.context_providers = [FakeProvider()]
+
+    api_task = task_for_test()
+    task = Task(api_task)
+    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, api_task)
+    task.error(exception=ValueError("boom"))
+
+    _verify_update(
+        settings,
+        patched_update,
+        status=StatusEnum.ERROR,
+        data={"exception": "boom", "fake": {"detail": "boom"}},
+    )
+
+
+def test_error_explicit_data_overrides_provider_data(settings, patched_update):
+    """Explicit `data` passed to `error()` wins over provider-derived data for
+    overlapping keys."""
+
+    class FakeProvider(ContextProvider):
+        identifier = "fake"
+
+        def capture_error_context(self, exception, snapshot=None):
+            return {"detail": "from provider"}
+
+    settings.context_providers = [FakeProvider()]
+
+    api_task = task_for_test()
+    task = Task(api_task)
+    patched_update.return_value = Response(HTTPStatus.OK, b"", {}, api_task)
+    task.error(exception=ValueError("boom"), data={"exception": "overridden", "extra": 1})
+
+    _verify_update(
+        settings,
+        patched_update,
+        status=StatusEnum.ERROR,
+        data={"exception": "overridden", "extra": 1, "fake": {"detail": "from provider"}},
+    )
 
 
 def test_increment_value(settings, patched_update):

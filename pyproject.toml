@@ -47,6 +47,9 @@ cli = [
 procrastinate = [
     "procrastinate>=3.0",
 ]
+sentry = [
+    "sentry-sdk>=1.0",
+]
 
 [tool.uv]
 package = true
@@ -69,6 +72,7 @@ dev = [
     "redis",
     "openapi-python-client",
     "taskbadger[cli]",
+    "taskbadger[sentry]",
 ]
 
 [project.scripts]
