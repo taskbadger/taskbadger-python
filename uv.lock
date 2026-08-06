@@ -595,47 +595,21 @@ wheels = [
 name = "openapi-python-client"
 version = "0.28.4"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.11'",
-]
 dependencies = [
-    { name = "attrs", marker = "python_full_version < '3.11'" },
-    { name = "colorama", marker = "python_full_version < '3.11' and sys_platform == 'win32'" },
-    { name = "httpx", marker = "python_full_version < '3.11'" },
-    { name = "jinja2", marker = "python_full_version < '3.11'" },
-    { name = "pydantic", marker = "python_full_version < '3.11'" },
-    { name = "python-dateutil", marker = "python_full_version < '3.11'" },
-    { name = "ruamel-yaml", marker = "python_full_version < '3.11'" },
-    { name = "ruff", marker = "python_full_version < '3.11'" },
-    { name = "shellingham", marker = "python_full_version < '3.11'" },
-    { name = "typer", version = "0.25.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "attrs" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "httpx" },
+    { name = "jinja2" },
+    { name = "pydantic" },
+    { name = "python-dateutil" },
+    { name = "ruamel-yaml" },
+    { name = "ruff" },
+    { name = "shellingham" },
+    { name = "typer" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/7b/cf/c9278f87a8454cef126fb2594bc32472d681957ea03b8de68d304107a459/openapi_python_client-0.28.4.tar.gz", hash = "sha256:f78dfab5e21652806b17af07c16187b5911138fc526229126953c1b7b37d2b88", size = 125974, upload-time = "2026-05-11T19:44:08.427Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/07/59/016bf13a3bfb85a0d890d492cc9fc65ccefa53ecc5eba3c9a049e5ea6317/openapi_python_client-0.28.4-py3-none-any.whl", hash = "sha256:6bb87dbb05f88e5ab5ba4e5902f0c85ea53e666d3646be49ea2bb19bc8b5bb85", size = 183212, upload-time = "2026-05-11T19:44:07.005Z" },
-]
-
-[[package]]
-name = "openapi-python-client"
-version = "0.29.0"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.11'",
-]
-dependencies = [
-    { name = "attrs", marker = "python_full_version >= '3.11'" },
-    { name = "colorama", marker = "python_full_version >= '3.11' and sys_platform == 'win32'" },
-    { name = "httpx", marker = "python_full_version >= '3.11'" },
-    { name = "jinja2", marker = "python_full_version >= '3.11'" },
-    { name = "pydantic", marker = "python_full_version >= '3.11'" },
-    { name = "ruamel-yaml", marker = "python_full_version >= '3.11'" },
-    { name = "ruff", marker = "python_full_version >= '3.11'" },
-    { name = "shellingham", marker = "python_full_version >= '3.11'" },
-    { name = "typer", version = "0.26.8", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/63/f6/67dfe73b5073251b6e2aba3d67191819798dd33dd09fcb2d12242662a960/openapi_python_client-0.29.0.tar.gz", hash = "sha256:4ff439a63765aaef548e69c4eedd86dfad57891dc322709450af0c2c9a72a23e", size = 125697, upload-time = "2026-05-30T20:32:10.533Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/fb/d1/7391a205622c40b8e9d1b79b892b4944d6e3637674b47a56196e2c96c5d1/openapi_python_client-0.29.0-py3-none-any.whl", hash = "sha256:1085864c1e0a42fb50e1f5eb84363b19de07ebfb8a3f82a146c8529b948b8f12", size = 182954, upload-time = "2026-05-30T20:32:09.037Z" },
 ]
 
 [[package]]
@@ -1204,8 +1178,7 @@ celery = [
 ]
 cli = [
     { name = "rich" },
-    { name = "typer", version = "0.25.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "typer", version = "0.26.8", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "typer" },
 ]
 procrastinate = [
     { name = "procrastinate" },
@@ -1217,8 +1190,7 @@ sentry = [
 [package.dev-dependencies]
 dev = [
     { name = "invoke" },
-    { name = "openapi-python-client", version = "0.28.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "openapi-python-client", version = "0.29.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "openapi-python-client" },
     { name = "pre-commit" },
     { name = "procrastinate" },
     { name = "pytest" },
@@ -1245,7 +1217,7 @@ provides-extras = ["celery", "cli", "procrastinate", "sentry"]
 [package.metadata.requires-dev]
 dev = [
     { name = "invoke" },
-    { name = "openapi-python-client" },
+    { name = "openapi-python-client", specifier = "<0.29" },
     { name = "pre-commit" },
     { name = "procrastinate" },
     { name = "pytest" },
@@ -1332,36 +1304,15 @@ wheels = [
 name = "typer"
 version = "0.25.1"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.11'",
-]
 dependencies = [
-    { name = "annotated-doc", marker = "python_full_version < '3.11'" },
-    { name = "click", marker = "python_full_version < '3.11'" },
-    { name = "rich", marker = "python_full_version < '3.11'" },
-    { name = "shellingham", marker = "python_full_version < '3.11'" },
+    { name = "annotated-doc" },
+    { name = "click" },
+    { name = "rich" },
+    { name = "shellingham" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/e4/51/9aed62104cea109b820bbd6c14245af756112017d309da813ef107d42e7e/typer-0.25.1.tar.gz", hash = "sha256:9616eb8853a09ffeabab1698952f33c6f29ffdbceb4eaeecf571880e8d7664cc", size = 122276, upload-time = "2026-04-30T19:32:16.964Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3f/f9/2b3ff4e56e5fa7debfaf9eb135d0da96f3e9a1d5b27222223c7296336e5f/typer-0.25.1-py3-none-any.whl", hash = "sha256:75caa44ed46a03fb2dab8808753ffacdbfea88495e74c85a28c5eefcf5f39c89", size = 58409, upload-time = "2026-04-30T19:32:18.271Z" },
-]
-
-[[package]]
-name = "typer"
-version = "0.26.8"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.11'",
-]
-dependencies = [
-    { name = "annotated-doc", marker = "python_full_version >= '3.11'" },
-    { name = "colorama", marker = "python_full_version >= '3.11' and sys_platform == 'win32'" },
-    { name = "rich", marker = "python_full_version >= '3.11'" },
-    { name = "shellingham", marker = "python_full_version >= '3.11'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/7c/f7/68adc395201b20b872d68e975386832e8005ffeacedd43a1d837a32815be/typer-0.26.8.tar.gz", hash = "sha256:c244a6bd558886fe3f8780efb6bdd28bb9aff005a94eedebaa5cb32926fe2f7e", size = 202097, upload-time = "2026-06-26T09:22:45.705Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/80/87/b9fd69c92c6102a066e1b86a35243f53e70bd4c709f2a26d9f4fee4f4dc0/typer-0.26.8-py3-none-any.whl", hash = "sha256:3512ca79ac5c11113414b36e80281b872884477722440691c89d1112e321a49c", size = 122564, upload-time = "2026-06-26T09:22:44.72Z" },
 ]
 
 [[package]]
