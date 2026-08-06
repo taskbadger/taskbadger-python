@@ -263,6 +263,51 @@ def test_celery_publish_has_no_parent_outside_a_task():
     assert "parent" not in create.call_args.kwargs
 
 
+def _running_task(chain=None, callbacks=None):
+    """Pretend a task with these successors is mid-run."""
+    request = mock.Mock(chain=chain, callbacks=callbacks)
+    return mock.patch("celery.current_task", mock.Mock(request=request))
+
+
+@pytest.mark.usefixtures("_bind_settings")
+@pytest.mark.parametrize(
+    "successors",
+    [
+        {"chain": [{"task": "child.task"}]},
+        {"callbacks": [{"task": "child.task"}]},
+        # a group of callbacks arrives as one signature wrapping the real tasks
+        {"callbacks": [{"task": "celery.group", "kwargs": {"tasks": [{"task": "child.task"}]}}]},
+    ],
+    ids=["chain", "callback", "callback_group"],
+)
+def test_celery_workflow_successors_are_not_nested(successors):
+    """Chain links and callbacks are dispatched while the task that precedes
+    them still looks current, but they follow it rather than belong to it."""
+    with mock.patch("taskbadger.celery.create_task_safe") as create, _running_task(**successors):
+        create.return_value = task_for_test()
+        token = enter_task("root_id")
+        try:
+            _publish()
+        finally:
+            exit_task(token)
+
+    assert "parent" not in create.call_args.kwargs
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_publish_from_a_task_body_still_nests_while_a_chain_is_pending():
+    """Only the successor itself is exempt — a task the body enqueues is not."""
+    with mock.patch("taskbadger.celery.create_task_safe") as create, _running_task(chain=[{"task": "next.task"}]):
+        create.return_value = task_for_test()
+        token = enter_task("root_id")
+        try:
+            _publish()
+        finally:
+            exit_task(token)
+
+    assert create.call_args.kwargs["parent"] == "root_id"
+
+
 @pytest.mark.usefixtures("_bind_settings")
 def test_celery_publish_explicit_parent_wins():
     with mock.patch("taskbadger.celery.create_task_safe") as create:

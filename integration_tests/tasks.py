@@ -39,6 +39,16 @@ def spawns_child(self, x, y):
     return spawns_grandchild.delay(x, y).id
 
 
+@shared_task(bind=True, base=taskbadger.celery.Task)
+def chain_head(self):
+    return self.taskbadger_task_id
+
+
+@shared_task(bind=True, base=taskbadger.celery.Task)
+def chain_tail(self, head_tb_id):
+    return {"head_tb_id": head_tb_id, "own_tb_id": self.taskbadger_task_id}
+
+
 @shared_task(bind=True, base=taskbadger.celery.Task, taskbadger_heartbeat_interval=HEARTBEAT_INTERVAL)
 def slow_add(self, x, y):
     """Runs long enough to go stale without a heartbeat, and never updates itself."""

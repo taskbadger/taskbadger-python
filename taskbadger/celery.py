@@ -141,6 +141,41 @@ class Task(celery.Task):
         return task
 
 
+def _signature_names(signature):
+    """The task names ``signature`` will publish, expanding groups.
+
+    Signatures reach us either as ``Signature`` objects or as the dicts they
+    serialize to, depending on where in Celery they came from.
+    """
+    if isinstance(signature, dict):
+        name = signature.get("task")
+        nested = (signature.get("kwargs") or {}).get("tasks")
+    else:
+        name = getattr(signature, "task", None)
+        nested = getattr(signature, "tasks", None)
+    if nested:
+        for inner in nested:
+            yield from _signature_names(inner)
+    elif name:
+        yield name
+
+
+def _is_workflow_successor(task_name):
+    """Whether the task being published is the running task's next chain link or
+    one of its callbacks, rather than something its body chose to enqueue.
+
+    Celery dispatches both from inside ``trace_task`` after the task body
+    returns but before ``task_postrun``, so the running task still looks
+    current. They're the task's successors rather than its subtasks, so they
+    shouldn't be nested under it.
+    """
+    request = getattr(celery.current_task, "request", None)
+    if request is None:
+        return False
+    successors = list(request.chain or []) + list(request.callbacks or [])
+    return any(name == task_name for sig in successors for name in _signature_names(sig))
+
+
 @before_task_publish.connect
 def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
     routing_key = kwargs.get("routing_key")
@@ -174,7 +209,7 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
     # `before_task_publish` fires in the process doing the publishing, so if that
     # is itself a tracked task this nests the new task under it.
     enclosing_task = parent_id()
-    if enclosing_task:
+    if enclosing_task and not _is_workflow_successor(sender):
         kwargs.setdefault("parent", enclosing_task)
     name = kwargs.pop("name", headers["task"])
 
