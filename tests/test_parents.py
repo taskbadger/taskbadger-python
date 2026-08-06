@@ -5,6 +5,7 @@ attached to it via `parent`; if the running task is itself a child, the new task
 is attached to the same root rather than to the child.
 """
 
+import copy
 import logging
 from unittest import mock
 
@@ -148,6 +149,9 @@ def test_list_tasks_filters_by_parent(httpx_mock):
     assert child.parent == "parent_id"
     assert list(tasks) == tasks.results
     assert len(tasks) == 1
+    # a TaskList must survive copy / pickle: both probe for dunders that
+    # `__getattr__` must not try to delegate
+    assert len(copy.deepcopy(tasks)) == 1
 
 
 @pytest.mark.usefixtures("_bind_settings")
@@ -404,6 +408,26 @@ def test_celery_eager_nests_under_the_running_task():
             exit_task(token)
 
     assert create.call_args.kwargs["parent"] == "root_id"
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_eager_explicit_none_parent_makes_a_root_task():
+    """`taskbadger_parent=None` asks for a root task, as it does at publish time."""
+    add = _celery_app(task_always_eager=True, task_eager_propagates=True)
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe"),
+        mock.patch("taskbadger.sdk.get_task"),
+    ):
+        create.return_value = task_for_test()
+        token = enter_task("root_id")
+        try:
+            add.apply_async((2, 2), taskbadger_parent=None)
+        finally:
+            exit_task(token)
+
+    assert create.call_args.kwargs["parent"] is None
 
 
 # --- Procrastinate ------------------------------------------------------------

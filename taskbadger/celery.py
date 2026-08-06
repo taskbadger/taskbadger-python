@@ -334,8 +334,9 @@ def _maybe_create_task(signal_sender):
         "external_id": external_id,
         # eager and canvas tasks are created here rather than at publish time, but
         # still run inside whatever task invoked them. An explicit
-        # `taskbadger_parent` wins, as it does at publish time.
-        "parent": header_kwargs.get("parent") or parent_id(),
+        # `taskbadger_parent` wins, as it does at publish time — including an
+        # explicit `None`, which asks for a root task.
+        "parent": header_kwargs["parent"] if "parent" in header_kwargs else parent_id(),
     }
     heartbeat_interval, stale_timeout = resolve_heartbeat_options(
         header_kwargs.get("heartbeat_interval", getattr(signal_sender, TB_HEARTBEAT_INTERVAL, None)),

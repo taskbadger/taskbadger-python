@@ -554,6 +554,11 @@ class Task:
         return self._task.tags.to_dict()
 
     def __getattr__(self, item):
+        if item.startswith("_"):
+            # don't delegate private / dunder lookups: `copy` and `pickle` probe
+            # for e.g. `__setstate__` on an instance that has no `_task` yet,
+            # which would recurse until the stack blows up.
+            raise AttributeError(item)
         return getattr(self._task, item)
 
     def safe_update(self, **kwargs):
@@ -606,6 +611,11 @@ class TaskList:
         return len(self._results)
 
     def __getattr__(self, item):
+        if item.startswith("_"):
+            # don't delegate private / dunder lookups: `copy` and `pickle` probe
+            # for e.g. `__setstate__` on an instance that has no `_task_list` yet,
+            # which would recurse until the stack blows up.
+            raise AttributeError(item)
         return getattr(self._task_list, item)
 
 
