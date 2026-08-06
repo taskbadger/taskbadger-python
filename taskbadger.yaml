@@ -28,6 +28,11 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: parent
+        schema:
+          type: string
+        description: Only return the tasks that are part of this task.
       - in: path
         name: project_slug
         schema:
@@ -388,7 +393,10 @@ paths:
           description: ''
     post:
       operationId: action_create
-      description: Create an action for a task
+      description: '**Deprecated.** Per-job actions are being retired. Configure alerts
+        once at the project level with a global action instead of attaching them to
+        individual tasks. This endpoint still works but will be removed in a future
+        release.'
       summary: Create Action
       parameters:
       - in: path
@@ -420,6 +428,7 @@ paths:
       security:
       - projectKeyAuth: []
       - bearerAuth: []
+      deprecated: true
       responses:
         '201':
           content:
@@ -471,7 +480,10 @@ paths:
           description: ''
     put:
       operationId: action_update
-      description: Update an action
+      description: '**Deprecated.** Per-job actions are being retired. Configure alerts
+        once at the project level with a global action instead of attaching them to
+        individual tasks. This endpoint still works but will be removed in a future
+        release.'
       summary: Update Action
       parameters:
       - in: path
@@ -509,6 +521,7 @@ paths:
       security:
       - projectKeyAuth: []
       - bearerAuth: []
+      deprecated: true
       responses:
         '200':
           content:
@@ -518,7 +531,10 @@ paths:
           description: ''
     patch:
       operationId: action_partial_update
-      description: Update an action
+      description: '**Deprecated.** Per-job actions are being retired. Configure alerts
+        once at the project level with a global action instead of attaching them to
+        individual tasks. This endpoint still works but will be removed in a future
+        release.'
       summary: Update Action (partial)
       parameters:
       - in: path
@@ -555,6 +571,7 @@ paths:
       security:
       - projectKeyAuth: []
       - bearerAuth: []
+      deprecated: true
       responses:
         '200':
           content:
@@ -564,7 +581,10 @@ paths:
           description: ''
     delete:
       operationId: action_cancel
-      description: Cancel an action
+      description: '**Deprecated.** Per-job actions are being retired. Configure alerts
+        once at the project level with a global action instead of attaching them to
+        individual tasks. This endpoint still works but will be removed in a future
+        release.'
       summary: Cancel Action
       parameters:
       - in: path
@@ -596,6 +616,7 @@ paths:
       security:
       - projectKeyAuth: []
       - bearerAuth: []
+      deprecated: true
       responses:
         '204':
           description: No response body
@@ -685,6 +706,12 @@ components:
     PatchedTaskRequest:
       type: object
       properties:
+        parent:
+          type: string
+          minLength: 1
+          nullable: true
+          description: ID of the task this task is part of. Tasks can only be nested
+            one level deep, and a task's parent can not be changed once set.
         name:
           type: string
           minLength: 1
@@ -791,6 +818,11 @@ components:
         project:
           type: string
           readOnly: true
+        parent:
+          type: string
+          nullable: true
+          description: ID of the task this task is part of. Tasks can only be nested
+            one level deep, and a task's parent can not be changed once set.
         name:
           type: string
           description: Name of the task
@@ -894,6 +926,12 @@ components:
     TaskRequest:
       type: object
       properties:
+        parent:
+          type: string
+          minLength: 1
+          nullable: true
+          description: ID of the task this task is part of. Tasks can only be nested
+            one level deep, and a task's parent can not be changed once set.
         name:
           type: string
           minLength: 1

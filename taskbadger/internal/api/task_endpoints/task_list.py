@@ -16,6 +16,7 @@ def _get_kwargs(
     *,
     cursor: str | Unset = UNSET,
     page_size: int | Unset = UNSET,
+    parent: str | Unset = UNSET,
 ) -> dict[str, Any]:
 
     params: dict[str, Any] = {}
@@ -23,6 +24,8 @@ def _get_kwargs(
     params["cursor"] = cursor
 
     params["page_size"] = page_size
+
+    params["parent"] = parent
 
     params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
 
@@ -66,6 +69,7 @@ def sync_detailed(
     client: AuthenticatedClient,
     cursor: str | Unset = UNSET,
     page_size: int | Unset = UNSET,
+    parent: str | Unset = UNSET,
 ) -> Response[PaginatedTaskList]:
     """List Tasks
 
@@ -76,6 +80,7 @@ def sync_detailed(
         project_slug (str):
         cursor (str | Unset):
         page_size (int | Unset):
+        parent (str | Unset):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -90,6 +95,7 @@ def sync_detailed(
         project_slug=project_slug,
         cursor=cursor,
         page_size=page_size,
+        parent=parent,
     )
 
     response = client.get_httpx_client().request(
@@ -106,6 +112,7 @@ def sync(
     client: AuthenticatedClient,
     cursor: str | Unset = UNSET,
     page_size: int | Unset = UNSET,
+    parent: str | Unset = UNSET,
 ) -> PaginatedTaskList | None:
     """List Tasks
 
@@ -116,6 +123,7 @@ def sync(
         project_slug (str):
         cursor (str | Unset):
         page_size (int | Unset):
+        parent (str | Unset):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -131,6 +139,7 @@ def sync(
         client=client,
         cursor=cursor,
         page_size=page_size,
+        parent=parent,
     ).parsed
 
 
@@ -141,6 +150,7 @@ async def asyncio_detailed(
     client: AuthenticatedClient,
     cursor: str | Unset = UNSET,
     page_size: int | Unset = UNSET,
+    parent: str | Unset = UNSET,
 ) -> Response[PaginatedTaskList]:
     """List Tasks
 
@@ -151,6 +161,7 @@ async def asyncio_detailed(
         project_slug (str):
         cursor (str | Unset):
         page_size (int | Unset):
+        parent (str | Unset):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -165,6 +176,7 @@ async def asyncio_detailed(
         project_slug=project_slug,
         cursor=cursor,
         page_size=page_size,
+        parent=parent,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -179,6 +191,7 @@ async def asyncio(
     client: AuthenticatedClient,
     cursor: str | Unset = UNSET,
     page_size: int | Unset = UNSET,
+    parent: str | Unset = UNSET,
 ) -> PaginatedTaskList | None:
     """List Tasks
 
@@ -189,6 +202,7 @@ async def asyncio(
         project_slug (str):
         cursor (str | Unset):
         page_size (int | Unset):
+        parent (str | Unset):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -205,5 +219,6 @@ async def asyncio(
             client=client,
             cursor=cursor,
             page_size=page_size,
+            parent=parent,
         )
     ).parsed

@@ -23,6 +23,8 @@ class TaskRequest:
     """
     Attributes:
         name (str): Name of the task
+        parent (None | str | Unset): ID of the task this task is part of. Tasks can only be nested one level deep, and a
+            task's parent can not be changed once set.
         queue (str | Unset): Queue the task is from
         external_id (str | Unset): Identifier from the originating system (e.g. Celery task ID) for correlating with
             logs
@@ -51,6 +53,7 @@ class TaskRequest:
     """
 
     name: str
+    parent: None | str | Unset = UNSET
     queue: str | Unset = UNSET
     external_id: str | Unset = UNSET
     status: StatusEnum | Unset = StatusEnum.PENDING
@@ -69,6 +72,12 @@ class TaskRequest:
         from ..models.task_request_tags import TaskRequestTags
 
         name = self.name
+
+        parent: None | str | Unset
+        if isinstance(self.parent, Unset):
+            parent = UNSET
+        else:
+            parent = self.parent
 
         queue = self.queue
 
@@ -133,6 +142,8 @@ class TaskRequest:
                 "name": name,
             }
         )
+        if parent is not UNSET:
+            field_dict["parent"] = parent
         if queue is not UNSET:
             field_dict["queue"] = queue
         if external_id is not UNSET:
@@ -166,6 +177,15 @@ class TaskRequest:
 
         d = dict(src_dict)
         name = d.pop("name")
+
+        def _parse_parent(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        parent = _parse_parent(d.pop("parent", UNSET))
 
         queue = d.pop("queue", UNSET)
 
@@ -261,6 +281,7 @@ class TaskRequest:
 
         task_request = cls(
             name=name,
+            parent=parent,
             queue=queue,
             external_id=external_id,
             status=status,
