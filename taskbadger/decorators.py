@@ -1,7 +1,9 @@
 import logging
 from functools import wraps
 
+from ._current_task import enter_task, exit_task, parent_id
 from ._error_context import capture_error_data, reset_error_context, start_error_context
+from ._integrations import parent_of
 from .mug import Session
 from .safe_sdk import create_task_safe
 from .sdk import StatusEnum
@@ -46,14 +48,20 @@ def track(
         @wraps(func)
         @Session()
         def _inner(*args, **kwargs):
-            task = create_task_safe(
-                task_name,
-                status=StatusEnum.PROCESSING,
-                max_runtime=max_runtime,
-                monitor_id=monitor_id,
-                **task_kwargs,
-            )
+            create_kwargs = {
+                "status": StatusEnum.PROCESSING,
+                "max_runtime": max_runtime,
+                "monitor_id": monitor_id,
+            }
+            enclosing_task = parent_id()
+            if enclosing_task:
+                create_kwargs["parent"] = enclosing_task
+            # an explicit `parent` in task_kwargs wins over the enclosing task
+            create_kwargs.update(task_kwargs)
+            task = create_task_safe(task_name, **create_kwargs)
             token = start_error_context()
+            # so that tasks created while `func` runs are nested under this one
+            task_token = enter_task(task.id, parent_of(task)) if task else None
             try:
                 result = func(*args, **kwargs)
             except Exception as e:
@@ -65,6 +73,8 @@ def track(
                 )
                 raise
             finally:
+                if task_token is not None:
+                    exit_task(task_token)
                 reset_error_context(token)
 
             _update_task(task, status=StatusEnum.SUCCESS)

@@ -15,12 +15,13 @@ import functools
 import inspect
 import json
 import logging
-from contextvars import ContextVar
 
+from ._current_task import current_task_id, enter_task, exit_task, parent_id
 from ._error_context import capture_error_data, reset_error_context, start_error_context
 from ._heartbeat import heartbeat
 from ._integrations import (
     TERMINAL_STATES,
+    parent_of,
     resolve_heartbeat_options,
     safe_get_task,
     task_cache,
@@ -44,8 +45,6 @@ _INSTRUMENTED_ATTR = "_taskbadger_instrumented"
 _MANUAL_ATTR = "_taskbadger_manual"
 _OPTS_ATTR = "_taskbadger_opts"
 _SYSTEM_ATTR = "_taskbadger_system"
-
-_current_tb_task_id: ContextVar[str | None] = ContextVar("_current_tb_task_id", default=None)
 
 
 def _instrument_task(task, system=None, manual=False, opts=None):
@@ -85,9 +84,9 @@ def _instrument_task(task, system=None, manual=False, opts=None):
             tb_id = kwargs.pop(TB_TASK_ID_KWARG, None)
             if tb_id is None:
                 return await original_func(*args, **kwargs)
-            token = _current_tb_task_id.set(tb_id)
+            _update_status(tb_id, StatusEnum.PROCESSING)
+            token = _enter_running_task(tb_id)
             try:
-                _update_status(tb_id, StatusEnum.PROCESSING)
                 heartbeat.start(tb_id, _heartbeat_interval(task))
                 ctx_token = start_error_context()
                 try:
@@ -101,7 +100,7 @@ def _instrument_task(task, system=None, manual=False, opts=None):
                 return result
             finally:
                 heartbeat.stop(tb_id)
-                _current_tb_task_id.reset(token)
+                exit_task(token)
     else:
 
         @functools.wraps(original_func)
@@ -109,9 +108,9 @@ def _instrument_task(task, system=None, manual=False, opts=None):
             tb_id = kwargs.pop(TB_TASK_ID_KWARG, None)
             if tb_id is None:
                 return original_func(*args, **kwargs)
-            token = _current_tb_task_id.set(tb_id)
+            _update_status(tb_id, StatusEnum.PROCESSING)
+            token = _enter_running_task(tb_id)
             try:
-                _update_status(tb_id, StatusEnum.PROCESSING)
                 heartbeat.start(tb_id, _heartbeat_interval(task))
                 ctx_token = start_error_context()
                 try:
@@ -125,11 +124,23 @@ def _instrument_task(task, system=None, manual=False, opts=None):
                 return result
             finally:
                 heartbeat.stop(tb_id)
-                _current_tb_task_id.reset(token)
+                exit_task(token)
 
     _wrap_defer(task)
     task.func = wrapped
     setattr(task, _INSTRUMENTED_ATTR, True)
+
+
+def _enter_running_task(tb_id):
+    """Mark ``tb_id`` as the task running in this context so anything it defers
+    nests under it.
+
+    Call this after the PROCESSING update, which leaves the task in the cache,
+    so resolving its parent doesn't cost a fetch. Skipped entirely when Badger
+    isn't configured — there is nothing to fetch with.
+    """
+    parent = parent_of(safe_get_task(tb_id)) if Badger.is_configured() else None
+    return enter_task(tb_id, parent)
 
 
 def _update_status(tb_id, status, exception=None):
@@ -217,6 +228,10 @@ def _create_pending_task(task, task_kwargs, queue=None):
     opts = dict(getattr(task, _OPTS_ATTR, {}) or {})
     name = opts.pop("name", None) or task.name
     create_kwargs = {"status": StatusEnum.PENDING}
+    # a defer from inside a running task nests the deferred task under it
+    enclosing_task = parent_id()
+    if enclosing_task:
+        create_kwargs["parent"] = enclosing_task
     queue = queue or getattr(task, "queue", None)
     if queue is not None:
         create_kwargs["queue"] = queue
@@ -331,7 +346,7 @@ def current_task():
     Returns ``None`` outside of a tracked task or if the task can't be fetched.
     Result is cached for the lifetime of the worker process via an LRU.
     """
-    tb_id = _current_tb_task_id.get()
+    tb_id = current_task_id()
     if tb_id is None:
         return None
     return safe_get_task(tb_id)

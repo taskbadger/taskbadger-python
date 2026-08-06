@@ -77,6 +77,17 @@ def safe_get_task(task_id: str):
     return task
 
 
+def parent_of(task) -> str | None:
+    """The id of ``task``'s parent, or ``None`` if it has none.
+
+    Accepts ``None`` (e.g. a failed fetch) and normalizes the generated model's
+    ``UNSET`` — returned for tasks fetched before the API grew the field — to
+    ``None``.
+    """
+    parent = getattr(task, "parent", None) if task is not None else None
+    return parent or None
+
+
 def match_task_name(task_name: str, includes, excludes) -> bool:
     """Return True if ``task_name`` should be tracked under the given rules.
 

@@ -14,9 +14,10 @@ from celery.signals import (
 from kombu import serialization
 
 from . import sdk
+from ._current_task import enter_task, exit_task, parent_id
 from ._error_context import capture_error_data, reset_error_context, start_error_context
 from ._heartbeat import heartbeat
-from ._integrations import TERMINAL_STATES, resolve_heartbeat_options, safe_get_task, task_cache
+from ._integrations import TERMINAL_STATES, parent_of, resolve_heartbeat_options, safe_get_task, task_cache
 from .internal.models import StatusEnum
 from .mug import Badger
 from .safe_sdk import create_task_safe, update_task_safe
@@ -34,6 +35,9 @@ TB_OWNS_SESSION = f"{KWARG_PREFIX}owns_session"
 # Token returned by start_error_context(), stashed on the request so
 # task_postrun_handler can restore the previous context (see comment there).
 TB_ERROR_CTX_TOKEN = f"{KWARG_PREFIX}error_ctx_token"
+# Token returned by enter_task(), stashed on the request so task_postrun_handler
+# can clear the task again once it has finished running.
+TB_CURRENT_TASK_TOKEN = f"{KWARG_PREFIX}current_task_token"
 
 log = logging.getLogger("taskbadger")
 
@@ -167,6 +171,11 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
     if routing_key and "queue" not in kwargs:
         kwargs["queue"] = routing_key
     kwargs.setdefault("external_id", headers["id"])
+    # `before_task_publish` fires in the process doing the publishing, so if that
+    # is itself a tracked task this nests the new task under it.
+    enclosing_task = parent_id()
+    if enclosing_task:
+        kwargs.setdefault("parent", enclosing_task)
     name = kwargs.pop("name", headers["task"])
 
     # `heartbeat_interval` isn't a task field; it tells the worker how often to
@@ -280,7 +289,15 @@ def _maybe_create_task(signal_sender):
     delivery_info = getattr(signal_sender.request, "delivery_info", None) or {}
     queue = delivery_info.get("routing_key")
     external_id = signal_sender.request.id
-    create_kwargs = {"status": StatusEnum.PENDING, "data": data, "queue": queue, "external_id": external_id}
+    create_kwargs = {
+        "status": StatusEnum.PENDING,
+        "data": data,
+        "queue": queue,
+        "external_id": external_id,
+        # eager and canvas tasks are created here rather than at publish time, but
+        # still run inside whatever task invoked them
+        "parent": parent_id(),
+    }
     # `before_task_publish` never ran for these, so per-call options are still
     # sitting in the headers rather than resolved into the message.
     header_kwargs = headers.get(TB_KWARGS_ARG) or {}
@@ -305,7 +322,8 @@ def task_prerun_handler(sender=None, **kwargs):
     _maybe_create_task(sender)
     _update_task(sender, StatusEnum.PROCESSING)
     _start_heartbeat(sender)
-    if _get_taskbadger_task_id(sender.request):
+    task_id = _get_taskbadger_task_id(sender.request)
+    if task_id:
         # Snapshotted here (same thread as the task body and the failure/retry
         # signals below) so context providers can tell a fresh capture from a
         # stale one if the task errors. The token is restored in
@@ -315,6 +333,11 @@ def task_prerun_handler(sender=None, **kwargs):
         # clobbered by the inner task's snapshot for the rest of its run.
         token = start_error_context()
         sender.request.update({TB_ERROR_CTX_TOKEN: token})
+        # Mark this as the running task so anything it publishes is nested under
+        # it. `_update_task` above has already put it in the cache, so this is a
+        # lookup rather than a fetch.
+        current_token = enter_task(task_id, parent_of(safe_get_task(task_id)))
+        sender.request.update({TB_CURRENT_TASK_TOKEN: current_token})
 
 
 @task_postrun.connect
@@ -323,6 +346,10 @@ def task_postrun_handler(sender=None, **kwargs):
     task_id = _get_taskbadger_task_id(sender.request)
     if task_id:
         heartbeat.stop(task_id)
+    current_token = sender.request.get(TB_CURRENT_TASK_TOKEN)
+    if current_token is not None:
+        exit_task(current_token)
+        sender.request.update({TB_CURRENT_TASK_TOKEN: None})
     token = sender.request.get(TB_ERROR_CTX_TOKEN)
     if token is not None:
         reset_error_context(token)
