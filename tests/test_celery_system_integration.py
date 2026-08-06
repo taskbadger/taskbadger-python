@@ -16,7 +16,14 @@ from http import HTTPStatus
 from unittest import mock
 
 import pytest
-from celery.signals import task_prerun
+from celery.signals import (
+    before_task_publish,
+    task_failure,
+    task_postrun,
+    task_prerun,
+    task_retry,
+    task_success,
+)
 
 from taskbadger import StatusEnum
 from taskbadger.celery import Task
@@ -247,7 +254,22 @@ def _assert_signals(check_is_connected=True):
 
 
 def _disconnect_signals():
-    from taskbadger.celery import task_prerun_handler
+    """Disconnect every handler the module connected on import.
 
-    task_prerun.disconnect(task_prerun_handler)
+    All of them, not just the one asserted on: re-importing the module connects
+    a second copy of each handler, and anything left behind keeps firing for the
+    rest of the session — from a stale module object that `mock.patch` no longer
+    reaches.
+    """
+    import taskbadger.celery as tb_celery
+
+    for signal, handler in (
+        (before_task_publish, tb_celery.task_publish_handler),
+        (task_prerun, tb_celery.task_prerun_handler),
+        (task_postrun, tb_celery.task_postrun_handler),
+        (task_success, tb_celery.task_success_handler),
+        (task_failure, tb_celery.task_failure_handler),
+        (task_retry, tb_celery.task_retry_handler),
+    ):
+        signal.disconnect(handler)
     _assert_signals(check_is_connected=False)
