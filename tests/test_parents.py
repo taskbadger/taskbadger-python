@@ -141,8 +141,12 @@ def test_list_tasks_filters_by_parent(httpx_mock):
         json={"next": None, "previous": None, "results": [_json_task_response(parent="parent_id")]},
         status_code=200,
     )
-    (child,) = list_tasks(parent="parent_id").results
+    tasks = list_tasks(parent="parent_id")
+    (child,) = tasks.results
+    assert isinstance(child, Task)
     assert child.parent == "parent_id"
+    assert list(tasks) == tasks.results
+    assert len(tasks) == 1
 
 
 @pytest.mark.usefixtures("_bind_settings")
