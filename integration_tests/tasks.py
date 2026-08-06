@@ -22,6 +22,33 @@ def add_auto_track(self, x, y):
     return x + y
 
 
+@shared_task(bind=True, base=taskbadger.celery.Task)
+def spawns_grandchild(self, x, y):
+    """Deferred by `spawns_child`, and defers a task of its own in turn.
+
+    Since this is already a child, the task it defers has to be flattened onto
+    the root rather than nested under this one — the API only allows one level.
+    """
+    grandchild = add.delay(x, y)
+    return {"own_tb_id": self.taskbadger_task_id, "grandchild_tb_id": grandchild.taskbadger_task_id}
+
+
+@shared_task(bind=True, base=taskbadger.celery.Task)
+def spawns_child(self, x, y):
+    """Defers a task from inside its own run, so that task nests under this one."""
+    return spawns_grandchild.delay(x, y).id
+
+
+@shared_task(bind=True, base=taskbadger.celery.Task)
+def chain_head(self):
+    return self.taskbadger_task_id
+
+
+@shared_task(bind=True, base=taskbadger.celery.Task)
+def chain_tail(self, head_tb_id):
+    return {"head_tb_id": head_tb_id, "own_tb_id": self.taskbadger_task_id}
+
+
 @shared_task(bind=True, base=taskbadger.celery.Task, taskbadger_heartbeat_interval=HEARTBEAT_INTERVAL)
 def slow_add(self, x, y):
     """Runs long enough to go stale without a heartbeat, and never updates itself."""

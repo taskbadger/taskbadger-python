@@ -73,7 +73,9 @@ def sync_detailed(
 ) -> Response[Action]:
     """Update Action (partial)
 
-     Update an action
+     **Deprecated.** Per-job actions are being retired. Configure alerts once at the project level with a
+    global action instead of attaching them to individual tasks. This endpoint still works but will be
+    removed in a future release.
 
     Args:
         organization_slug (str):
@@ -116,7 +118,9 @@ def sync(
 ) -> Action | None:
     """Update Action (partial)
 
-     Update an action
+     **Deprecated.** Per-job actions are being retired. Configure alerts once at the project level with a
+    global action instead of attaching them to individual tasks. This endpoint still works but will be
+    removed in a future release.
 
     Args:
         organization_slug (str):
@@ -154,7 +158,9 @@ async def asyncio_detailed(
 ) -> Response[Action]:
     """Update Action (partial)
 
-     Update an action
+     **Deprecated.** Per-job actions are being retired. Configure alerts once at the project level with a
+    global action instead of attaching them to individual tasks. This endpoint still works but will be
+    removed in a future release.
 
     Args:
         organization_slug (str):
@@ -195,7 +201,9 @@ async def asyncio(
 ) -> Action | None:
     """Update Action (partial)
 
-     Update an action
+     **Deprecated.** Per-job actions are being retired. Configure alerts once at the project level with a
+    global action instead of attaching them to individual tasks. This endpoint still works but will be
+    removed in a future release.
 
     Args:
         organization_slug (str):

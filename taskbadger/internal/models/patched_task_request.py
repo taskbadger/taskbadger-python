@@ -22,6 +22,8 @@ T = TypeVar("T", bound="PatchedTaskRequest")
 class PatchedTaskRequest:
     """
     Attributes:
+        parent (None | str | Unset): ID of the task this task is part of. Tasks can only be nested one level deep, and a
+            task's parent can not be changed once set.
         name (str | Unset): Name of the task
         queue (str | Unset): Queue the task is from
         external_id (str | Unset): Identifier from the originating system (e.g. Celery task ID) for correlating with
@@ -50,6 +52,7 @@ class PatchedTaskRequest:
         tags (PatchedTaskRequestTags | Unset): Tags for the task represented as a mapping from 'namespace' to 'value'.
     """
 
+    parent: None | str | Unset = UNSET
     name: str | Unset = UNSET
     queue: str | Unset = UNSET
     external_id: str | Unset = UNSET
@@ -67,6 +70,12 @@ class PatchedTaskRequest:
 
     def to_dict(self) -> dict[str, Any]:
         from ..models.patched_task_request_tags import PatchedTaskRequestTags
+
+        parent: None | str | Unset
+        if isinstance(self.parent, Unset):
+            parent = UNSET
+        else:
+            parent = self.parent
 
         name = self.name
 
@@ -129,6 +138,8 @@ class PatchedTaskRequest:
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
+        if parent is not UNSET:
+            field_dict["parent"] = parent
         if name is not UNSET:
             field_dict["name"] = name
         if queue is not UNSET:
@@ -163,6 +174,16 @@ class PatchedTaskRequest:
         from ..models.patched_task_request_tags import PatchedTaskRequestTags
 
         d = dict(src_dict)
+
+        def _parse_parent(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        parent = _parse_parent(d.pop("parent", UNSET))
+
         name = d.pop("name", UNSET)
 
         queue = d.pop("queue", UNSET)
@@ -258,6 +279,7 @@ class PatchedTaskRequest:
             tags = PatchedTaskRequestTags.from_dict(_tags)
 
         patched_task_request = cls(
+            parent=parent,
             name=name,
             queue=queue,
             external_id=external_id,

@@ -70,7 +70,9 @@ dev = [
     "invoke",
     "pytest-celery",
     "redis",
-    "openapi-python-client",
+    # 0.29 generates `datetime.fromisoformat` calls, which can't parse the API's
+    # `Z`-suffixed timestamps on Python 3.10.
+    "openapi-python-client<0.29",
     "taskbadger[cli]",
     "taskbadger[sentry]",
 ]

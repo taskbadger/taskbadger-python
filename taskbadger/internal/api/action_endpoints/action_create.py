@@ -68,7 +68,9 @@ def sync_detailed(
 ) -> Response[Action]:
     """Create Action
 
-     Create an action for a task
+     **Deprecated.** Per-job actions are being retired. Configure alerts once at the project level with a
+    global action instead of attaching them to individual tasks. This endpoint still works but will be
+    removed in a future release.
 
     Args:
         organization_slug (str):
@@ -108,7 +110,9 @@ def sync(
 ) -> Action | None:
     """Create Action
 
-     Create an action for a task
+     **Deprecated.** Per-job actions are being retired. Configure alerts once at the project level with a
+    global action instead of attaching them to individual tasks. This endpoint still works but will be
+    removed in a future release.
 
     Args:
         organization_slug (str):
@@ -143,7 +147,9 @@ async def asyncio_detailed(
 ) -> Response[Action]:
     """Create Action
 
-     Create an action for a task
+     **Deprecated.** Per-job actions are being retired. Configure alerts once at the project level with a
+    global action instead of attaching them to individual tasks. This endpoint still works but will be
+    removed in a future release.
 
     Args:
         organization_slug (str):
@@ -181,7 +187,9 @@ async def asyncio(
 ) -> Action | None:
     """Create Action
 
-     Create an action for a task
+     **Deprecated.** Per-job actions are being retired. Configure alerts once at the project level with a
+    global action instead of attaching them to individual tasks. This endpoint still works but will be
+    removed in a future release.
 
     Args:
         organization_slug (str):
