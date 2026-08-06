@@ -162,6 +162,7 @@ def create_task(
     tags: dict[str, str] = None,
     queue: str = None,
     external_id: str = None,
+    parent: str = None,
 ) -> "Task":
     """Create a Task.
 
@@ -178,6 +179,9 @@ def create_task(
         tags: Dictionary of namespace -> value tags.
         queue: Name of the queue the task is from.
         external_id: Identifier from the originating system (e.g. Celery task ID) for correlating with logs.
+        parent: ID of the parent task. Tasks nest a single level deep, so this must be the ID
+            of a task that is not itself a child. The Celery and Procrastinate integrations set
+            this automatically for tasks enqueued from within a tracked task.
 
     Returns:
         Task: The created Task object.
@@ -186,6 +190,8 @@ def create_task(
         "name": name,
         "status": status,
     }
+    if parent is not None:
+        task_dict["parent"] = parent
     if queue is not None:
         task_dict["queue"] = queue
     if external_id is not None:
@@ -236,6 +242,7 @@ def update_task(
     tags: dict[str, str] = None,
     queue: str = None,
     external_id: str = None,
+    parent: str = None,
 ) -> "Task":
     """Update a task.
     Requires only the task ID and fields to update.
@@ -253,6 +260,8 @@ def update_task(
         tags: Dictionary of namespace -> value tags.
         queue: Name of the queue the task is from.
         external_id: Identifier from the originating system (e.g. Celery task ID) for correlating with logs.
+        parent: ID of the parent task. Can only be set on a task that doesn't already have a
+            parent — the API rejects an attempt to change one.
 
     Returns:
         Task: The updated Task object.
@@ -266,6 +275,7 @@ def update_task(
     stale_timeout = _none_to_unset(stale_timeout)
     queue = _none_to_unset(queue)
     external_id = _none_to_unset(external_id)
+    parent = _none_to_unset(parent)
 
     data = data or UNSET
     body = PatchedTaskRequest(
@@ -278,6 +288,7 @@ def update_task(
         stale_timeout=stale_timeout,
         queue=queue,
         external_id=external_id,
+        parent=parent,
     )
     if actions:
         _warn_actions_deprecated()
@@ -291,9 +302,15 @@ def update_task(
     return Task(response.parsed)
 
 
-def list_tasks(page_size: int = None, cursor: str = None):
-    """List tasks."""
-    kwargs = _make_args(page_size=page_size, cursor=cursor)
+def list_tasks(page_size: int = None, cursor: str = None, parent: str = None):
+    """List tasks.
+
+    Arguments:
+        page_size: Number of results to return per page.
+        cursor: Pagination cursor.
+        parent: Only return the children of this task.
+    """
+    kwargs = _make_args(page_size=page_size, cursor=cursor, parent=parent)
     with Session() as client:
         response = task_list.sync_detailed(client=client, **kwargs)
     _check_response(response)
@@ -353,6 +370,7 @@ class Task:
         tags: dict[str, str] = None,
         queue: str = None,
         external_id: str = None,
+        parent: str = None,
     ) -> "Task":
         """Create a new task
 
@@ -371,6 +389,7 @@ class Task:
             tags=tags,
             queue=queue,
             external_id=external_id,
+            parent=parent,
         )
 
     def __init__(self, task):
@@ -468,6 +487,7 @@ class Task:
         tags: dict[str, str] = None,
         queue: str = None,
         external_id: str = None,
+        parent: str = None,
         data_merge_strategy: Any = None,
     ):
         """Generic update method used to update any of the task fields.
@@ -497,6 +517,7 @@ class Task:
             tags=tags,
             queue=queue,
             external_id=external_id,
+            parent=parent,
         )
         self._task = task._task
 
