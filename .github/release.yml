@@ -1,0 +1,32 @@
+changelog:
+  exclude:
+    labels:
+      - duplicate
+      - invalid
+      - wontfix
+  categories:
+    - title: ⚠️ Breaking Changes
+      labels:
+        - breaking
+    - title: 🚀 Features
+      labels:
+        - feat
+        - enhancement
+    - title: 🐛 Bug Fixes
+      labels:
+        - fix
+        - bug
+    - title: 📚 Documentation
+      labels:
+        - docs
+        - documentation
+    - title: 🧹 Maintenance
+      labels:
+        - chore
+        - refactor
+        - perf
+        - test
+        - ci
+    - title: Other Changes
+      labels:
+        - "*"

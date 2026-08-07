@@ -46,6 +46,15 @@ The `update-api` invoke task curls `localhost:8000/api/schema.json` by default �
 - Extras (`celery`, `procrastinate`, `cli`, `sentry`) are all optional; keep their imports inside the corresponding module (`taskbadger/celery.py`, `taskbadger/procrastinate.py`, `taskbadger/systems/`, `taskbadger/cli/`, `taskbadger/context_providers/sentry.py`).
 - `taskbadger/internal/*` is generator output — lint is best-effort, don't reformat manually.
 
+## Commits and PRs
+
+Conventional Commits for commit subjects and PR titles: `type(scope): summary`.
+
+- Types: `feat` `fix` `docs` `chore` `refactor` `perf` `test` `ci`. Breaking: `feat!:` / `fix!:` plus a `BREAKING CHANGE:` footer.
+- Scopes (optional): `celery`, `procrastinate`, `cli`, `sdk`, `sentry`, `internal`.
+- **Label every PR with its type** (`feat`, `fix`, …). Release notes are auto-generated from PR titles and grouped by label via `.github/release.yml`; an unlabelled PR falls into "Other Changes".
+- PRs merge as merge commits, so only PR titles reach the changelog — commit subjects are history hygiene.
+
 ## Releasing
 
 ```bash
