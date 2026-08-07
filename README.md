@@ -42,6 +42,19 @@ $ export TASKBADGER_API_KEY=***
 $ taskbadger run "nightly-backup" -- ./backup.sh
 ```
 
+### Request timeout
+
+API requests time out after 5 seconds by default. Override it with the `timeout` argument
+(seconds), or with the `TASKBADGER_HTTP_TIMEOUT` environment variable, which the CLI also
+honours:
+
+```python
+taskbadger.init(token="***", timeout=30)
+```
+
+Pass an [`httpx.Timeout`](https://www.python-httpx.org/advanced/timeouts/) for finer control,
+or `httpx.Timeout(None)` to disable timeouts entirely.
+
 ### Procrastinate Integration
 
 The SDK includes optional support for the [Procrastinate](https://procrastinate.readthedocs.io/) task queue.

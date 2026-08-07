@@ -4,11 +4,16 @@ from contextlib import ContextDecorator
 from contextvars import ContextVar
 from copy import deepcopy
 
+import httpx
+
 from taskbadger.context_providers import ContextProvider
 from taskbadger.internal import AuthenticatedClient
 from taskbadger.systems import System
 
 _local = ContextVar("taskbadger_client")
+
+#: Default timeout (seconds) applied to all API requests.
+DEFAULT_HTTP_TIMEOUT = 5.0
 
 
 Callback = str | Callable[[dict], dict | None]
@@ -23,9 +28,10 @@ class Settings:
     systems: dict[str, System] = dataclasses.field(default_factory=dict)
     before_create: Callback = None
     context_providers: list[ContextProvider] = dataclasses.field(default_factory=list)
+    timeout: float | httpx.Timeout | None = DEFAULT_HTTP_TIMEOUT
 
     def get_client(self):
-        return AuthenticatedClient(self.base_url, self.token)
+        return AuthenticatedClient(self.base_url, self.token, timeout=httpx.Timeout(self.timeout))
 
     def as_kwargs(self):
         return {
