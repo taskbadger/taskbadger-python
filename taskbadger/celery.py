@@ -25,7 +25,16 @@ from .sdk import DefaultMergeStrategy
 
 KWARG_PREFIX = "taskbadger_"
 TB_KWARGS_ARG = f"{KWARG_PREFIX}kwargs"
-IGNORE_ARGS = {TB_KWARGS_ARG, f"{KWARG_PREFIX}task", f"{KWARG_PREFIX}task_id", f"{KWARG_PREFIX}record_task_args"}
+# Per-execution tracking switch carried on the message headers. Not a task field, so it
+# must never end up in the kwargs passed to `create_task`.
+TB_TRACK = f"{KWARG_PREFIX}track"
+IGNORE_ARGS = {
+    TB_KWARGS_ARG,
+    TB_TRACK,
+    f"{KWARG_PREFIX}task",
+    f"{KWARG_PREFIX}task_id",
+    f"{KWARG_PREFIX}record_task_args",
+}
 TB_TASK_ID = f"{KWARG_PREFIX}task_id"
 TB_HEARTBEAT_INTERVAL = f"{KWARG_PREFIX}heartbeat_interval"
 TB_STALE_TIMEOUT = f"{KWARG_PREFIX}stale_timeout"
@@ -60,6 +69,12 @@ class Task(celery.Task):
     set on the task it makes the worker ping the task every N seconds while it runs, which
     keeps tasks with a `stale_timeout` from going stale. Unless `taskbadger_stale_timeout`
     is also given it is set to twice the interval.
+
+    A single execution can opt out of tracking with `taskbadger_track=False`, either as an
+    argument to `apply_async` or in its `headers`. This also overrides auto-tracking, and
+    works for canvas tasks (`.map()` / `.starmap()`), which only accept it via `headers`.
+    It is per-execution only — to exclude a task permanently use
+    `CelerySystemIntegration(excludes=[...])` rather than setting it on the task.
 
     Access to the task is provided via the `taskbadger_task` property of the Celery task.
     The task ID may also be accessed via the `taskbadger_task_id` property. These may
@@ -99,7 +114,15 @@ class Task(celery.Task):
             tb_kwargs.update(self._get_tb_kwargs(args[1]))
 
         if Badger.is_configured():
-            headers["taskbadger_track"] = True
+            # An explicit `taskbadger_track=False` opts this execution out of tracking and
+            # must survive to the signal handlers. It arrives either as a `taskbadger_`
+            # prefixed argument (already extracted into `tb_kwargs`) or straight in the
+            # headers, hence the `setdefault` for the latter.
+            track = tb_kwargs.pop("track", None)
+            if track is None:
+                headers.setdefault(TB_TRACK, True)
+            else:
+                headers[TB_TRACK] = track
             headers[TB_KWARGS_ARG] = tb_kwargs
             if "record_task_args" in tb_kwargs:
                 headers["taskbadger_record_task_args"] = tb_kwargs.pop("record_task_args")
@@ -186,7 +209,10 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
 
     celery_system = Badger.current.settings.get_system_by_id("celery")
     auto_track = celery_system and celery_system.track_task(sender)
-    manual_track = headers.get("taskbadger_track")
+    manual_track = headers.get(TB_TRACK)
+    if manual_track is False:
+        # explicit opt-out for this execution, which also overrides auto-tracking
+        return
     if not manual_track and not auto_track:
         return
 
@@ -271,7 +297,12 @@ def _maybe_create_task(signal_sender):
     # Badger wasn't configured at publish time but has stale config in worker.
     headers = signal_sender.request.headers or {}
     is_canvas_task = task_name in ("celery.map", "celery.starmap")
-    if not is_canvas_task and not headers.get("taskbadger_track"):
+    track_header = headers.get(TB_TRACK)
+    if track_header is False:
+        # explicit opt-out, which canvas tasks honour too: they are only ever created
+        # here, so this is the one place their header is checked
+        return
+    if not is_canvas_task and not track_header:
         return
 
     # NOW it's safe to check Badger configuration

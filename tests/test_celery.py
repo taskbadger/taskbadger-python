@@ -18,7 +18,8 @@ from kombu.utils.json import register_type
 
 from taskbadger import Action, EmailIntegration, StatusEnum
 from taskbadger.celery import Task, task_publish_handler
-from taskbadger.mug import Badger
+from taskbadger.mug import Badger, Settings
+from taskbadger.systems.celery import CelerySystemIntegration
 from tests.utils import task_for_test
 
 
@@ -297,6 +298,85 @@ def test_celery_publish_handler_task_not_registered_locally():
     assert headers["taskbadger_task_id"] == create.return_value.id
 
 
+@pytest.mark.parametrize(("track_header", "expect_created"), [({}, True), ({"taskbadger_track": False}, False)])
+def test_celery_publish_handler_opt_out_beats_auto_track(track_header, expect_created):
+    """An explicit `taskbadger_track=False` header opts a single execution out, even
+    when auto-tracking would otherwise pick the task up."""
+    settings = Settings("https://taskbadger.net", "token", "org", "proj", systems={"celery": CelerySystemIntegration()})
+    Badger.current.bind(settings)
+    try:
+        with mock.patch("taskbadger.celery.create_task_safe") as create:
+            create.return_value = task_for_test()
+            headers = {"id": "abc123", "task": "auto.tracked.task", **track_header}
+            task_publish_handler(sender="auto.tracked.task", headers=headers, body=[[], {}, {}])
+    finally:
+        Badger.current.bind(None)
+
+    assert create.called is expect_created
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_track_attr_not_passed_to_create(celery_session_app):
+    """`taskbadger_track` is a tracking switch, not a task field, so it must never reach
+    `create_task` — which would raise on the unexpected kwarg and lose the task."""
+
+    @celery_session_app.task(base=Task, name="track.attr.task", taskbadger_track=False)
+    def track_attr_task():
+        return 1
+
+    with mock.patch("taskbadger.celery.create_task_safe") as create:
+        create.return_value = task_for_test()
+        headers = {"id": "abc123", "task": "track.attr.task", "taskbadger_track": True}
+        task_publish_handler(sender="track.attr.task", headers=headers, body=[[], {}, {}])
+
+    assert "track" not in create.call_args.kwargs
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_task_opt_out(celery_session_app, celery_session_worker):
+    """`headers={"taskbadger_track": False}` prevents tracking of a single execution."""
+
+    @celery_session_app.task(bind=True, base=Task)
+    def add_opt_out(self, a, b):
+        assert self.taskbadger_task_id is None, "task should not be tracked"
+        return a + b
+
+    celery_session_worker.reload()
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe") as update,
+    ):
+        result = add_opt_out.apply_async((2, 2), headers={"taskbadger_track": False})
+        assert result.get(timeout=10, propagate=True) == 4
+
+    create.assert_not_called()
+    update.assert_not_called()
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_task_opt_out_kwarg(celery_session_app, celery_session_worker):
+    """`taskbadger_track=False` also works as a `taskbadger_`-prefixed option, the way the
+    other per-call options are passed, and never leaks into the create_task kwargs."""
+
+    @celery_session_app.task(bind=True, base=Task)
+    def add_opt_out_kwarg(self, a, b):
+        assert self.taskbadger_task_id is None, "task should not be tracked"
+        return a + b
+
+    celery_session_worker.reload()
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe") as update,
+    ):
+        result = add_opt_out_kwarg.apply_async((2, 2), taskbadger_track=False)
+        assert result.get(timeout=10, propagate=True) == 4
+
+    create.assert_not_called()
+    update.assert_not_called()
+
+
 @pytest.mark.usefixtures("_bind_settings")
 def test_celery_task_custom_queue(celery_session_app, celery_session_worker):
     @celery_session_app.task(bind=True, base=Task)
@@ -540,6 +620,30 @@ def test_task_map(celery_session_worker):
     assert task_name.endswith("(map 5)")
     assert update.call_count == 2  # PROCESSING and SUCCESS
     assert Badger.current.session().client is None
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_task_map_opt_out(celery_session_worker):
+    """Canvas tasks honour the opt-out too. They are created in the worker rather than
+    at publish time, so the header is checked there."""
+
+    @celery.shared_task(bind=True, base=Task)
+    def task_map_opt_out_fn(self, a):
+        return a * 2
+
+    celery_session_worker.reload()
+
+    map_canvas = task_map_opt_out_fn.map(list(range(3)))
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe") as update,
+    ):
+        result = map_canvas.apply_async(headers={"taskbadger_track": False})
+        assert result.get(timeout=10, propagate=True) == [0, 2, 4]
+
+    create.assert_not_called()
+    update.assert_not_called()
 
 
 @pytest.mark.usefixtures("_bind_settings")
