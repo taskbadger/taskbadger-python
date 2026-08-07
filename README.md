@@ -125,3 +125,18 @@ def slow_job():
 
 Unless `stale_timeout` is given explicitly it is set to twice the interval. All running tasks are
 pinged from a single background thread, started the first time a task with a heartbeat runs.
+
+### Skipping tracking for a single Celery call
+
+Pass `taskbadger_track=False` to leave one execution untracked. This overrides auto-tracking as
+well as the `taskbadger.Task` base class:
+
+```python
+noisy_job.apply_async(args, taskbadger_track=False)
+```
+
+Canvas primitives don't go through `apply_async` on the task itself, so pass it in the headers:
+
+```python
+noisy_job.map(items).apply_async(headers={"taskbadger_track": False})
+```
