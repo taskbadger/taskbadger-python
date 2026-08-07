@@ -5,9 +5,11 @@ attached to it via `parent`; if the running task is itself a child, the new task
 is attached to the same root rather than to the child.
 """
 
+import copy
 import logging
 from unittest import mock
 
+import celery
 import procrastinate
 import pytest
 from procrastinate import testing
@@ -141,8 +143,15 @@ def test_list_tasks_filters_by_parent(httpx_mock):
         json={"next": None, "previous": None, "results": [_json_task_response(parent="parent_id")]},
         status_code=200,
     )
-    (child,) = list_tasks(parent="parent_id").results
+    tasks = list_tasks(parent="parent_id")
+    (child,) = tasks.results
+    assert isinstance(child, Task)
     assert child.parent == "parent_id"
+    assert list(tasks) == tasks.results
+    assert len(tasks) == 1
+    # a TaskList must survive copy / pickle: both probe for dunders that
+    # `__getattr__` must not try to delegate
+    assert len(copy.deepcopy(tasks)) == 1
 
 
 @pytest.mark.usefixtures("_bind_settings")
@@ -319,6 +328,106 @@ def test_celery_publish_explicit_parent_wins():
             exit_task(token)
 
     assert create.call_args.kwargs["parent"] == "chosen"
+
+
+def _celery_app(**conf):
+    """A standalone app backed by in-memory transports, so no broker is needed."""
+    app = celery.Celery("test_parents", broker="memory://", backend="cache+memory://", **conf)
+
+    @app.task(bind=True, base=taskbadger.celery.Task, name="test_parents.add")
+    def add(self, a, b):
+        return a + b
+
+    return add
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_apply_async_parent():
+    """`taskbadger_parent` on `apply_async` reaches the task created at publish time."""
+    add = _celery_app()
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.sdk.get_task"),
+    ):
+        create.return_value = task_for_test()
+        add.apply_async((2, 2), taskbadger_parent="chosen")
+
+    assert create.call_args.kwargs["parent"] == "chosen"
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_apply_async_parent_beats_the_running_task():
+    add = _celery_app()
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.sdk.get_task"),
+    ):
+        create.return_value = task_for_test()
+        token = enter_task("root_id")
+        try:
+            add.apply_async((2, 2), taskbadger_parent="chosen")
+        finally:
+            exit_task(token)
+
+    assert create.call_args.kwargs["parent"] == "chosen"
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_eager_apply_async_parent():
+    """Eager tasks are created in `task_prerun` rather than at publish time, but
+    the explicit parent still has to make it through."""
+    add = _celery_app(task_always_eager=True, task_eager_propagates=True)
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe"),
+        mock.patch("taskbadger.sdk.get_task"),
+    ):
+        create.return_value = task_for_test()
+        assert add.apply_async((2, 2), taskbadger_parent="chosen").get() == 4
+
+    assert create.call_args.kwargs["parent"] == "chosen"
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_eager_nests_under_the_running_task():
+    add = _celery_app(task_always_eager=True, task_eager_propagates=True)
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe"),
+        mock.patch("taskbadger.sdk.get_task"),
+    ):
+        create.return_value = task_for_test()
+        token = enter_task("root_id")
+        try:
+            add.apply_async((2, 2))
+        finally:
+            exit_task(token)
+
+    assert create.call_args.kwargs["parent"] == "root_id"
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_eager_explicit_none_parent_makes_a_root_task():
+    """`taskbadger_parent=None` asks for a root task, as it does at publish time."""
+    add = _celery_app(task_always_eager=True, task_eager_propagates=True)
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe"),
+        mock.patch("taskbadger.sdk.get_task"),
+    ):
+        create.return_value = task_for_test()
+        token = enter_task("root_id")
+        try:
+            add.apply_async((2, 2), taskbadger_parent=None)
+        finally:
+            exit_task(token)
+
+    assert create.call_args.kwargs["parent"] is None
 
 
 # --- Procrastinate ------------------------------------------------------------

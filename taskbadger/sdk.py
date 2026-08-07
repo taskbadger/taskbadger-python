@@ -302,7 +302,7 @@ def update_task(
     return Task(response.parsed)
 
 
-def list_tasks(page_size: int = None, cursor: str = None, parent: str = None):
+def list_tasks(page_size: int = None, cursor: str = None, parent: str = None) -> "TaskList":
     """List tasks.
 
     Arguments:
@@ -314,7 +314,7 @@ def list_tasks(page_size: int = None, cursor: str = None, parent: str = None):
     with Session() as client:
         response = task_list.sync_detailed(client=client, **kwargs)
     _check_response(response)
-    return response.parsed
+    return TaskList(response.parsed)
 
 
 _ACTIONS_DEPRECATED_MESSAGE = (
@@ -554,6 +554,11 @@ class Task:
         return self._task.tags.to_dict()
 
     def __getattr__(self, item):
+        if item.startswith("_"):
+            # don't delegate private / dunder lookups: `copy` and `pickle` probe
+            # for e.g. `__setstate__` on an instance that has no `_task` yet,
+            # which would recurse until the stack blows up.
+            raise AttributeError(item)
         return getattr(self._task, item)
 
     def safe_update(self, **kwargs):
@@ -579,6 +584,39 @@ class Task:
         if value_step and self._task.value:
             return new_value - self._task.value >= value_step
         return True
+
+
+class TaskList:
+    """A page of tasks as returned by [taskbadger.list_tasks][].
+
+    Iterating over a `TaskList` yields [taskbadger.Task][] objects:
+
+        for task in taskbadger.list_tasks():
+            print(task.name)
+    """
+
+    def __init__(self, task_list):
+        self._task_list = task_list
+        self._results = [Task(task) for task in task_list.results]
+
+    @property
+    def results(self) -> list[Task]:
+        """The tasks in this page."""
+        return self._results
+
+    def __iter__(self):
+        return iter(self._results)
+
+    def __len__(self):
+        return len(self._results)
+
+    def __getattr__(self, item):
+        if item.startswith("_"):
+            # don't delegate private / dunder lookups: `copy` and `pickle` probe
+            # for e.g. `__setstate__` on an instance that has no `_task_list` yet,
+            # which would recurse until the stack blows up.
+            raise AttributeError(item)
+        return getattr(self._task_list, item)
 
 
 def _none_to_unset(value):

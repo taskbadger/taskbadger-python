@@ -13,7 +13,9 @@ def tag_release(c: Context):
     if bump_key in ("1", "2", "3"):
         bump = {"1": "major", "2": "minor", "3": "patch"}[bump_key]
         version = _bump_version(bump)
-        c.run("git add pyproject.toml")
+        # the lockfile pins the project's own version, so it moves with pyproject
+        c.run("uv lock")
+        c.run("git add pyproject.toml uv.lock")
         c.run(f"git commit -m 'Bump version to {version}'")
 
     if input(f"\nReady to release version {version}? [y/n]") == "y":
