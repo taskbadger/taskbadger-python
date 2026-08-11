@@ -5,6 +5,8 @@ import os
 import warnings
 from typing import Any
 
+import httpx
+
 from taskbadger._error_context import capture_error_data
 from taskbadger.context_providers import ContextProvider
 from taskbadger.exceptions import (
@@ -29,7 +31,7 @@ from taskbadger.internal.models import (
     TaskRequest,
 )
 from taskbadger.internal.types import UNSET
-from taskbadger.mug import Badger, Callback, Session, Settings
+from taskbadger.mug import DEFAULT_HTTP_TIMEOUT, Badger, Callback, Session, Settings
 from taskbadger.systems import System
 from taskbadger.utils import import_string
 
@@ -58,6 +60,17 @@ def _parse_token(token):
     return None
 
 
+def _timeout_from_env():
+    """Read the request timeout from ``TASKBADGER_HTTP_TIMEOUT``, falling back to the default."""
+    raw = os.environ.get("TASKBADGER_HTTP_TIMEOUT")
+    if not raw:
+        return DEFAULT_HTTP_TIMEOUT
+    try:
+        return float(raw)
+    except ValueError as e:
+        raise ConfigurationError(f"TASKBADGER_HTTP_TIMEOUT must be a number, got {raw!r}") from e
+
+
 def init(
     organization_slug: str = None,
     project_slug: str = None,
@@ -66,6 +79,7 @@ def init(
     tags: dict[str, str] = None,
     before_create: Callback = None,
     context_providers: list[ContextProvider] = None,
+    timeout: float | httpx.Timeout = None,
 ):
     """Initialize Task Badger client.
 
@@ -79,10 +93,13 @@ def init(
     Arguments:
         context_providers: Providers consulted when a tracked task errors, to attach extra
             context (e.g. a Sentry issue link) to the task's `data`. See `taskbadger.context_providers`.
+        timeout: Timeout (seconds) for API requests. Defaults to the ``TASKBADGER_HTTP_TIMEOUT``
+            environment variable if set, otherwise 5 seconds. Pass an `httpx.Timeout` for finer
+            control, or ``httpx.Timeout(None)`` to disable timeouts.
 
     Call this function once per thread.
     """
-    _init(_TB_HOST, organization_slug, project_slug, token, systems, tags, before_create, context_providers)
+    _init(_TB_HOST, organization_slug, project_slug, token, systems, tags, before_create, context_providers, timeout)
 
 
 def _init(
@@ -94,11 +111,14 @@ def _init(
     tags: dict[str, str] = None,
     before_create: Callback = None,
     context_providers: list[ContextProvider] = None,
+    timeout: float | httpx.Timeout = None,
 ):
     host = host or os.environ.get("TASKBADGER_HOST", "https://taskbadger.net")
     organization_slug = organization_slug or os.environ.get("TASKBADGER_ORG")
     project_slug = project_slug or os.environ.get("TASKBADGER_PROJECT")
     token = token or os.environ.get("TASKBADGER_API_KEY")
+    if timeout is None:
+        timeout = _timeout_from_env()
 
     if token:
         parsed = _parse_token(token)
@@ -127,6 +147,7 @@ def _init(
             systems={system.identifier: system for system in systems},
             before_create=before_create,
             context_providers=context_providers or [],
+            timeout=timeout,
         )
         Badger.current.bind(settings, tags)
     else:
