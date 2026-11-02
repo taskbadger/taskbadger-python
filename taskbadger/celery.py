@@ -14,14 +14,14 @@ from celery.signals import (
 from kombu import serialization
 
 from . import sdk
-from ._current_task import enter_task, exit_task, parent_id, retry_parent_id
+from ._current_task import enter_task, exit_task, parent_id, retry_of_id
 from ._error_context import capture_error_data, reset_error_context, start_error_context
 from ._heartbeat import heartbeat
 from ._integrations import (
     TERMINAL_STATES,
-    is_retry_task,
     parent_of,
     resolve_heartbeat_options,
+    retry_of,
     safe_get_task,
     task_cache,
 )
@@ -254,12 +254,9 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
     enclosing_task = parent_id()
     if enclosing_task and not _is_workflow_successor(sender):
         if "parent" not in kwargs and headers.get("retries") and _is_retry_of_running_task(headers):
-            # A Celery retry republishes the same task. It is marked so the API can leave
-            # the first few out of the monthly allocation, and nested under the first attempt.
-            retry_parent = retry_parent_id()
-            if retry_parent:
-                kwargs["parent"] = retry_parent
-                kwargs["is_retry"] = True
+            # A Celery retry republishes the same task. It names the first attempt so the API
+            # can leave the first few retries of it out of the monthly allocation.
+            kwargs["retry_of"] = retry_of_id()
         kwargs.setdefault("parent", enclosing_task)
     name = kwargs.pop("name", headers["task"])
 
@@ -398,10 +395,7 @@ def _maybe_create_task(signal_sender):
     }
     if "parent" not in header_kwargs and getattr(signal_sender.request, "retries", 0):
         # An eager retry runs nested inside the attempt that retried it.
-        retry_parent = retry_parent_id()
-        if retry_parent:
-            create_kwargs["parent"] = retry_parent
-            create_kwargs["is_retry"] = True
+        create_kwargs["retry_of"] = retry_of_id()
     heartbeat_interval, stale_timeout = resolve_heartbeat_options(
         header_kwargs.get("heartbeat_interval", getattr(signal_sender, TB_HEARTBEAT_INTERVAL, None)),
         header_kwargs.get("stale_timeout", getattr(signal_sender, TB_STALE_TIMEOUT, None)),
@@ -438,7 +432,7 @@ def task_prerun_handler(sender=None, **kwargs):
         # it. `_update_task` above has already put it in the cache, so this is a
         # lookup rather than a fetch.
         running = safe_get_task(task_id)
-        current_token = enter_task(task_id, parent_of(running), is_retry_task(running))
+        current_token = enter_task(task_id, parent_of(running), retry_of(running))
         sender.request.update({TB_CURRENT_TASK_TOKEN: current_token})
 
 

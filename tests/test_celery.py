@@ -475,9 +475,9 @@ def test_celery_task_retry(celery_session_app, celery_session_worker):
     assert create.call_count == 2
     first, retry = create.call_args_list
     # the original attempt is an ordinary task; the retry is marked and nested under it
-    assert "is_retry" not in first.kwargs
-    assert retry.kwargs["is_retry"] is True
-    assert retry.kwargs["parent"] is not None
+    assert "retry_of" not in first.kwargs
+    assert retry.kwargs["retry_of"] is not None
+    assert retry.kwargs["parent"] == retry.kwargs["retry_of"]  # a top-level task's retry nests under it
     assert update.call_args_list == [
         mock.call(mock.ANY, status=StatusEnum.PROCESSING, data=mock.ANY),
         mock.call(mock.ANY, status=StatusEnum.ERROR, data=mock.ANY),

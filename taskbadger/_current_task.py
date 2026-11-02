@@ -14,22 +14,23 @@ which keeps this module free of API calls.
 
 from contextvars import ContextVar
 
-# (id of the running task, id of its parent or None if it is a root task, whether it is a retry)
-_current: ContextVar[tuple[str, str | None, bool] | None] = ContextVar("taskbadger_current_task", default=None)
+# (id of the running task, id of its parent or None if it is a root task,
+#  id of the first attempt if the running task is a retry, else None)
+_current: ContextVar[tuple[str, str | None, str | None] | None] = ContextVar("taskbadger_current_task", default=None)
 
 
-def enter_task(task_id: str, parent: str = None, is_retry: bool = False):
+def enter_task(task_id: str, parent: str = None, retry_of: str = None):
     """Mark `task_id` as the task running in this context.
 
     Arguments:
         task_id: The running task.
         parent: The running task's own parent, if it has one.
-        is_retry: Whether the running task is itself a retry of its parent.
+        retry_of: The first attempt, if the running task is itself a retry.
 
     Returns:
         A token to pass to `exit_task`.
     """
-    return _current.set((task_id, parent, is_retry))
+    return _current.set((task_id, parent, retry_of))
 
 
 def exit_task(token) -> None:
@@ -54,19 +55,16 @@ def parent_id() -> str | None:
     return parent or task_id
 
 
-def retry_parent_id() -> str | None:
-    """The id to use as `parent` for a retry of the task running right now.
+def retry_of_id() -> str | None:
+    """The id to use as `retry_of` for a retry of the task running right now.
 
-    A retry is nested under the first attempt, so this is the running task for the first attempt
-    and the first attempt again when the running task is itself a retry. `None` when there is no
-    suitable first attempt: outside a tracked task, or when the running task is a child of some
-    other task (a fan-out child), since retries, like children, can't be nested a level deeper.
-    The caller should then create the retry as an ordinary task.
+    The first attempt: the running task itself, or the task it is a retry of. Retries all point at
+    the first attempt, so the API can count them per task. `None` outside a tracked task. The
+    retry's `parent` is still `parent_id()`: under the first attempt for a top-level task,
+    alongside it for a child.
     """
     current = _current.get()
     if current is None:
         return None
-    task_id, parent, is_retry = current
-    if parent is None:
-        return task_id
-    return parent if is_retry else None
+    task_id, _, retry_of = current
+    return retry_of or task_id

@@ -497,19 +497,23 @@ def test_procrastinate_worker_makes_its_task_current(app):
     assert current_task_id() is None
 
 
-def test_retry_parent_id():
-    from taskbadger._current_task import enter_task, exit_task, retry_parent_id
+def test_retry_of_id():
+    from taskbadger._current_task import enter_task, exit_task, parent_id, retry_of_id
 
-    assert retry_parent_id() is None  # outside a tracked task
+    assert retry_of_id() is None  # outside a tracked task
 
-    token = enter_task("first")  # a root task: its retry nests under it
-    assert retry_parent_id() == "first"
+    token = enter_task("first")  # a top-level task: its retries point at it and nest under it
+    assert (retry_of_id(), parent_id()) == ("first", "first")
     exit_task(token)
 
-    token = enter_task("retry", "first", is_retry=True)  # retries nest under the first attempt
-    assert retry_parent_id() == "first"
+    token = enter_task("retry", "first", retry_of="first")  # retries of retries point at the first attempt
+    assert (retry_of_id(), parent_id()) == ("first", "first")
     exit_task(token)
 
-    token = enter_task("child", "batch")  # a fan-out child can't have nested retries
-    assert retry_parent_id() is None
+    token = enter_task("child", "batch")  # a fan-out child's retries sit beside it under the batch
+    assert (retry_of_id(), parent_id()) == ("child", "batch")
+    exit_task(token)
+
+    token = enter_task("child-retry", "batch", retry_of="child")
+    assert (retry_of_id(), parent_id()) == ("child", "batch")
     exit_task(token)

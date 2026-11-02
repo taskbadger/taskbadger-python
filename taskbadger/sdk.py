@@ -184,7 +184,7 @@ def create_task(
     queue: str = None,
     external_id: str = None,
     parent: str = None,
-    is_retry: bool = None,
+    retry_of: str = None,
 ) -> "Task":
     """Create a Task.
 
@@ -204,9 +204,9 @@ def create_task(
         parent: ID of the parent task. Tasks nest a single level deep, so this must be the ID
             of a task that is not itself a child. The Celery and Procrastinate integrations set
             this automatically for tasks enqueued from within a tracked task.
-        is_retry: Mark the task as a retry of `parent`. The first 3 retries of a parent don't
-            count towards your monthly task allocation. Ignored without `parent`. The Celery
-            integration sets this automatically for retries.
+        retry_of: ID of the first attempt, to mark the task as a retry of it. The first 3 retries
+            of a task don't count towards your monthly task allocation. The Celery integration
+            sets this automatically for retries.
 
     Returns:
         Task: The created Task object.
@@ -217,8 +217,8 @@ def create_task(
     }
     if parent is not None:
         task_dict["parent"] = parent
-    if is_retry:
-        task_dict["is_retry"] = True
+    if retry_of is not None:
+        task_dict["retry_of"] = retry_of
     if queue is not None:
         task_dict["queue"] = queue
     if external_id is not None:
@@ -398,7 +398,7 @@ class Task:
         queue: str = None,
         external_id: str = None,
         parent: str = None,
-        is_retry: bool = None,
+        retry_of: str = None,
     ) -> "Task":
         """Create a new task
 
@@ -418,7 +418,7 @@ class Task:
             queue=queue,
             external_id=external_id,
             parent=parent,
-            is_retry=is_retry,
+            retry_of=retry_of,
         )
 
     def __init__(self, task):

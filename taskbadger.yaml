@@ -712,12 +712,20 @@ components:
           nullable: true
           description: ID of the task this task is part of. Tasks can only be nested
             one level deep, and a task's parent can not be changed once set.
+        retry_of:
+          type: string
+          minLength: 1
+          nullable: true
+          description: 'ID of the first attempt of the task this task is a retry of.
+            The first 3 retries of a task don''t count towards the monthly task allocation.
+            A retry is nested like a child of the original: under it for a top-level
+            task, otherwise alongside it under the same parent. Retries of a retry
+            point at the original. Can only be set when the task is created.'
         is_retry:
           type: boolean
-          description: Set when this task is a retry of its parent task. The first
-            3 retries of a parent don't count towards the monthly task allocation.
-            Ignored unless 'parent' is also set (a retry with no parent is a new task)
-            and can only be set when the task is created.
+          description: 'Whether this task is a retry. On create, deprecated in favour
+            of ''retry_of'': marks the task as a retry of its ''parent'', which must
+            be a top-level task, and is ignored without ''parent''.'
         name:
           type: string
           minLength: 1
@@ -829,12 +837,19 @@ components:
           nullable: true
           description: ID of the task this task is part of. Tasks can only be nested
             one level deep, and a task's parent can not be changed once set.
+        retry_of:
+          type: string
+          nullable: true
+          description: 'ID of the first attempt of the task this task is a retry of.
+            The first 3 retries of a task don''t count towards the monthly task allocation.
+            A retry is nested like a child of the original: under it for a top-level
+            task, otherwise alongside it under the same parent. Retries of a retry
+            point at the original. Can only be set when the task is created.'
         is_retry:
           type: boolean
-          description: Set when this task is a retry of its parent task. The first
-            3 retries of a parent don't count towards the monthly task allocation.
-            Ignored unless 'parent' is also set (a retry with no parent is a new task)
-            and can only be set when the task is created.
+          description: 'Whether this task is a retry. On create, deprecated in favour
+            of ''retry_of'': marks the task as a retry of its ''parent'', which must
+            be a top-level task, and is ignored without ''parent''.'
         name:
           type: string
           description: Name of the task
@@ -944,12 +959,20 @@ components:
           nullable: true
           description: ID of the task this task is part of. Tasks can only be nested
             one level deep, and a task's parent can not be changed once set.
+        retry_of:
+          type: string
+          minLength: 1
+          nullable: true
+          description: 'ID of the first attempt of the task this task is a retry of.
+            The first 3 retries of a task don''t count towards the monthly task allocation.
+            A retry is nested like a child of the original: under it for a top-level
+            task, otherwise alongside it under the same parent. Retries of a retry
+            point at the original. Can only be set when the task is created.'
         is_retry:
           type: boolean
-          description: Set when this task is a retry of its parent task. The first
-            3 retries of a parent don't count towards the monthly task allocation.
-            Ignored unless 'parent' is also set (a retry with no parent is a new task)
-            and can only be set when the task is created.
+          description: 'Whether this task is a retry. On create, deprecated in favour
+            of ''retry_of'': marks the task as a retry of its ''parent'', which must
+            be a top-level task, and is ignored without ''parent''.'
         name:
           type: string
           minLength: 1
