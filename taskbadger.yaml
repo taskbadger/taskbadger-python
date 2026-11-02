@@ -721,11 +721,6 @@ components:
             A retry is nested like a child of the original: under it for a top-level
             task, otherwise alongside it under the same parent. Retries of a retry
             point at the original. Can only be set when the task is created.'
-        is_retry:
-          type: boolean
-          description: 'Whether this task is a retry. On create, deprecated in favour
-            of ''retry_of'': marks the task as a retry of its ''parent'', which must
-            be a top-level task, and is ignored without ''parent''.'
         name:
           type: string
           minLength: 1
@@ -845,11 +840,6 @@ components:
             A retry is nested like a child of the original: under it for a top-level
             task, otherwise alongside it under the same parent. Retries of a retry
             point at the original. Can only be set when the task is created.'
-        is_retry:
-          type: boolean
-          description: 'Whether this task is a retry. On create, deprecated in favour
-            of ''retry_of'': marks the task as a retry of its ''parent'', which must
-            be a top-level task, and is ignored without ''parent''.'
         name:
           type: string
           description: Name of the task
@@ -968,11 +958,6 @@ components:
             A retry is nested like a child of the original: under it for a top-level
             task, otherwise alongside it under the same parent. Retries of a retry
             point at the original. Can only be set when the task is created.'
-        is_retry:
-          type: boolean
-          description: 'Whether this task is a retry. On create, deprecated in favour
-            of ''retry_of'': marks the task as a retry of its ''parent'', which must
-            be a top-level task, and is ignored without ''parent''.'
         name:
           type: string
           minLength: 1

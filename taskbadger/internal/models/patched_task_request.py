@@ -28,8 +28,6 @@ class PatchedTaskRequest:
             of a task don't count towards the monthly task allocation. A retry is nested like a child of the original: under
             it for a top-level task, otherwise alongside it under the same parent. Retries of a retry point at the original.
             Can only be set when the task is created.
-        is_retry (bool | Unset): Whether this task is a retry. On create, deprecated in favour of 'retry_of': marks the
-            task as a retry of its 'parent', which must be a top-level task, and is ignored without 'parent'.
         name (str | Unset): Name of the task
         queue (str | Unset): Queue the task is from
         external_id (str | Unset): Identifier from the originating system (e.g. Celery task ID) for correlating with
@@ -60,7 +58,6 @@ class PatchedTaskRequest:
 
     parent: None | str | Unset = UNSET
     retry_of: None | str | Unset = UNSET
-    is_retry: bool | Unset = UNSET
     name: str | Unset = UNSET
     queue: str | Unset = UNSET
     external_id: str | Unset = UNSET
@@ -90,8 +87,6 @@ class PatchedTaskRequest:
             retry_of = UNSET
         else:
             retry_of = self.retry_of
-
-        is_retry = self.is_retry
 
         name = self.name
 
@@ -158,8 +153,6 @@ class PatchedTaskRequest:
             field_dict["parent"] = parent
         if retry_of is not UNSET:
             field_dict["retry_of"] = retry_of
-        if is_retry is not UNSET:
-            field_dict["is_retry"] = is_retry
         if name is not UNSET:
             field_dict["name"] = name
         if queue is not UNSET:
@@ -212,8 +205,6 @@ class PatchedTaskRequest:
             return cast(None | str | Unset, data)
 
         retry_of = _parse_retry_of(d.pop("retry_of", UNSET))
-
-        is_retry = d.pop("is_retry", UNSET)
 
         name = d.pop("name", UNSET)
 
@@ -312,7 +303,6 @@ class PatchedTaskRequest:
         patched_task_request = cls(
             parent=parent,
             retry_of=retry_of,
-            is_retry=is_retry,
             name=name,
             queue=queue,
             external_id=external_id,

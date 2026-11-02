@@ -37,8 +37,6 @@ class Task:
             of a task don't count towards the monthly task allocation. A retry is nested like a child of the original: under
             it for a top-level task, otherwise alongside it under the same parent. Retries of a retry point at the original.
             Can only be set when the task is created.
-        is_retry (bool | Unset): Whether this task is a retry. On create, deprecated in favour of 'retry_of': marks the
-            task as a retry of its 'parent', which must be a top-level task, and is ignored without 'parent'.
         queue (str | Unset): Queue the task is from
         external_id (str | Unset): Identifier from the originating system (e.g. Celery task ID) for correlating with
             logs
@@ -77,7 +75,6 @@ class Task:
     public_url: str
     parent: None | str | Unset = UNSET
     retry_of: None | str | Unset = UNSET
-    is_retry: bool | Unset = UNSET
     queue: str | Unset = UNSET
     external_id: str | Unset = UNSET
     status: StatusEnum | Unset = StatusEnum.PENDING
@@ -125,8 +122,6 @@ class Task:
             retry_of = UNSET
         else:
             retry_of = self.retry_of
-
-        is_retry = self.is_retry
 
         queue = self.queue
 
@@ -203,8 +198,6 @@ class Task:
             field_dict["parent"] = parent
         if retry_of is not UNSET:
             field_dict["retry_of"] = retry_of
-        if is_retry is not UNSET:
-            field_dict["is_retry"] = is_retry
         if queue is not UNSET:
             field_dict["queue"] = queue
         if external_id is not UNSET:
@@ -277,8 +270,6 @@ class Task:
             return cast(None | str | Unset, data)
 
         retry_of = _parse_retry_of(d.pop("retry_of", UNSET))
-
-        is_retry = d.pop("is_retry", UNSET)
 
         queue = d.pop("queue", UNSET)
 
@@ -384,7 +375,6 @@ class Task:
             public_url=public_url,
             parent=parent,
             retry_of=retry_of,
-            is_retry=is_retry,
             queue=queue,
             external_id=external_id,
             status=status,
