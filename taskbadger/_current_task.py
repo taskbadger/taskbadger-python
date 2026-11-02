@@ -14,21 +14,22 @@ which keeps this module free of API calls.
 
 from contextvars import ContextVar
 
-# (id of the running task, id of its parent or None if it is a root task)
-_current: ContextVar[tuple[str, str | None] | None] = ContextVar("taskbadger_current_task", default=None)
+# (id of the running task, id of its parent or None if it is a root task, whether it is a retry)
+_current: ContextVar[tuple[str, str | None, bool] | None] = ContextVar("taskbadger_current_task", default=None)
 
 
-def enter_task(task_id: str, parent: str = None):
+def enter_task(task_id: str, parent: str = None, is_retry: bool = False):
     """Mark `task_id` as the task running in this context.
 
     Arguments:
         task_id: The running task.
         parent: The running task's own parent, if it has one.
+        is_retry: Whether the running task is itself a retry of its parent.
 
     Returns:
         A token to pass to `exit_task`.
     """
-    return _current.set((task_id, parent))
+    return _current.set((task_id, parent, is_retry))
 
 
 def exit_task(token) -> None:
@@ -49,5 +50,23 @@ def parent_id() -> str | None:
     current = _current.get()
     if current is None:
         return None
-    task_id, parent = current
+    task_id, parent, _ = current
     return parent or task_id
+
+
+def retry_parent_id() -> str | None:
+    """The id to use as `parent` for a retry of the task running right now.
+
+    A retry is nested under the first attempt, so this is the running task for the first attempt
+    and the first attempt again when the running task is itself a retry. `None` when there is no
+    suitable first attempt: outside a tracked task, or when the running task is a child of some
+    other task (a fan-out child), since retries, like children, can't be nested a level deeper.
+    The caller should then create the retry as an ordinary task.
+    """
+    current = _current.get()
+    if current is None:
+        return None
+    task_id, parent, is_retry = current
+    if parent is None:
+        return task_id
+    return parent if is_retry else None

@@ -25,6 +25,9 @@ class TaskRequest:
         name (str): Name of the task
         parent (None | str | Unset): ID of the task this task is part of. Tasks can only be nested one level deep, and a
             task's parent can not be changed once set.
+        is_retry (bool | Unset): Set when this task is a retry of its parent task. The first 3 retries of a parent don't
+            count towards the monthly task allocation. Ignored unless 'parent' is also set (a retry with no parent is a new
+            task) and can only be set when the task is created.
         queue (str | Unset): Queue the task is from
         external_id (str | Unset): Identifier from the originating system (e.g. Celery task ID) for correlating with
             logs
@@ -54,6 +57,7 @@ class TaskRequest:
 
     name: str
     parent: None | str | Unset = UNSET
+    is_retry: bool | Unset = UNSET
     queue: str | Unset = UNSET
     external_id: str | Unset = UNSET
     status: StatusEnum | Unset = StatusEnum.PENDING
@@ -78,6 +82,8 @@ class TaskRequest:
             parent = UNSET
         else:
             parent = self.parent
+
+        is_retry = self.is_retry
 
         queue = self.queue
 
@@ -144,6 +150,8 @@ class TaskRequest:
         )
         if parent is not UNSET:
             field_dict["parent"] = parent
+        if is_retry is not UNSET:
+            field_dict["is_retry"] = is_retry
         if queue is not UNSET:
             field_dict["queue"] = queue
         if external_id is not UNSET:
@@ -186,6 +194,8 @@ class TaskRequest:
             return cast(None | str | Unset, data)
 
         parent = _parse_parent(d.pop("parent", UNSET))
+
+        is_retry = d.pop("is_retry", UNSET)
 
         queue = d.pop("queue", UNSET)
 
@@ -282,6 +292,7 @@ class TaskRequest:
         task_request = cls(
             name=name,
             parent=parent,
+            is_retry=is_retry,
             queue=queue,
             external_id=external_id,
             status=status,

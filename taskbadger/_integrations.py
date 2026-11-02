@@ -88,6 +88,11 @@ def parent_of(task) -> str | None:
     return parent or None
 
 
+def is_retry_task(task) -> bool:
+    """Whether ``task`` was created as a retry of its parent (``False`` for ``None``/unset)."""
+    return getattr(task, "is_retry", False) is True
+
+
 def match_task_name(task_name: str, includes, excludes) -> bool:
     """Return True if ``task_name`` should be tracked under the given rules.
 

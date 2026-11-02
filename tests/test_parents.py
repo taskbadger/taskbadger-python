@@ -495,3 +495,21 @@ def test_procrastinate_worker_makes_its_task_current(app):
 
     assert seen["parent"] == "job_tb"
     assert current_task_id() is None
+
+
+def test_retry_parent_id():
+    from taskbadger._current_task import enter_task, exit_task, retry_parent_id
+
+    assert retry_parent_id() is None  # outside a tracked task
+
+    token = enter_task("first")  # a root task: its retry nests under it
+    assert retry_parent_id() == "first"
+    exit_task(token)
+
+    token = enter_task("retry", "first", is_retry=True)  # retries nest under the first attempt
+    assert retry_parent_id() == "first"
+    exit_task(token)
+
+    token = enter_task("child", "batch")  # a fan-out child can't have nested retries
+    assert retry_parent_id() is None
+    exit_task(token)

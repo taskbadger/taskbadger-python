@@ -14,10 +14,17 @@ from celery.signals import (
 from kombu import serialization
 
 from . import sdk
-from ._current_task import enter_task, exit_task, parent_id
+from ._current_task import enter_task, exit_task, parent_id, retry_parent_id
 from ._error_context import capture_error_data, reset_error_context, start_error_context
 from ._heartbeat import heartbeat
-from ._integrations import TERMINAL_STATES, parent_of, resolve_heartbeat_options, safe_get_task, task_cache
+from ._integrations import (
+    TERMINAL_STATES,
+    is_retry_task,
+    parent_of,
+    resolve_heartbeat_options,
+    safe_get_task,
+    task_cache,
+)
 from .internal.models import StatusEnum
 from .mug import Badger
 from .safe_sdk import create_task_safe, update_task_safe
@@ -199,6 +206,16 @@ def _is_workflow_successor(task_name):
     return any(name == task_name for sig in successors for name in _signature_names(sig))
 
 
+def _is_retry_of_running_task(headers):
+    """Whether the message being published is a retry of the task that is running.
+
+    ``self.retry()`` republishes with the running task's own id, which separates it from an
+    unrelated task that happens to carry a ``retries`` header.
+    """
+    request = getattr(celery.current_task, "request", None)
+    return request is not None and request.id == headers.get("id")
+
+
 @before_task_publish.connect
 def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
     routing_key = kwargs.get("routing_key")
@@ -236,6 +253,13 @@ def task_publish_handler(sender=None, headers=None, body=None, **kwargs):
     # is itself a tracked task this nests the new task under it.
     enclosing_task = parent_id()
     if enclosing_task and not _is_workflow_successor(sender):
+        if "parent" not in kwargs and headers.get("retries") and _is_retry_of_running_task(headers):
+            # A Celery retry republishes the same task. It is marked so the API can leave
+            # the first few out of the monthly allocation, and nested under the first attempt.
+            retry_parent = retry_parent_id()
+            if retry_parent:
+                kwargs["parent"] = retry_parent
+                kwargs["is_retry"] = True
         kwargs.setdefault("parent", enclosing_task)
     name = kwargs.pop("name", headers["task"])
 
@@ -372,6 +396,12 @@ def _maybe_create_task(signal_sender):
         # explicit `None`, which asks for a root task.
         "parent": header_kwargs["parent"] if "parent" in header_kwargs else parent_id(),
     }
+    if "parent" not in header_kwargs and getattr(signal_sender.request, "retries", 0):
+        # An eager retry runs nested inside the attempt that retried it.
+        retry_parent = retry_parent_id()
+        if retry_parent:
+            create_kwargs["parent"] = retry_parent
+            create_kwargs["is_retry"] = True
     heartbeat_interval, stale_timeout = resolve_heartbeat_options(
         header_kwargs.get("heartbeat_interval", getattr(signal_sender, TB_HEARTBEAT_INTERVAL, None)),
         header_kwargs.get("stale_timeout", getattr(signal_sender, TB_STALE_TIMEOUT, None)),
@@ -407,7 +437,8 @@ def task_prerun_handler(sender=None, **kwargs):
         # Mark this as the running task so anything it publishes is nested under
         # it. `_update_task` above has already put it in the cache, so this is a
         # lookup rather than a fetch.
-        current_token = enter_task(task_id, parent_of(safe_get_task(task_id)))
+        running = safe_get_task(task_id)
+        current_token = enter_task(task_id, parent_of(running), is_retry_task(running))
         sender.request.update({TB_CURRENT_TASK_TOKEN: current_token})
 
 

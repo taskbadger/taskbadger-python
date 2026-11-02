@@ -712,6 +712,12 @@ components:
           nullable: true
           description: ID of the task this task is part of. Tasks can only be nested
             one level deep, and a task's parent can not be changed once set.
+        is_retry:
+          type: boolean
+          description: Set when this task is a retry of its parent task. The first
+            3 retries of a parent don't count towards the monthly task allocation.
+            Ignored unless 'parent' is also set (a retry with no parent is a new task)
+            and can only be set when the task is created.
         name:
           type: string
           minLength: 1
@@ -823,6 +829,12 @@ components:
           nullable: true
           description: ID of the task this task is part of. Tasks can only be nested
             one level deep, and a task's parent can not be changed once set.
+        is_retry:
+          type: boolean
+          description: Set when this task is a retry of its parent task. The first
+            3 retries of a parent don't count towards the monthly task allocation.
+            Ignored unless 'parent' is also set (a retry with no parent is a new task)
+            and can only be set when the task is created.
         name:
           type: string
           description: Name of the task
@@ -932,6 +944,12 @@ components:
           nullable: true
           description: ID of the task this task is part of. Tasks can only be nested
             one level deep, and a task's parent can not be changed once set.
+        is_retry:
+          type: boolean
+          description: Set when this task is a retry of its parent task. The first
+            3 retries of a parent don't count towards the monthly task allocation.
+            Ignored unless 'parent' is also set (a retry with no parent is a new task)
+            and can only be set when the task is created.
         name:
           type: string
           minLength: 1
