@@ -430,6 +430,68 @@ def test_celery_eager_explicit_none_parent_makes_a_root_task():
     assert create.call_args.kwargs["parent"] is None
 
 
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_publish_of_a_retry_of_a_fan_out_child_sits_beside_it():
+    """A retry is published with the running task's own id and a `retries` header. For a
+    child of another task it points at the child and stays under the same parent."""
+    add = _celery_app()
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.sdk.get_task"),
+        mock.patch("taskbadger.celery._is_retry_of_running_task", return_value=True),
+    ):
+        create.return_value = task_for_test()
+        token = enter_task("child", "batch")
+        try:
+            add.apply_async((2, 2), retries=1)
+        finally:
+            exit_task(token)
+
+    assert create.call_args.kwargs["retry_of"] == "child"
+    assert create.call_args.kwargs["parent"] == "batch"
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_publish_without_retries_header_is_not_a_retry():
+    add = _celery_app()
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.sdk.get_task"),
+        mock.patch("taskbadger.celery._is_retry_of_running_task", return_value=True),
+    ):
+        create.return_value = task_for_test()
+        token = enter_task("root_id")
+        try:
+            add.apply_async((2, 2))
+        finally:
+            exit_task(token)
+
+    assert "retry_of" not in create.call_args.kwargs
+    assert create.call_args.kwargs["parent"] == "root_id"
+
+
+@pytest.mark.usefixtures("_bind_settings")
+def test_celery_eager_retry_points_at_the_first_attempt():
+    add = _celery_app(task_always_eager=True, task_eager_propagates=True)
+
+    with (
+        mock.patch("taskbadger.celery.create_task_safe") as create,
+        mock.patch("taskbadger.celery.update_task_safe"),
+        mock.patch("taskbadger.sdk.get_task"),
+    ):
+        create.return_value = task_for_test()
+        token = enter_task("first")
+        try:
+            add.apply_async((2, 2), retries=1)
+        finally:
+            exit_task(token)
+
+    assert create.call_args.kwargs["retry_of"] == "first"
+    assert create.call_args.kwargs["parent"] == "first"
+
+
 # --- Procrastinate ------------------------------------------------------------
 
 
