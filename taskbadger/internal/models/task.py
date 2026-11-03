@@ -33,6 +33,10 @@ class Task:
         public_url (str):
         parent (None | str | Unset): ID of the task this task is part of. Tasks can only be nested one level deep, and a
             task's parent can not be changed once set.
+        retry_of (None | str | Unset): ID of the first attempt of the task this task is a retry of. The first 3 retries
+            of a task don't count towards the monthly task allocation. A retry is nested like a child of the original: under
+            it for a top-level task, otherwise alongside it under the same parent. Retries of a retry point at the original.
+            Can only be set when the task is created.
         queue (str | Unset): Queue the task is from
         external_id (str | Unset): Identifier from the originating system (e.g. Celery task ID) for correlating with
             logs
@@ -70,6 +74,7 @@ class Task:
     url: str
     public_url: str
     parent: None | str | Unset = UNSET
+    retry_of: None | str | Unset = UNSET
     queue: str | Unset = UNSET
     external_id: str | Unset = UNSET
     status: StatusEnum | Unset = StatusEnum.PENDING
@@ -111,6 +116,12 @@ class Task:
             parent = UNSET
         else:
             parent = self.parent
+
+        retry_of: None | str | Unset
+        if isinstance(self.retry_of, Unset):
+            retry_of = UNSET
+        else:
+            retry_of = self.retry_of
 
         queue = self.queue
 
@@ -185,6 +196,8 @@ class Task:
         )
         if parent is not UNSET:
             field_dict["parent"] = parent
+        if retry_of is not UNSET:
+            field_dict["retry_of"] = retry_of
         if queue is not UNSET:
             field_dict["queue"] = queue
         if external_id is not UNSET:
@@ -248,6 +261,15 @@ class Task:
             return cast(None | str | Unset, data)
 
         parent = _parse_parent(d.pop("parent", UNSET))
+
+        def _parse_retry_of(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        retry_of = _parse_retry_of(d.pop("retry_of", UNSET))
 
         queue = d.pop("queue", UNSET)
 
@@ -352,6 +374,7 @@ class Task:
             url=url,
             public_url=public_url,
             parent=parent,
+            retry_of=retry_of,
             queue=queue,
             external_id=external_id,
             status=status,

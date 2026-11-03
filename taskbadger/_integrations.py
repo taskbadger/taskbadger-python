@@ -88,6 +88,12 @@ def parent_of(task) -> str | None:
     return parent or None
 
 
+def retry_of(task) -> str | None:
+    """The id of the first attempt ``task`` is a retry of, or ``None`` (also for ``None``/unset)."""
+    value = getattr(task, "retry_of", None) if task is not None else None
+    return value or None
+
+
 def match_task_name(task_name: str, includes, excludes) -> bool:
     """Return True if ``task_name`` should be tracked under the given rules.
 

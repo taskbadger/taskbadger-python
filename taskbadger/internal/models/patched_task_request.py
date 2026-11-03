@@ -24,6 +24,10 @@ class PatchedTaskRequest:
     Attributes:
         parent (None | str | Unset): ID of the task this task is part of. Tasks can only be nested one level deep, and a
             task's parent can not be changed once set.
+        retry_of (None | str | Unset): ID of the first attempt of the task this task is a retry of. The first 3 retries
+            of a task don't count towards the monthly task allocation. A retry is nested like a child of the original: under
+            it for a top-level task, otherwise alongside it under the same parent. Retries of a retry point at the original.
+            Can only be set when the task is created.
         name (str | Unset): Name of the task
         queue (str | Unset): Queue the task is from
         external_id (str | Unset): Identifier from the originating system (e.g. Celery task ID) for correlating with
@@ -53,6 +57,7 @@ class PatchedTaskRequest:
     """
 
     parent: None | str | Unset = UNSET
+    retry_of: None | str | Unset = UNSET
     name: str | Unset = UNSET
     queue: str | Unset = UNSET
     external_id: str | Unset = UNSET
@@ -76,6 +81,12 @@ class PatchedTaskRequest:
             parent = UNSET
         else:
             parent = self.parent
+
+        retry_of: None | str | Unset
+        if isinstance(self.retry_of, Unset):
+            retry_of = UNSET
+        else:
+            retry_of = self.retry_of
 
         name = self.name
 
@@ -140,6 +151,8 @@ class PatchedTaskRequest:
         field_dict.update({})
         if parent is not UNSET:
             field_dict["parent"] = parent
+        if retry_of is not UNSET:
+            field_dict["retry_of"] = retry_of
         if name is not UNSET:
             field_dict["name"] = name
         if queue is not UNSET:
@@ -183,6 +196,15 @@ class PatchedTaskRequest:
             return cast(None | str | Unset, data)
 
         parent = _parse_parent(d.pop("parent", UNSET))
+
+        def _parse_retry_of(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        retry_of = _parse_retry_of(d.pop("retry_of", UNSET))
 
         name = d.pop("name", UNSET)
 
@@ -280,6 +302,7 @@ class PatchedTaskRequest:
 
         patched_task_request = cls(
             parent=parent,
+            retry_of=retry_of,
             name=name,
             queue=queue,
             external_id=external_id,

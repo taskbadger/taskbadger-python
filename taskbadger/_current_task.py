@@ -14,21 +14,23 @@ which keeps this module free of API calls.
 
 from contextvars import ContextVar
 
-# (id of the running task, id of its parent or None if it is a root task)
-_current: ContextVar[tuple[str, str | None] | None] = ContextVar("taskbadger_current_task", default=None)
+# (id of the running task, id of its parent or None if it is a root task,
+#  id of the first attempt if the running task is a retry, else None)
+_current: ContextVar[tuple[str, str | None, str | None] | None] = ContextVar("taskbadger_current_task", default=None)
 
 
-def enter_task(task_id: str, parent: str = None):
+def enter_task(task_id: str, parent: str = None, retry_of: str = None):
     """Mark `task_id` as the task running in this context.
 
     Arguments:
         task_id: The running task.
         parent: The running task's own parent, if it has one.
+        retry_of: The first attempt, if the running task is itself a retry.
 
     Returns:
         A token to pass to `exit_task`.
     """
-    return _current.set((task_id, parent))
+    return _current.set((task_id, parent, retry_of))
 
 
 def exit_task(token) -> None:
@@ -49,5 +51,20 @@ def parent_id() -> str | None:
     current = _current.get()
     if current is None:
         return None
-    task_id, parent = current
+    task_id, parent, _ = current
     return parent or task_id
+
+
+def retry_of_id() -> str | None:
+    """The id to use as `retry_of` for a retry of the task running right now.
+
+    The first attempt: the running task itself, or the task it is a retry of. Retries all point at
+    the first attempt, so the API can count them per task. `None` outside a tracked task. The
+    retry's `parent` is still `parent_id()`: under the first attempt for a top-level task,
+    alongside it for a child.
+    """
+    current = _current.get()
+    if current is None:
+        return None
+    task_id, _, retry_of = current
+    return retry_of or task_id
